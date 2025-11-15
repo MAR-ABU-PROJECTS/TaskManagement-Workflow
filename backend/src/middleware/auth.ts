@@ -12,11 +12,7 @@ declare global {
 }
 
 // Authentication middleware
-export function authenticate(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export function authenticate(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).json({ message: "Authorization header missing" });
@@ -32,7 +28,7 @@ export function authenticate(
 
   try {
     // Find the user by ID
-    const user = users.find(u => u.id === decoded.id);
+    const user = users.find((u) => u.id === decoded.id);
 
     if (!user || !user.isActive) {
       return res.status(401).json({ message: "User not found or inactive" });
