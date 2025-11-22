@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { AlertTriangle, User, Flag, CheckCircle2, MoreVertical, LinkIcon, Send, FileText } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
