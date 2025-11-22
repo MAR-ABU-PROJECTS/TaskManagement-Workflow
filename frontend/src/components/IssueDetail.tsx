@@ -45,11 +45,10 @@ export default function IssueDetailPage() {
   const [newComment, setNewComment] = useState("")
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col px-4 p-6">
       {/* Header */}
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b border-slate-200 dark:border-slate-800 px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
+      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+       
         <div className="flex items-center gap-3 flex-1">
           <AlertTriangle className="h-5 w-5 text-orange-500" />
           <h1 className="text-lg font-semibold">Login button not responding on mobile</h1>
@@ -71,11 +70,11 @@ export default function IssueDetailPage() {
             <DropdownMenuItem className="text-destructive">Delete Issue</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        <div className="grid lg:grid-cols-3 gap-6 p-6">
+        <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Column - Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Description */}

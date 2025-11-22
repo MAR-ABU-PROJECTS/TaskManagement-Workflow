@@ -116,7 +116,11 @@ export default function ProjectsPage() {
 											</DropdownMenuTrigger>
 											<DropdownMenuContent align="end">
 												<DropdownMenuItem>
-													Edit Project
+													<Link
+														href={`/projects/${project.id}/edit`}
+													>
+														Edit Project
+													</Link>
 												</DropdownMenuItem>
 												{/* <DropdownMenuItem>
 													Duplicate
