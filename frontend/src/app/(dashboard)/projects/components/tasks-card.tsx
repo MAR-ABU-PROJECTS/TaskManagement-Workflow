@@ -83,10 +83,12 @@ const TaskCard = ({
 									Assign to
 								</DropdownMenuItem>
 
-								<DropdownMenuItem>
+								<DropdownMenuItem className="p-0 mt-0.5">
 									<Button
 										variant={"destructive"}
 										onClick={() => onDelete(id)}
+										size={'sm'}
+										className="w-full text-left"
 									>
 										Delete
 									</Button>

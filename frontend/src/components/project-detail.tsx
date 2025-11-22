@@ -8,10 +8,11 @@ import { DeleteTaskModal } from "@/app/(dashboard)/projects/components/delete-ta
 import { AssignTaskModal } from "@/app/(dashboard)/projects/components/assign-task-modal";
 import { ChangeStatusModal } from "@/app/(dashboard)/projects/components/change-status-modal";
 import { EditTaskModal } from "@/app/(dashboard)/projects/components/edit-task-modal";
+import { Task } from "@/app/(dashboard)/projects/type";
 
 export default function ProjectDetailPage() {
 	const [tasks, setTasks] = useState(initialTasks);
-	const [selectedTask, setSelectedTask] = useState<any>(null);
+	const [selectedTask, setSelectedTask] = useState<Task | null>();
 	const [openModal, setOpenModal] = useState<
 		"edit" | "status" | "assign" | "delete" | null
 	>(null);
@@ -40,10 +41,10 @@ export default function ProjectDetailPage() {
 		setOpenModal("delete");
 	};
 
-	const handleSaveTask = (updatedTask: any) => {
-		setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
-		setOpenModal(null);
-	};
+  const handleSaveTask = (updatedTask: Task) => {
+    setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)))
+    setOpenModal(null)
+  }
 
 	const handleStatusChange = (taskId: number, newStatus: string) => {
 		setTasks(
@@ -93,25 +94,25 @@ export default function ProjectDetailPage() {
 			<EditTaskModal
 				isOpen={openModal === "edit"}
 				onClose={() => setOpenModal(null)}
-				task={selectedTask}
+				task={selectedTask as Task}
 				onSave={handleSaveTask}
 			/>
 			<ChangeStatusModal
 				isOpen={openModal === "status"}
 				onClose={() => setOpenModal(null)}
-				task={selectedTask}
+				task={selectedTask as Task}
 				onStatusChange={handleStatusChange}
 			/>
 			<AssignTaskModal
 				isOpen={openModal === "assign"}
 				onClose={() => setOpenModal(null)}
-				task={selectedTask}
+				task={selectedTask as Task}
 				onAssign={handleAssignChange}
 			/>
 			<DeleteTaskModal
 				isOpen={openModal === "delete"}
 				onClose={() => setOpenModal(null)}
-				task={selectedTask}
+				task={selectedTask as Task}
 				onConfirm={handleConfirmDelete}
 			/>
 		</div>
