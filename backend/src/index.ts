@@ -6,11 +6,7 @@ import logger from "./utils/logger";
 import { apiLimiter } from "./middleware/rateLimiter";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
-import authRoutes from "./routes/auth";
-import teamRoutes from "./routes/teams";
-import projectRoutes from "./routes/projects";
-import taskRoutes from "./routes/tasks";
-import issueRoutes from "./routes/issues";
+import routes from "./routes";
 
 const app = express();
 
@@ -23,18 +19,14 @@ app.use(express.urlencoded({ extended: true }));
 // Rate limiting
 app.use(apiLimiter);
 
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/teams", teamRoutes);
-app.use("/api/projects", projectRoutes);
-app.use("/api/tasks", taskRoutes);
-app.use("/api/issues", issueRoutes);
+// API Routes
+app.use("/api", routes);
 
-// Health check
+// Root health check
 app.get("/", (_req, res) => {
   res.json({
-    message: "MAR Project Management API is running",
-    version: "1.0.0",
+    message: "MAR Task Management API - Jira Style",
+    version: "2.0.0",
     environment: config.NODE_ENV,
   });
 });
@@ -49,4 +41,7 @@ app.use(errorHandler);
 app.listen(config.PORT, () => {
   logger.info(`Server running on ${config.BASE_URL}`);
   logger.info(`Environment: ${config.NODE_ENV}`);
+  logger.info(`Jira-style Task Management System Ready`);
 });
+
+export default app;

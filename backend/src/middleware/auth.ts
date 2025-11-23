@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { User } from "../data";
 import { verifyToken } from "../utils/token";
-import { users } from "../data";
+import prisma from "../db/prisma";
 
 declare global {
   namespace Express {
@@ -12,7 +12,11 @@ declare global {
 }
 
 // Authentication middleware
-export function authenticate(req: Request, res: Response, next: NextFunction) {
+export async function authenticate(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).json({ message: "Authorization header missing" });
@@ -27,14 +31,16 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
   }
 
   try {
-    // Find the user by ID
-    const user = users.find((u) => u.id === decoded.id);
+    // Find the user by ID from database
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+    });
 
     if (!user || !user.isActive) {
       return res.status(401).json({ message: "User not found or inactive" });
     }
 
-    req.user = user;
+    req.user = user as User;
     return next();
   } catch (error) {
     return next(error);

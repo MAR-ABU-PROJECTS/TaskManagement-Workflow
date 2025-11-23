@@ -7,162 +7,236 @@ generator client {
 
 datasource db {
    provider = "postgresql"
-   url      = env("DATABASE_URL")
 }
 
 enum UserRole {
-   SUPER_ADMIN
-   ORG_ADMIN
-   TEAM_OWNER
-   TEAM_ADMIN
-   PROJECT_MANAGER
-   MEMBER
-}
-
-enum TeamRole {
-   OWNER
+   CEO
+   HOO
+   HR
    ADMIN
-   MEMBER
+   STAFF
 }
 
-enum ProjectStatus {
-   ACTIVE
-   ARCHIVED
+enum Department {
+   OPS
+   HR
 }
 
 enum TaskStatus {
-   BACKLOG
-   TODO
+   DRAFT
+   ASSIGNED
    IN_PROGRESS
+   PAUSED
    REVIEW
-   DONE
-   BLOCKED
+   COMPLETED
+   REJECTED
 }
 
 enum TaskPriority {
    LOW
    MEDIUM
    HIGH
-   CRITICAL
 }
 
-enum IssueSeverity {
-   MINOR
-   MAJOR
-   CRITICAL
-   BLOCKER
+enum IssueType {
+   TASK
+   BUG
+   STORY
 }
 
-enum IssueStatus {
-   OPEN
-   IN_PROGRESS
-   RESOLVED
-   CLOSED
-   REOPENED
+enum ActivityAction {
+   CREATE
+   ASSIGN
+   APPROVE
+   REJECT
+   STATUS_UPDATE
+   COMMENT
+}
+
+enum NotificationType {
+   TASK_ASSIGNED
+   STATUS_CHANGED
+   COMMENT
+   MENTION
+   APPROVAL_REQUIRED
+   APPROVED
+   REJECTED
+}
+
+enum DependencyType {
+   BLOCKS
+   IS_BLOCKED_BY
+   RELATES_TO
 }
 
 model User {
-   id           String   @id @default(uuid())
-   email        String   @unique
-   passwordHash String   @map("password_hash")
-   firstName    String   @map("first_name")
-   lastName     String   @map("last_name")
-   role         UserRole @default(MEMBER)
-   isActive     Boolean  @default(true) @map("is_active")
-   createdAt    DateTime @default(now()) @map("created_at")
-   updatedAt    DateTime @updatedAt @map("updated_at")
+   id           String      @id @default(uuid())
+   email        String      @unique
+   passwordHash String      @map("password_hash")
+   name         String
+   role         UserRole    @default(STAFF)
+   department   Department?
+   isActive     Boolean     @default(true) @map("is_active")
+   createdAt    DateTime    @default(now()) @map("created_at")
+   updatedAt    DateTime    @updatedAt @map("updated_at")
 
    // Relations
-   teamMemberships TeamMember[]
-   createdTasks    Task[]       @relation("TaskCreator")
-   assignedTasks   Task[]       @relation("TaskAssignee")
+   createdProjects Project[]         @relation("ProjectCreator")
+   createdTasks    Task[]            @relation("TaskCreator")
+   assignedTasks   Task[]            @relation("TaskAssignee")
+   approvedTasks   Task[]            @relation("TaskApprover")
+   comments        TaskComment[]
+   activityLogs    TaskActivityLog[]
+   notifications   Notification[]
+   watchedTasks    Task[]            @relation("TaskWatchers")
+   timeEntries     TimeEntry[]
+   activeTimer     ActiveTimer?
 
    @@map("users")
 }
 
-model Team {
-   id          String   @id @default(uuid())
-   name        String
-   description String?
-   createdAt   DateTime @default(now()) @map("created_at")
-   updatedAt   DateTime @updatedAt @map("updated_at")
-
-   // Relations
-   members  TeamMember[]
-   projects Project[]
-
-   @@map("teams")
-}
-
-model TeamMember {
-   id        String   @id @default(uuid())
-   teamId    String   @map("team_id")
-   userId    String   @map("user_id")
-   role      TeamRole @default(MEMBER)
-   joinedAt  DateTime @default(now()) @map("joined_at")
-   updatedAt DateTime @updatedAt @map("updated_at")
-
-   // Relations
-   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
-   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-   @@unique([teamId, userId])
-   @@map("team_members")
-}
-
 model Project {
-   id          String        @id @default(uuid())
-   teamId      String        @map("team_id")
+   id          String      @id @default(uuid())
    name        String
-   key         String
    description String?
-   status      ProjectStatus @default(ACTIVE)
-   createdAt   DateTime      @default(now()) @map("created_at")
-   updatedAt   DateTime      @updatedAt @map("updated_at")
+   department  Department?
+   creatorId   String      @map("creator_id")
+   createdAt   DateTime    @default(now()) @map("created_at")
+   updatedAt   DateTime    @updatedAt @map("updated_at")
 
    // Relations
-   team   Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
-   tasks  Task[]
-   issues Issue[]
+   creator User   @relation("ProjectCreator", fields: [creatorId], references: [id])
+   tasks   Task[]
 
-   @@unique([teamId, key])
    @@map("projects")
 }
 
 model Task {
-   id          String       @id @default(uuid())
-   projectId   String       @map("project_id")
-   title       String
-   description String?
-   status      TaskStatus   @default(TODO)
-   priority    TaskPriority @default(MEDIUM)
-   createdBy   String       @map("created_by")
-   createdAt   DateTime     @default(now()) @map("created_at")
-   updatedAt   DateTime     @updatedAt @map("updated_at")
+   id               String       @id @default(uuid())
+   projectId        String?      @map("project_id")
+   title            String
+   description      String?
+   priority         TaskPriority @default(MEDIUM)
+   issueType        IssueType    @default(TASK) @map("issue_type")
+   status           TaskStatus   @default(DRAFT)
+   creatorId        String       @map("creator_id")
+   assigneeId       String?      @map("assignee_id")
+   parentTaskId     String?      @map("parent_task_id")
+   requiresApproval Boolean      @default(false) @map("requires_approval")
+   approvedById     String?      @map("approved_by_id")
+   rejectionReason  String?      @map("rejection_reason")
+   labels           String[]     @default([])
+   dueDate          DateTime?    @map("due_date")
+   estimatedHours   Float?       @map("estimated_hours")
+   loggedHours      Float        @default(0) @map("logged_hours")
+   createdAt        DateTime     @default(now()) @map("created_at")
+   updatedAt        DateTime     @updatedAt @map("updated_at")
 
    // Relations
-   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-   creator   User    @relation("TaskCreator", fields: [createdBy], references: [id])
-   assignees User[]  @relation("TaskAssignee")
-   issues    Issue[]
+   project      Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+   creator      User              @relation("TaskCreator", fields: [creatorId], references: [id])
+   assignee     User?             @relation("TaskAssignee", fields: [assigneeId], references: [id])
+   approvedBy   User?             @relation("TaskApprover", fields: [approvedById], references: [id])
+   parentTask   Task?             @relation("SubTasks", fields: [parentTaskId], references: [id])
+   subTasks     Task[]            @relation("SubTasks")
+   comments     TaskComment[]
+   activityLogs TaskActivityLog[]
+   watchers     User[]            @relation("TaskWatchers")
+   dependentOn  TaskDependency[]  @relation("DependentTask")
+   blocking     TaskDependency[]  @relation("BlockingTask")
+   timeEntries  TimeEntry[]
+   activeTimers ActiveTimer[]
 
    @@map("tasks")
 }
 
-model Issue {
-   id          String        @id @default(uuid())
-   projectId   String?       @map("project_id")
-   taskId      String?       @map("task_id")
-   title       String
-   description String
-   severity    IssueSeverity
-   status      IssueStatus   @default(OPEN)
-   createdAt   DateTime      @default(now()) @map("created_at")
-   updatedAt   DateTime      @updatedAt @map("updated_at")
+model TaskComment {
+   id        String   @id @default(uuid())
+   taskId    String   @map("task_id")
+   userId    String   @map("user_id")
+   message   String
+   createdAt DateTime @default(now()) @map("created_at")
 
    // Relations
-   project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-   task    Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+   user User @relation(fields: [userId], references: [id])
 
-   @@map("issues")
+   @@map("task_comments")
+}
+
+model TaskActivityLog {
+   id             String         @id @default(uuid())
+   taskId         String         @map("task_id")
+   userId         String         @map("user_id")
+   action         ActivityAction
+   previousStatus TaskStatus?    @map("previous_status")
+   newStatus      TaskStatus?    @map("new_status")
+   metadata       Json?
+   timestamp      DateTime       @default(now())
+
+   // Relations
+   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+   user User @relation(fields: [userId], references: [id])
+
+   @@map("task_activity_logs")
+}
+
+model Notification {
+   id        String           @id @default(uuid())
+   userId    String           @map("user_id")
+   type      NotificationType
+   payload   Json
+   read      Boolean          @default(false)
+   createdAt DateTime         @default(now()) @map("created_at")
+
+   // Relations
+   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+   @@map("notifications")
+}
+
+model TaskDependency {
+   id              String         @id @default(uuid())
+   dependentTaskId String         @map("dependent_task_id")
+   blockingTaskId  String         @map("blocking_task_id")
+   type            DependencyType @default(BLOCKS)
+   createdAt       DateTime       @default(now()) @map("created_at")
+
+   // Relations
+   dependentTask Task @relation("DependentTask", fields: [dependentTaskId], references: [id], onDelete: Cascade)
+   blockingTask  Task @relation("BlockingTask", fields: [blockingTaskId], references: [id], onDelete: Cascade)
+
+   @@unique([dependentTaskId, blockingTaskId])
+   @@map("task_dependencies")
+}
+
+model TimeEntry {
+   id          String   @id @default(uuid())
+   taskId      String   @map("task_id")
+   userId      String   @map("user_id")
+   hours       Float
+   description String?
+   date        DateTime @default(now())
+   createdAt   DateTime @default(now()) @map("created_at")
+   updatedAt   DateTime @updatedAt @map("updated_at")
+
+   // Relations
+   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+   user User @relation(fields: [userId], references: [id])
+
+   @@map("time_entries")
+}
+
+model ActiveTimer {
+   id          String   @id @default(uuid())
+   taskId      String   @map("task_id")
+   userId      String   @unique @map("user_id")
+   startTime   DateTime @map("start_time")
+   description String?
+
+   // Relations
+   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+   @@map("active_timers")
 }
