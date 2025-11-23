@@ -7,6 +7,7 @@ generator client {
 
 datasource db {
    provider = "postgresql"
+   url      = env("DATABASE_URL")
 }
 
 enum UserRole {
@@ -69,6 +70,13 @@ enum DependencyType {
    RELATES_TO
 }
 
+enum SprintStatus {
+   PLANNING
+   ACTIVE
+   COMPLETED
+   CANCELLED
+}
+
 model User {
    id           String      @id @default(uuid())
    email        String      @unique
@@ -91,6 +99,7 @@ model User {
    watchedTasks    Task[]            @relation("TaskWatchers")
    timeEntries     TimeEntry[]
    activeTimer     ActiveTimer?
+   attachments     TaskAttachment[]  @relation("TaskAttachmentUploader")
 
    @@map("users")
 }
@@ -105,8 +114,10 @@ model Project {
    updatedAt   DateTime    @updatedAt @map("updated_at")
 
    // Relations
-   creator User   @relation("ProjectCreator", fields: [creatorId], references: [id])
+   creator User     @relation("ProjectCreator", fields: [creatorId], references: [id])
    tasks   Task[]
+   epics   Epic[]
+   sprints Sprint[]
 
    @@map("projects")
 }
@@ -129,6 +140,9 @@ model Task {
    dueDate          DateTime?    @map("due_date")
    estimatedHours   Float?       @map("estimated_hours")
    loggedHours      Float        @default(0) @map("logged_hours")
+   storyPoints      Int?         @map("story_points")
+   epicId           String?      @map("epic_id")
+   sprintId         String?      @map("sprint_id")
    createdAt        DateTime     @default(now()) @map("created_at")
    updatedAt        DateTime     @updatedAt @map("updated_at")
 
@@ -146,6 +160,9 @@ model Task {
    blocking     TaskDependency[]  @relation("BlockingTask")
    timeEntries  TimeEntry[]
    activeTimers ActiveTimer[]
+   attachments  TaskAttachment[]
+   epic         Epic?             @relation(fields: [epicId], references: [id])
+   sprint       Sprint?           @relation(fields: [sprintId], references: [id])
 
    @@map("tasks")
 }
@@ -239,4 +256,60 @@ model ActiveTimer {
    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
    @@map("active_timers")
+}
+
+model TaskAttachment {
+   id           String   @id @default(uuid())
+   taskId       String   @map("task_id")
+   uploadedById String   @map("uploaded_by_id")
+   fileName     String   @map("file_name")
+   originalName String   @map("original_name")
+   filePath     String   @map("file_path")
+   mimeType     String   @map("mime_type")
+   fileSize     Int      @map("file_size")
+   createdAt    DateTime @default(now()) @map("created_at")
+
+   // Relations
+   task       Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+   uploadedBy User @relation("TaskAttachmentUploader", fields: [uploadedById], references: [id])
+
+   @@map("task_attachments")
+}
+
+model Epic {
+   id          String    @id @default(uuid())
+   projectId   String    @map("project_id")
+   name        String
+   description String?
+   color       String?
+   startDate   DateTime? @map("start_date")
+   endDate     DateTime? @map("end_date")
+   createdAt   DateTime  @default(now()) @map("created_at")
+   updatedAt   DateTime  @updatedAt @map("updated_at")
+
+   // Relations
+   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+   tasks   Task[]
+
+   @@map("epics")
+}
+
+model Sprint {
+   id            String       @id @default(uuid())
+   projectId     String       @map("project_id")
+   name          String
+   goal          String?
+   status        SprintStatus @default(PLANNING)
+   startDate     DateTime?    @map("start_date")
+   endDate       DateTime?    @map("end_date")
+   capacityHours Float?       @map("capacity_hours")
+   completedAt   DateTime?    @map("completed_at")
+   createdAt     DateTime     @default(now()) @map("created_at")
+   updatedAt     DateTime     @updatedAt @map("updated_at")
+
+   // Relations
+   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+   tasks   Task[]
+
+   @@map("sprints")
 }

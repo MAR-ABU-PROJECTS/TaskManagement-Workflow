@@ -440,7 +440,7 @@ export class TimeTrackingService {
             hours: 0,
           };
         }
-        userHours[entry.userId].hours += entry.hours;
+        userHours[entry.userId]!.hours += entry.hours;
       });
     });
 
@@ -493,7 +493,7 @@ export class TimeTrackingService {
           hours: 0,
         };
       }
-      taskHours[entry.taskId].hours += entry.hours;
+      taskHours[entry.taskId]!.hours += entry.hours;
     });
 
     const byTask = Object.entries(taskHours).map(
