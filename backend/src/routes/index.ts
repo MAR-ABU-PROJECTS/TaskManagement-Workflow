@@ -46,10 +46,10 @@ router.use("/", searchRoutes); // Advanced search routes
 
 // Health check
 router.get("/health", (_req, res) => {
-  res.json({ 
-    status: "OK", 
+  res.json({
+    status: "OK",
     timestamp: new Date().toISOString(),
-    docs: "http://localhost:4000/api-docs"
+    docs: "http://localhost:4000/api-docs",
   });
 });
 

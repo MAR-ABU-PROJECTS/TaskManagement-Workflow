@@ -47,7 +47,7 @@ router.use(requireRoles(UserRole.CEO, UserRole.HOO, UserRole.HR));
 router.get("/users", async (req, res) => {
   try {
     const { department, role, isActive } = req.query;
-    
+
     const users = await prisma.user.findMany({
       where: {
         ...(department && { department: department as any }),

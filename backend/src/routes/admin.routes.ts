@@ -8,7 +8,9 @@ const router = express.Router();
 
 // All admin routes require authentication and ADMIN role or higher
 router.use(authenticate);
-router.use(requireRoles(UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN));
+router.use(
+  requireRoles(UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN)
+);
 
 /**
  * @swagger

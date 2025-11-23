@@ -58,10 +58,7 @@ router.get("/my-tasks", async (req, res) => {
           },
         },
       },
-      orderBy: [
-        { priority: "desc" },
-        { dueDate: "asc" },
-      ],
+      orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
     });
 
     res.json(tasks);
