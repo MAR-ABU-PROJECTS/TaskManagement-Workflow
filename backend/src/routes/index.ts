@@ -13,6 +13,10 @@ import backlogRoutes from "./backlog.routes";
 import reportRoutes from "./report.routes";
 import searchRoutes from "./search.routes";
 
+// Jira-like Project Management routes
+import projectMemberRoutes from "./projectMember.routes";
+import boardRoutes from "./board.routes";
+
 // Role-specific routes
 import ceoRoutes from "./ceo.routes";
 import hrRoutes from "./hr.routes";
@@ -32,6 +36,9 @@ router.use("/staff", staffRoutes);
 
 // Protected routes (require authentication)
 router.use("/projects", projectRoutes);
+router.use("/projects", projectMemberRoutes); // Project member management
+router.use("/projects", boardRoutes); // Board routes nested under projects
+router.use("/boards", boardRoutes); // Board routes (direct access)
 router.use("/tasks", taskRoutes);
 router.use("/tasks", commentRoutes); // Comment and activity log routes
 router.use("/notifications", notificationRoutes);
