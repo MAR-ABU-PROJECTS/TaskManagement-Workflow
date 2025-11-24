@@ -1,0 +1,21 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const BacklogController_1 = __importDefault(require("../controllers/BacklogController"));
+const auth_1 = require("../middleware/auth");
+const rbac_1 = require("../middleware/rbac");
+const enums_1 = require("../types/enums");
+const router = express_1.default.Router();
+router.use(auth_1.authenticate);
+router.get("/projects/:projectId/backlog", (0, rbac_1.hasProjectPermission)(enums_1.Permission.VIEW_SPRINTS), BacklogController_1.default.getProjectBacklog);
+router.get("/projects/:projectId/backlog/by-epic", (0, rbac_1.hasProjectPermission)(enums_1.Permission.VIEW_SPRINTS), BacklogController_1.default.getBacklogByEpic);
+router.get("/projects/:projectId/backlog/ready", (0, rbac_1.hasProjectPermission)(enums_1.Permission.VIEW_SPRINTS), BacklogController_1.default.getReadyTasks);
+router.get("/projects/:projectId/backlog/stats", (0, rbac_1.hasProjectPermission)(enums_1.Permission.VIEW_SPRINTS), BacklogController_1.default.getBacklogStats);
+router.put("/tasks/:taskId/estimate", (0, rbac_1.hasProjectPermission)(enums_1.Permission.MANAGE_SPRINTS), BacklogController_1.default.estimateTask);
+router.post("/tasks/bulk-estimate", (0, rbac_1.hasProjectPermission)(enums_1.Permission.MANAGE_SPRINTS), BacklogController_1.default.bulkEstimate);
+router.put("/tasks/:taskId/priority", (0, rbac_1.hasProjectPermission)(enums_1.Permission.MANAGE_SPRINTS), BacklogController_1.default.updateBacklogPriority);
+router.post("/backlog/move-to-sprint", (0, rbac_1.hasProjectPermission)(enums_1.Permission.MANAGE_SPRINTS), BacklogController_1.default.moveTasksToSprint);
+exports.default = router;

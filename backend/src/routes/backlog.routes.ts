@@ -1,6 +1,8 @@
 import express from "express";
 import BacklogController from "../controllers/BacklogController";
 import { authenticate } from "../middleware/auth";
+import { hasProjectPermission } from "../middleware/rbac";
+import { Permission } from "../types/enums";
 
 const router = express.Router();
 
@@ -40,7 +42,11 @@ router.use(authenticate);
  *               items:
  *                 $ref: '#/components/schemas/Task'
  */
-router.get("/projects/:projectId/backlog", BacklogController.getProjectBacklog);
+router.get(
+  "/projects/:projectId/backlog",
+  hasProjectPermission(Permission.VIEW_SPRINTS),
+  BacklogController.getProjectBacklog
+);
 /**
  * @swagger
  * /api/projects/{projectId}/backlog/by-epic:
@@ -61,14 +67,17 @@ router.get("/projects/:projectId/backlog", BacklogController.getProjectBacklog);
  */
 router.get(
   "/projects/:projectId/backlog/by-epic",
+  hasProjectPermission(Permission.VIEW_SPRINTS),
   BacklogController.getBacklogByEpic
 );
 router.get(
   "/projects/:projectId/backlog/ready",
+  hasProjectPermission(Permission.VIEW_SPRINTS),
   BacklogController.getReadyTasks
 );
 router.get(
   "/projects/:projectId/backlog/stats",
+  hasProjectPermission(Permission.VIEW_SPRINTS),
   BacklogController.getBacklogStats
 );
 
@@ -103,11 +112,27 @@ router.get(
  *       200:
  *         description: Task estimated successfully
  */
-router.put("/tasks/:taskId/estimate", BacklogController.estimateTask);
-router.post("/tasks/bulk-estimate", BacklogController.bulkEstimate);
+router.put(
+  "/tasks/:taskId/estimate",
+  hasProjectPermission(Permission.MANAGE_SPRINTS),
+  BacklogController.estimateTask
+);
+router.post(
+  "/tasks/bulk-estimate",
+  hasProjectPermission(Permission.MANAGE_SPRINTS),
+  BacklogController.bulkEstimate
+);
 
 // Backlog management
-router.put("/tasks/:taskId/priority", BacklogController.updateBacklogPriority);
-router.post("/backlog/move-to-sprint", BacklogController.moveTasksToSprint);
+router.put(
+  "/tasks/:taskId/priority",
+  hasProjectPermission(Permission.MANAGE_SPRINTS),
+  BacklogController.updateBacklogPriority
+);
+router.post(
+  "/backlog/move-to-sprint",
+  hasProjectPermission(Permission.MANAGE_SPRINTS),
+  BacklogController.moveTasksToSprint
+);
 
 export default router;

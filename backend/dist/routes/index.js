@@ -1,0 +1,68 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const auth_1 = __importDefault(require("./auth"));
+const projects_routes_1 = __importDefault(require("./projects.routes"));
+const tasks_routes_1 = __importDefault(require("./tasks.routes"));
+const comments_routes_1 = __importDefault(require("./comments.routes"));
+const notifications_routes_1 = __importDefault(require("./notifications.routes"));
+const taskDependency_routes_1 = __importDefault(require("./taskDependency.routes"));
+const timeTracking_routes_1 = __importDefault(require("./timeTracking.routes"));
+const taskAttachment_routes_1 = __importDefault(require("./taskAttachment.routes"));
+const sprint_routes_1 = __importDefault(require("./sprint.routes"));
+const epic_routes_1 = __importDefault(require("./epic.routes"));
+const backlog_routes_1 = __importDefault(require("./backlog.routes"));
+const report_routes_1 = __importDefault(require("./report.routes"));
+const search_routes_1 = __importDefault(require("./search.routes"));
+const projectMember_routes_1 = __importDefault(require("./projectMember.routes"));
+const board_routes_1 = __importDefault(require("./board.routes"));
+const workflow_routes_1 = __importDefault(require("./workflow.routes"));
+const permissionScheme_routes_1 = __importDefault(require("./permissionScheme.routes"));
+const component_routes_1 = __importDefault(require("./component.routes"));
+const version_routes_1 = __importDefault(require("./version.routes"));
+const jql_routes_1 = __importDefault(require("./jql.routes"));
+const savedFilter_routes_1 = __importDefault(require("./savedFilter.routes"));
+const bulkOperations_routes_1 = __importDefault(require("./bulkOperations.routes"));
+const ceo_routes_1 = __importDefault(require("./ceo.routes"));
+const hr_routes_1 = __importDefault(require("./hr.routes"));
+const admin_routes_1 = __importDefault(require("./admin.routes"));
+const staff_routes_1 = __importDefault(require("./staff.routes"));
+const router = express_1.default.Router();
+router.use("/auth", auth_1.default);
+router.use("/ceo", ceo_routes_1.default);
+router.use("/hr", hr_routes_1.default);
+router.use("/admin", admin_routes_1.default);
+router.use("/staff", staff_routes_1.default);
+router.use("/projects", projects_routes_1.default);
+router.use("/projects", projectMember_routes_1.default);
+router.use("/projects", board_routes_1.default);
+router.use("/boards", board_routes_1.default);
+router.use("/workflows", workflow_routes_1.default);
+router.use("/permission-schemes", permissionScheme_routes_1.default);
+router.use("/", component_routes_1.default);
+router.use("/", version_routes_1.default);
+router.use("/jql", jql_routes_1.default);
+router.use("/filters", savedFilter_routes_1.default);
+router.use("/bulk", bulkOperations_routes_1.default);
+router.use("/tasks", tasks_routes_1.default);
+router.use("/tasks", comments_routes_1.default);
+router.use("/notifications", notifications_routes_1.default);
+router.use("/task-dependencies", taskDependency_routes_1.default);
+router.use("/", timeTracking_routes_1.default);
+router.use("/", taskAttachment_routes_1.default);
+router.use("/", sprint_routes_1.default);
+router.use("/", epic_routes_1.default);
+router.use("/", backlog_routes_1.default);
+router.use("/", report_routes_1.default);
+router.use("/", search_routes_1.default);
+router.get("/health", (_req, res) => {
+    res.json({
+        status: "OK",
+        timestamp: new Date().toISOString(),
+        docs: "http://localhost:4000/api-docs",
+    });
+});
+exports.default = router;

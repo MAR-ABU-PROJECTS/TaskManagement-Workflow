@@ -1,6 +1,7 @@
 import express from "express";
 import { authenticate } from "../middleware/auth";
 import { isCEO } from "../middleware/rbac";
+import prisma from "../db/prisma";
 
 const router = express.Router();
 
@@ -40,13 +41,24 @@ router.use(isCEO);
  */
 router.get("/dashboard", async (_req, res) => {
   try {
-    // Implement CEO-specific dashboard logic
+    const [totalProjects, totalTasks, completedTasks, totalUsers] =
+      await Promise.all([
+        prisma.project.count(),
+        prisma.task.count(),
+        prisma.task.count({ where: { status: "COMPLETED" as any } }),
+        prisma.user.count({ where: { role: { in: ["STAFF" as any] } } }),
+      ]);
+
+    const completionRate =
+      totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+    const teamUtilization = totalUsers > 0 ? totalTasks / totalUsers : 0;
+
     const stats = {
-      totalProjects: 0, // TODO: Implement
-      activeProjects: 0,
-      totalTasks: 0,
-      completionRate: 0,
-      teamUtilization: 0,
+      totalProjects,
+      activeProjects: totalProjects, // All projects considered active
+      totalTasks,
+      completionRate: parseFloat(completionRate.toFixed(2)),
+      teamUtilization: parseFloat(teamUtilization.toFixed(2)),
     };
     res.json(stats);
   } catch (error: any) {
@@ -118,10 +130,46 @@ router.post("/projects/archive-all", async (req, res) => {
  *       403:
  *         description: Forbidden - CEO role required
  */
-router.get("/analytics/organization", async (_req, res) => {
+router.get("/analytics/organization", async (req, res) => {
   try {
-    // Implement organization-wide analytics
-    res.json({ analytics: "TODO: Implement CEO analytics" });
+    const { startDate, endDate } = req.query;
+
+    const dateFilter: any = {};
+    if (startDate) dateFilter.gte = new Date(startDate as string);
+    if (endDate) dateFilter.lte = new Date(endDate as string);
+
+    const [projectsByStatus, tasksByStatus, usersByRole, tasksOverTime] =
+      await Promise.all([
+        prisma.project.groupBy({
+          by: ["status" as any],
+          _count: true,
+        }),
+        prisma.task.groupBy({
+          by: ["status" as any],
+          _count: true,
+        }),
+        prisma.user.groupBy({
+          by: ["role" as any],
+          _count: true,
+        }),
+        prisma.task.findMany({
+          where:
+            Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {},
+          select: { createdAt: true, status: true },
+          orderBy: { createdAt: "desc" },
+          take: 100,
+        }),
+      ]);
+
+    res.json({
+      analytics: {
+        projectsByStatus,
+        tasksByStatus,
+        usersByRole,
+        tasksOverTime,
+        dateRange: { startDate, endDate },
+      },
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

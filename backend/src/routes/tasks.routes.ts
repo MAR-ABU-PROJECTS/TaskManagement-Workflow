@@ -1,6 +1,11 @@
 import express from "express";
 import { authenticate } from "../middleware/auth";
-import { canApproveTask } from "../middleware/rbac";
+import {
+  canApproveTask,
+  hasProjectPermission,
+  canEditIssue,
+} from "../middleware/rbac";
+import { Permission } from "../types/enums";
 import TaskController from "../controllers/TaskController";
 
 const router = express.Router();
@@ -108,8 +113,12 @@ router.use(authenticate);
  *       500:
  *         description: Server error
  */
-router.post("/", (req, res) => TaskController.createTask(req, res));
-router.get("/", (req, res) => TaskController.getAllTasks(req, res));
+router.post("/", hasProjectPermission(Permission.CREATE_ISSUES), (req, res) =>
+  TaskController.createTask(req, res)
+);
+router.get("/", hasProjectPermission(Permission.BROWSE_PROJECT), (req, res) =>
+  TaskController.getAllTasks(req, res)
+);
 
 /**
  * @swagger
@@ -186,8 +195,14 @@ router.get("/", (req, res) => TaskController.getAllTasks(req, res));
  *       403:
  *         description: Forbidden - insufficient permissions
  */
-router.get("/:id", (req, res) => TaskController.getTaskById(req, res));
-router.patch("/:id", (req, res) => TaskController.updateTask(req, res));
+router.get(
+  "/:id",
+  hasProjectPermission(Permission.BROWSE_PROJECT),
+  (req, res) => TaskController.getTaskById(req, res)
+);
+router.patch("/:id", canEditIssue, (req, res) =>
+  TaskController.updateTask(req, res)
+);
 
 /**
  * @swagger
@@ -230,8 +245,10 @@ router.patch("/:id", (req, res) => TaskController.updateTask(req, res));
  *       403:
  *         description: Forbidden
  */
-router.patch("/:id/status", (req, res) =>
-  TaskController.changeStatus(req, res)
+router.patch(
+  "/:id/status",
+  hasProjectPermission(Permission.TRANSITION_ISSUES),
+  (req, res) => TaskController.changeStatus(req, res)
 );
 
 /**
@@ -275,7 +292,11 @@ router.patch("/:id/status", (req, res) =>
  *       403:
  *         description: Forbidden - requires approval
  */
-router.post("/:id/assign", (req, res) => TaskController.assignTask(req, res));
+router.post(
+  "/:id/assign",
+  hasProjectPermission(Permission.ASSIGN_ISSUES),
+  (req, res) => TaskController.assignTask(req, res)
+);
 
 /**
  * @swagger
