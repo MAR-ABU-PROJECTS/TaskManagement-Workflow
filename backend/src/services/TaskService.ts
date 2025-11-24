@@ -551,6 +551,50 @@ export class TaskService {
 
     return false;
   }
+
+  /**
+   * Search tasks using Prisma where clause (for JQL)
+   */
+  async searchTasks(whereClause: any): Promise<Task[]> {
+    const tasks = await prisma.task.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+        sprint: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    return tasks as Task[];
+  }
 }
 
 export default new TaskService();

@@ -1,6 +1,7 @@
 import express from "express";
 import { authenticate } from "../middleware/auth";
-import { canCreateProject } from "../middleware/rbac";
+import { canCreateProject, hasProjectPermission } from "../middleware/rbac";
+import { Permission } from "../types/enums";
 import ProjectController from "../controllers/ProjectController";
 
 const router = express.Router();
@@ -101,7 +102,9 @@ router.use(authenticate);
 router.post("/", canCreateProject, (req, res) =>
   ProjectController.createProject(req, res)
 );
-router.get("/", (req, res) => ProjectController.getAllProjects(req, res));
+router.get("/", hasProjectPermission(Permission.BROWSE_PROJECT), (req, res) =>
+  ProjectController.getAllProjects(req, res)
+);
 
 /**
  * @swagger
@@ -176,8 +179,20 @@ router.get("/", (req, res) => ProjectController.getAllProjects(req, res));
  *       403:
  *         description: Forbidden
  */
-router.get("/:id", (req, res) => ProjectController.getProjectById(req, res));
-router.patch("/:id", (req, res) => ProjectController.updateProject(req, res));
-router.delete("/:id", (req, res) => ProjectController.archiveProject(req, res));
+router.get(
+  "/:id",
+  hasProjectPermission(Permission.BROWSE_PROJECT),
+  (req, res) => ProjectController.getProjectById(req, res)
+);
+router.patch(
+  "/:id",
+  hasProjectPermission(Permission.EDIT_PROJECT),
+  (req, res) => ProjectController.updateProject(req, res)
+);
+router.delete(
+  "/:id",
+  hasProjectPermission(Permission.ADMINISTER_PROJECT),
+  (req, res) => ProjectController.archiveProject(req, res)
+);
 
 export default router;

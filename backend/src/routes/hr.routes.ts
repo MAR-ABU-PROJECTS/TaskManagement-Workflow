@@ -300,10 +300,72 @@ router.put("/users/:userId/change-department", async (req, res) => {
  *       403:
  *         description: Forbidden - HR role required
  */
-router.get("/analytics/team-performance", async (_req, res) => {
+router.get("/analytics/team-performance", async (req, res) => {
   try {
-    // TODO: Implement team performance analytics
-    res.json({ analytics: "Team performance data" });
+    const { startDate, endDate, department } = req.query;
+
+    const dateFilter: any = {};
+    if (startDate) dateFilter.gte = new Date(startDate as string);
+    if (endDate) dateFilter.lte = new Date(endDate as string);
+
+    const departmentFilter = department
+      ? { department: department as any }
+      : {};
+
+    // Get team statistics
+    const [totalUsers, activeUsers, tasksByUser, completedTasksByUser] =
+      await Promise.all([
+        prisma.user.count({
+          where: { role: "STAFF" as any, ...departmentFilter },
+        }),
+        prisma.user.count({
+          where: {
+            role: "STAFF" as any,
+            ...departmentFilter,
+            assignedTasks: { some: {} },
+          },
+        }),
+        prisma.task.groupBy({
+          by: ["assigneeId" as any],
+          _count: true,
+          where:
+            Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {},
+        }),
+        prisma.task.groupBy({
+          by: ["assigneeId" as any],
+          _count: true,
+          where: {
+            status: "COMPLETED" as any,
+            ...(Object.keys(dateFilter).length > 0
+              ? { updatedAt: dateFilter }
+              : {}),
+          },
+        }),
+      ]);
+
+    const avgTasksPerUser =
+      totalUsers > 0
+        ? tasksByUser.reduce((sum, t) => sum + t._count, 0) / totalUsers
+        : 0;
+    const avgCompletedPerUser =
+      totalUsers > 0
+        ? completedTasksByUser.reduce((sum, t) => sum + t._count, 0) /
+          totalUsers
+        : 0;
+
+    res.json({
+      analytics: {
+        totalUsers,
+        activeUsers,
+        utilization: totalUsers > 0 ? (activeUsers / totalUsers) * 100 : 0,
+        avgTasksPerUser: parseFloat(avgTasksPerUser.toFixed(2)),
+        avgCompletedTasksPerUser: parseFloat(avgCompletedPerUser.toFixed(2)),
+        taskDistribution: tasksByUser,
+        completionDistribution: completedTasksByUser,
+        dateRange: { startDate, endDate },
+        department,
+      },
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

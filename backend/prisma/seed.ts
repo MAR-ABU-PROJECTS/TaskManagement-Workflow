@@ -1,14 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Starting database seed...");
@@ -19,8 +15,160 @@ async function main() {
   await prisma.taskActivityLog.deleteMany();
   await prisma.taskComment.deleteMany();
   await prisma.task.deleteMany();
+  await prisma.projectMember.deleteMany();
+  await prisma.board.deleteMany();
+  await prisma.permissionGrant.deleteMany();
+  await prisma.permissionScheme.deleteMany();
+  await prisma.workflowTransition.deleteMany();
+  await prisma.workflowScheme.deleteMany();
   await prisma.project.deleteMany();
   await prisma.user.deleteMany();
+
+  // Create default workflow scheme
+  console.log("⚙️  Creating default workflow scheme...");
+  const defaultWorkflow = await prisma.workflowScheme.create({
+    data: {
+      name: "Default Workflow",
+      description: "Standard workflow with common transitions",
+      isDefault: true,
+    },
+  });
+
+  // Add standard transitions
+  const transitions = [
+    {
+      name: "Start Progress",
+      fromStatus: "DRAFT",
+      toStatus: "ASSIGNED",
+      requiredRole: "DEVELOPER",
+    },
+    {
+      name: "Begin Work",
+      fromStatus: "ASSIGNED",
+      toStatus: "IN_PROGRESS",
+      requiredRole: "DEVELOPER",
+    },
+    {
+      name: "Pause Work",
+      fromStatus: "IN_PROGRESS",
+      toStatus: "PAUSED",
+      requiredRole: "DEVELOPER",
+    },
+    {
+      name: "Submit for Review",
+      fromStatus: "IN_PROGRESS",
+      toStatus: "REVIEW",
+      requiredRole: "DEVELOPER",
+    },
+    {
+      name: "Resume Work",
+      fromStatus: "PAUSED",
+      toStatus: "IN_PROGRESS",
+      requiredRole: "DEVELOPER",
+    },
+    {
+      name: "Approve",
+      fromStatus: "REVIEW",
+      toStatus: "COMPLETED",
+      requiredRole: "PROJECT_LEAD",
+    },
+    {
+      name: "Reject",
+      fromStatus: "REVIEW",
+      toStatus: "REJECTED",
+      requiredRole: "PROJECT_LEAD",
+    },
+    {
+      name: "Request Changes",
+      fromStatus: "REVIEW",
+      toStatus: "IN_PROGRESS",
+      requiredRole: "PROJECT_LEAD",
+    },
+    {
+      name: "Reopen",
+      fromStatus: "REJECTED",
+      toStatus: "ASSIGNED",
+      requiredRole: "DEVELOPER",
+    },
+    {
+      name: "Reopen Completed",
+      fromStatus: "COMPLETED",
+      toStatus: "IN_PROGRESS",
+      requiredRole: "PROJECT_LEAD",
+    },
+  ];
+
+  await prisma.workflowTransition.createMany({
+    data: transitions.map((t) => ({
+      schemeId: defaultWorkflow.id,
+      ...t,
+    })) as any,
+  });
+
+  console.log("✅ Created default workflow scheme with 10 transitions");
+
+  // Create default permission scheme
+  console.log("🔐 Creating default permission scheme...");
+  const defaultPermission = await prisma.permissionScheme.create({
+    data: {
+      name: "Default Permission Scheme",
+      description: "Standard permission scheme for projects",
+      isDefault: true,
+    },
+  });
+
+  // Define permission grants (simplified set)
+  const permissionGrants = [
+    // PROJECT_ADMIN - All permissions
+    { permission: "ADMINISTER_PROJECT", grantedToRole: "PROJECT_ADMIN" },
+    { permission: "BROWSE_PROJECT", grantedToRole: "PROJECT_ADMIN" },
+    { permission: "EDIT_PROJECT", grantedToRole: "PROJECT_ADMIN" },
+    { permission: "CREATE_ISSUES", grantedToRole: "PROJECT_ADMIN" },
+    { permission: "EDIT_ISSUES", grantedToRole: "PROJECT_ADMIN" },
+    { permission: "DELETE_ISSUES", grantedToRole: "PROJECT_ADMIN" },
+    { permission: "MANAGE_SPRINTS", grantedToRole: "PROJECT_ADMIN" },
+    { permission: "MANAGE_EPICS", grantedToRole: "PROJECT_ADMIN" },
+
+    // PROJECT_LEAD - Management permissions
+    { permission: "BROWSE_PROJECT", grantedToRole: "PROJECT_LEAD" },
+    { permission: "CREATE_ISSUES", grantedToRole: "PROJECT_LEAD" },
+    { permission: "EDIT_ISSUES", grantedToRole: "PROJECT_LEAD" },
+    { permission: "DELETE_ISSUES", grantedToRole: "PROJECT_LEAD" },
+    { permission: "ASSIGN_ISSUES", grantedToRole: "PROJECT_LEAD" },
+    { permission: "TRANSITION_ISSUES", grantedToRole: "PROJECT_LEAD" },
+    { permission: "MANAGE_SPRINTS", grantedToRole: "PROJECT_LEAD" },
+    { permission: "MANAGE_EPICS", grantedToRole: "PROJECT_LEAD" },
+
+    // DEVELOPER - Development permissions
+    { permission: "BROWSE_PROJECT", grantedToRole: "DEVELOPER" },
+    { permission: "CREATE_ISSUES", grantedToRole: "DEVELOPER" },
+    { permission: "EDIT_OWN_ISSUES", grantedToRole: "DEVELOPER" },
+    { permission: "TRANSITION_ISSUES", grantedToRole: "DEVELOPER" },
+    { permission: "ADD_COMMENTS", grantedToRole: "DEVELOPER" },
+    { permission: "WORK_ON_ISSUES", grantedToRole: "DEVELOPER" },
+
+    // REPORTER - Reporting permissions
+    { permission: "BROWSE_PROJECT", grantedToRole: "REPORTER" },
+    { permission: "CREATE_ISSUES", grantedToRole: "REPORTER" },
+    { permission: "ADD_COMMENTS", grantedToRole: "REPORTER" },
+
+    // VIEWER - Read-only
+    { permission: "BROWSE_PROJECT", grantedToRole: "VIEWER" },
+
+    // Global role overrides
+    { permission: "ADMINISTER_PROJECT", grantedToUserRole: "CEO" },
+    { permission: "ADMINISTER_PROJECT", grantedToUserRole: "HOO" },
+    { permission: "ADMINISTER_PROJECT", grantedToUserRole: "ADMIN" },
+  ];
+
+  await prisma.permissionGrant.createMany({
+    data: permissionGrants.map((g) => ({
+      schemeId: defaultPermission.id,
+      ...g,
+    })) as any,
+  });
+
+  console.log("✅ Created default permission scheme with 30 grants");
 
   // Hash password for all users (password: "password123")
   const hashedPassword = await bcrypt.hash("password123", 10);
@@ -124,40 +272,137 @@ async function main() {
   const opsProject1 = await prisma.project.create({
     data: {
       name: "Website Redesign",
+      key: "WEB",
       description: "Complete overhaul of company website",
       department: "OPS",
       creatorId: ceo.id,
+      workflowSchemeId: defaultWorkflow.id,
+      permissionSchemeId: defaultPermission.id,
     },
   });
 
   const opsProject2 = await prisma.project.create({
     data: {
       name: "Mobile App Development",
+      key: "MAPP",
       description: "Build iOS and Android applications",
       department: "OPS",
       creatorId: opsAdmin.id,
+      workflowSchemeId: defaultWorkflow.id,
+      permissionSchemeId: defaultPermission.id,
     },
   });
 
   const hrProject1 = await prisma.project.create({
     data: {
       name: "Employee Onboarding System",
+      key: "ONBOARD",
       description: "Streamline new hire processes",
       department: "HR",
       creatorId: hrManager.id,
+      workflowSchemeId: defaultWorkflow.id,
+      permissionSchemeId: defaultPermission.id,
     },
   });
 
   const hrProject2 = await prisma.project.create({
     data: {
       name: "Performance Review 2025",
+      key: "PERF25",
       description: "Annual performance evaluation process",
       department: "HR",
       creatorId: hrAdmin.id,
+      workflowSchemeId: defaultWorkflow.id,
+      permissionSchemeId: defaultPermission.id,
     },
   });
 
-  console.log("✅ Created 4 projects");
+  console.log("✅ Created 4 projects with workflow and permission schemes");
+
+  // Add project members
+  console.log("👥 Adding project members...");
+  await prisma.projectMember.createMany({
+    data: [
+      // Website Redesign project
+      {
+        projectId: opsProject1.id,
+        userId: opsAdmin.id,
+        role: "PROJECT_ADMIN",
+        addedById: ceo.id,
+      },
+      {
+        projectId: opsProject1.id,
+        userId: opsStaff1.id,
+        role: "DEVELOPER",
+        addedById: opsAdmin.id,
+      },
+      {
+        projectId: opsProject1.id,
+        userId: opsStaff2.id,
+        role: "DEVELOPER",
+        addedById: opsAdmin.id,
+      },
+      // Mobile App project
+      {
+        projectId: opsProject2.id,
+        userId: opsAdmin.id,
+        role: "PROJECT_LEAD",
+        addedById: hoo.id,
+      },
+      {
+        projectId: opsProject2.id,
+        userId: opsStaff1.id,
+        role: "DEVELOPER",
+        addedById: opsAdmin.id,
+      },
+      {
+        projectId: opsProject2.id,
+        userId: opsStaff2.id,
+        role: "DEVELOPER",
+        addedById: opsAdmin.id,
+      },
+      // HR Onboarding project
+      {
+        projectId: hrProject1.id,
+        userId: hrAdmin.id,
+        role: "PROJECT_ADMIN",
+        addedById: hrManager.id,
+      },
+      {
+        projectId: hrProject1.id,
+        userId: hrStaff1.id,
+        role: "DEVELOPER",
+        addedById: hrAdmin.id,
+      },
+      {
+        projectId: hrProject1.id,
+        userId: hrStaff2.id,
+        role: "REPORTER",
+        addedById: hrAdmin.id,
+      },
+      // Performance Review project
+      {
+        projectId: hrProject2.id,
+        userId: hrAdmin.id,
+        role: "PROJECT_LEAD",
+        addedById: hrManager.id,
+      },
+      {
+        projectId: hrProject2.id,
+        userId: hrStaff1.id,
+        role: "DEVELOPER",
+        addedById: hrAdmin.id,
+      },
+      {
+        projectId: hrProject2.id,
+        userId: hrStaff2.id,
+        role: "DEVELOPER",
+        addedById: hrAdmin.id,
+      },
+    ],
+  });
+
+  console.log("✅ Added 12 project members");
 
   // Create Tasks with various statuses and approval states
   console.log("📋 Creating tasks...");
@@ -618,8 +863,11 @@ async function main() {
 
   console.log("\n🎉 Database seeding completed successfully!");
   console.log("\n📊 Summary:");
+  console.log("   - Default Workflow Scheme with 10 transitions");
+  console.log("   - Default Permission Scheme with 30 grants");
   console.log("   - 9 Users (CEO, HOO, HR Manager, 2 Admins, 4 Staff)");
-  console.log("   - 4 Projects (2 OPS, 2 HR)");
+  console.log("   - 4 Projects (2 OPS, 2 HR) with schemes assigned");
+  console.log("   - 12 Project Members with roles");
   console.log(
     "   - 12 Tasks (various statuses, 2 pending approval, 1 approved, 1 rejected)"
   );
@@ -644,5 +892,4 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-    await pool.end();
   });

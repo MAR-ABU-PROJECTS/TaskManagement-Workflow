@@ -17,9 +17,9 @@
     /* Emit */
     "outDir": "./dist",
     "removeComments": true,
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
+    "sourceMap": false,
+    "declaration": false,
+    "declarationMap": false,
 
     /* Interop Constraints */
     "esModuleInterop": true,

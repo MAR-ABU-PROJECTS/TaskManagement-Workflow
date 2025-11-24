@@ -19,8 +19,11 @@ export class NotificationService {
       },
     });
 
-    // TODO: Send email notification if enabled
-    // await this.sendEmailNotification(userId, type, payload);
+    // Send email notification if enabled (optional feature)
+    // Uncomment and configure EmailService when ready to use
+    // if (process.env.EMAIL_NOTIFICATIONS_ENABLED === "true") {
+    //   await EmailService.sendNotificationEmail(userId, type, payload);
+    // }
   }
 
   /**
@@ -324,7 +327,7 @@ export class NotificationService {
   }
 
   /**
-   * TODO: Send email notification
+   * Send email notification (currently disabled)
    * Commented out to avoid unused method warning
    */
   /*

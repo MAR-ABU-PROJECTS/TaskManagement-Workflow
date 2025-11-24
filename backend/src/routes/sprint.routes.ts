@@ -1,6 +1,8 @@
 import express from "express";
 import SprintController from "../controllers/SprintController";
 import { authenticate } from "../middleware/auth";
+import { hasProjectPermission } from "../middleware/rbac";
+import { Permission } from "../types/enums";
 
 const router = express.Router();
 
@@ -81,8 +83,16 @@ router.use(authenticate);
  *               items:
  *                 $ref: '#/components/schemas/Sprint'
  */
-router.post("/projects/:projectId/sprints", SprintController.createSprint);
-router.get("/projects/:projectId/sprints", SprintController.getProjectSprints);
+router.post(
+  "/projects/:projectId/sprints",
+  hasProjectPermission(Permission.MANAGE_SPRINTS),
+  SprintController.createSprint
+);
+router.get(
+  "/projects/:projectId/sprints",
+  hasProjectPermission(Permission.VIEW_SPRINTS),
+  SprintController.getProjectSprints
+);
 
 /**
  * @swagger
@@ -140,8 +150,16 @@ router.get("/projects/:projectId/sprints", SprintController.getProjectSprints);
  *       404:
  *         description: Sprint not found
  */
-router.get("/sprints/:sprintId", SprintController.getSprintById);
-router.put("/sprints/:sprintId", SprintController.updateSprint);
+router.get(
+  "/sprints/:sprintId",
+  hasProjectPermission(Permission.VIEW_SPRINTS),
+  SprintController.getSprintById
+);
+router.put(
+  "/sprints/:sprintId",
+  hasProjectPermission(Permission.MANAGE_SPRINTS),
+  SprintController.updateSprint
+);
 
 /**
  * @swagger
@@ -163,7 +181,11 @@ router.put("/sprints/:sprintId", SprintController.updateSprint);
  *       400:
  *         description: Sprint cannot be started (invalid state)
  */
-router.post("/sprints/:sprintId/start", SprintController.startSprint);
+router.post(
+  "/sprints/:sprintId/start",
+  hasProjectPermission(Permission.MANAGE_SPRINTS),
+  SprintController.startSprint
+);
 
 /**
  * @swagger
@@ -185,7 +207,11 @@ router.post("/sprints/:sprintId/start", SprintController.startSprint);
  *       400:
  *         description: Sprint cannot be completed
  */
-router.post("/sprints/:sprintId/complete", SprintController.completeSprint);
+router.post(
+  "/sprints/:sprintId/complete",
+  hasProjectPermission(Permission.MANAGE_SPRINTS),
+  SprintController.completeSprint
+);
 
 /**
  * @swagger
@@ -205,7 +231,11 @@ router.post("/sprints/:sprintId/complete", SprintController.completeSprint);
  *       200:
  *         description: Sprint cancelled successfully
  */
-router.post("/sprints/:sprintId/cancel", SprintController.cancelSprint);
+router.post(
+  "/sprints/:sprintId/cancel",
+  hasProjectPermission(Permission.MANAGE_SPRINTS),
+  SprintController.cancelSprint
+);
 
 /**
  * @swagger
@@ -240,7 +270,11 @@ router.post("/sprints/:sprintId/cancel", SprintController.cancelSprint);
  *       400:
  *         description: Invalid task IDs
  */
-router.post("/sprints/:sprintId/tasks", SprintController.addTasksToSprint);
+router.post(
+  "/sprints/:sprintId/tasks",
+  hasProjectPermission(Permission.MANAGE_SPRINTS),
+  SprintController.addTasksToSprint
+);
 
 /**
  * @swagger
@@ -267,7 +301,11 @@ router.post("/sprints/:sprintId/tasks", SprintController.addTasksToSprint);
  *       200:
  *         description: Tasks removed from sprint
  */
-router.delete("/sprints/tasks", SprintController.removeTasksFromSprint);
+router.delete(
+  "/sprints/tasks",
+  hasProjectPermission(Permission.MANAGE_SPRINTS),
+  SprintController.removeTasksFromSprint
+);
 
 /**
  * @swagger
@@ -305,7 +343,11 @@ router.delete("/sprints/tasks", SprintController.removeTasksFromSprint);
  *                   items:
  *                     type: number
  */
-router.get("/sprints/:sprintId/burndown", SprintController.getBurndownData);
+router.get(
+  "/sprints/:sprintId/burndown",
+  hasProjectPermission(Permission.VIEW_SPRINTS),
+  SprintController.getBurndownData
+);
 
 /**
  * @swagger
@@ -325,7 +367,11 @@ router.get("/sprints/:sprintId/burndown", SprintController.getBurndownData);
  *       200:
  *         description: Sprint velocity data
  */
-router.get("/sprints/:sprintId/velocity", SprintController.getVelocity);
+router.get(
+  "/sprints/:sprintId/velocity",
+  hasProjectPermission(Permission.VIEW_SPRINTS),
+  SprintController.getVelocity
+);
 
 /**
  * @swagger
@@ -345,6 +391,10 @@ router.get("/sprints/:sprintId/velocity", SprintController.getVelocity);
  *       200:
  *         description: Team velocity data
  */
-router.get("/projects/:projectId/velocity", SprintController.getTeamVelocity);
+router.get(
+  "/projects/:projectId/velocity",
+  hasProjectPermission(Permission.VIEW_SPRINTS),
+  SprintController.getTeamVelocity
+);
 
 export default router;
