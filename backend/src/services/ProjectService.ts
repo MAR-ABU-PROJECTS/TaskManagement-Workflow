@@ -17,6 +17,7 @@ export class ProjectService {
     const project = await prisma.project.create({
       data: {
         name: data.name,
+        key: data.key,
         description: data.description || null,
         department: data.department || null,
         creatorId,

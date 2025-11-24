@@ -9,62 +9,340 @@ const router = express.Router();
 router.use(authenticate);
 
 /**
- * @route   POST /api/tasks
- * @desc    Create a new task
- * @access  Authenticated users
+ * @swagger
+ * /api/tasks:
+ *   post:
+ *     summary: Create a new task
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - projectId
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: Implement user authentication
+ *               description:
+ *                 type: string
+ *                 example: Add JWT-based authentication to the API
+ *               projectId:
+ *                 type: string
+ *                 example: clh1234567890
+ *               assigneeId:
+ *                 type: string
+ *                 nullable: true
+ *               priority:
+ *                 type: string
+ *                 enum: [LOW, MEDIUM, HIGH, CRITICAL]
+ *                 default: MEDIUM
+ *               storyPoints:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 100
+ *               labels:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       201:
+ *         description: Task created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Task'
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ *   get:
+ *     summary: Get all tasks (filtered by user role and permissions)
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         schema:
+ *           type: string
+ *         description: Filter by project ID
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, IN_PROGRESS, COMPLETED, REJECTED]
+ *         description: Filter by task status
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: [LOW, MEDIUM, HIGH, CRITICAL]
+ *         description: Filter by priority
+ *       - in: query
+ *         name: assigneeId
+ *         schema:
+ *           type: string
+ *         description: Filter by assignee ID
+ *     responses:
+ *       200:
+ *         description: List of tasks
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Task'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.post("/", (req, res) => TaskController.createTask(req, res));
-
-/**
- * @route   GET /api/tasks
- * @desc    Get all tasks (filtered by role)
- * @access  Authenticated users
- */
 router.get("/", (req, res) => TaskController.getAllTasks(req, res));
 
 /**
- * @route   GET /api/tasks/:id
- * @desc    Get task by ID
- * @access  Authenticated users with access
+ * @swagger
+ * /api/tasks/{id}:
+ *   get:
+ *     summary: Get task by ID
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Task details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Task'
+ *       404:
+ *         description: Task not found
+ *       401:
+ *         description: Unauthorized
+ *   patch:
+ *     summary: Update task details
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *                 enum: [LOW, MEDIUM, HIGH, CRITICAL]
+ *               storyPoints:
+ *                 type: integer
+ *               labels:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       200:
+ *         description: Task updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Task'
+ *       400:
+ *         description: Invalid input
+ *       404:
+ *         description: Task not found
+ *       403:
+ *         description: Forbidden - insufficient permissions
  */
 router.get("/:id", (req, res) => TaskController.getTaskById(req, res));
-
-/**
- * @route   PATCH /api/tasks/:id
- * @desc    Update task
- * @access  Creator, Assignee, or Management
- */
 router.patch("/:id", (req, res) => TaskController.updateTask(req, res));
 
 /**
- * @route   PATCH /api/tasks/:id/status
- * @desc    Change task status
- * @access  Creator, Assignee, or Management
+ * @swagger
+ * /api/tasks/{id}/status:
+ *   patch:
+ *     summary: Change task status
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [PENDING, IN_PROGRESS, COMPLETED, REJECTED]
+ *     responses:
+ *       200:
+ *         description: Task status updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Task'
+ *       400:
+ *         description: Invalid status
+ *       404:
+ *         description: Task not found
+ *       403:
+ *         description: Forbidden
  */
 router.patch("/:id/status", (req, res) =>
   TaskController.changeStatus(req, res)
 );
 
 /**
- * @route   POST /api/tasks/:id/assign
- * @desc    Assign task to user
- * @access  Creator, Admin, or Management
+ * @swagger
+ * /api/tasks/{id}/assign:
+ *   post:
+ *     summary: Assign task to a user
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - assigneeId
+ *             properties:
+ *               assigneeId:
+ *                 type: string
+ *                 description: ID of the user to assign the task to
+ *     responses:
+ *       200:
+ *         description: Task assigned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Task'
+ *       400:
+ *         description: Invalid assignee
+ *       404:
+ *         description: Task not found
+ *       403:
+ *         description: Forbidden - requires approval
  */
 router.post("/:id/assign", (req, res) => TaskController.assignTask(req, res));
 
 /**
- * @route   POST /api/tasks/:id/approve
- * @desc    Approve task
- * @access  CEO, HOO, HR
+ * @swagger
+ * /api/tasks/{id}/approve:
+ *   post:
+ *     summary: Approve a task (requires CEO, HOO, or HR role)
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Task approved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Task'
+ *       404:
+ *         description: Task not found
+ *       403:
+ *         description: Forbidden - insufficient role permissions
  */
 router.post("/:id/approve", canApproveTask, (req, res) =>
   TaskController.approveTask(req, res)
 );
 
 /**
- * @route   POST /api/tasks/:id/reject
- * @desc    Reject task
- * @access  CEO, HOO, HR
+ * @swagger
+ * /api/tasks/{id}/reject:
+ *   post:
+ *     summary: Reject a task (requires CEO, HOO, or HR role)
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 description: Reason for rejection
+ *     responses:
+ *       200:
+ *         description: Task rejected successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Task'
+ *       404:
+ *         description: Task not found
+ *       403:
+ *         description: Forbidden - insufficient role permissions
  */
 router.post("/:id/reject", canApproveTask, (req, res) =>
   TaskController.rejectTask(req, res)

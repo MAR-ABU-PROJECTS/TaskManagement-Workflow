@@ -1,0 +1,3 @@
+-- This migration represents the complete system state
+-- All tables and features are already in the database from manual migrations
+-- This is a baseline/no-op migration

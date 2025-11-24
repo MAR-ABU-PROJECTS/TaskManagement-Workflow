@@ -5,6 +5,7 @@ import config from "./config";
 import logger from "./utils/logger";
 import { apiLimiter } from "./middleware/rateLimiter";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import { setupSwagger } from "./config/swagger";
 
 import routes from "./routes";
 
@@ -19,6 +20,9 @@ app.use(express.urlencoded({ extended: true }));
 // Rate limiting
 app.use(apiLimiter);
 
+// Swagger Documentation
+setupSwagger(app);
+
 // API Routes
 app.use("/api", routes);
 
@@ -28,6 +32,7 @@ app.get("/", (_req, res) => {
     message: "MAR Task Management API - Jira Style",
     version: "2.0.0",
     environment: config.NODE_ENV,
+    docs: `${config.BASE_URL}/api-docs`,
   });
 });
 
@@ -41,6 +46,7 @@ app.use(errorHandler);
 app.listen(config.PORT, () => {
   logger.info(`Server running on ${config.BASE_URL}`);
   logger.info(`Environment: ${config.NODE_ENV}`);
+  logger.info(`Swagger UI: ${config.BASE_URL}/api-docs`);
   logger.info(`Jira-style Task Management System Ready`);
 });
 

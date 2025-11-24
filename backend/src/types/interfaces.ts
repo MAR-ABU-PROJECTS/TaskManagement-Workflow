@@ -80,6 +80,7 @@ export interface Notification {
 
 export interface CreateProjectDTO {
   name: string;
+  key: string; // Project key like "PROJ", "DEV"
   description?: string;
   department?: Department;
 }

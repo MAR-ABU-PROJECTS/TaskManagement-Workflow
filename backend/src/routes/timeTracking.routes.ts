@@ -8,19 +8,82 @@ const router = express.Router();
 router.use(authenticate);
 
 /**
- * @route   POST /api/tasks/:taskId/time
- * @desc    Log time for a task
- * @access  Authenticated users
+ * @swagger
+ * /api/tasks/{taskId}/time:
+ *   post:
+ *     summary: Log time for a task
+ *     tags: [Time Tracking]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - hours
+ *             properties:
+ *               hours:
+ *                 type: number
+ *                 minimum: 0.1
+ *                 example: 2.5
+ *               description:
+ *                 type: string
+ *                 example: Worked on user authentication
+ *               date:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       201:
+ *         description: Time logged successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *   get:
+ *     summary: Get all time entries for a task
+ *     tags: [Time Tracking]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of time entries
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   hours:
+ *                     type: number
+ *                   description:
+ *                     type: string
+ *                   userId:
+ *                     type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
  */
 router.post("/tasks/:taskId/time", (req, res) =>
   TimeTrackingController.logTime(req, res)
 );
 
-/**
- * @route   GET /api/tasks/:taskId/time
- * @desc    Get time entries for a task
- * @access  Authenticated users
- */
 router.get("/tasks/:taskId/time", (req, res) =>
   TimeTrackingController.getTaskTimeEntries(req, res)
 );
@@ -54,18 +117,47 @@ router.delete("/time-entries/:id", (req, res) =>
 );
 
 /**
- * @route   POST /api/time/start
- * @desc    Start timer for a task
- * @access  Authenticated users
+ * @swagger
+ * /api/time/start:
+ *   post:
+ *     summary: Start a timer for a task
+ *     tags: [Time Tracking]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - taskId
+ *             properties:
+ *               taskId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Timer started
+ *       400:
+ *         description: Timer already running
  */
 router.post("/time/start", (req, res) =>
   TimeTrackingController.startTimer(req, res)
 );
 
 /**
- * @route   POST /api/time/stop
- * @desc    Stop active timer and log time
- * @access  Authenticated users
+ * @swagger
+ * /api/time/stop:
+ *   post:
+ *     summary: Stop the active timer and log time
+ *     tags: [Time Tracking]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Timer stopped and time logged
+ *       400:
+ *         description: No active timer
  */
 router.post("/time/stop", (req, res) =>
   TimeTrackingController.stopTimer(req, res)

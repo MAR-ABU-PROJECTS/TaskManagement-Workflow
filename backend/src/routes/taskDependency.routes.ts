@@ -8,37 +8,133 @@ const router = express.Router();
 router.use(authenticate);
 
 /**
- * @route   POST /api/task-dependencies
- * @desc    Create task dependency
- * @access  Authenticated users
+ * @swagger
+ * /api/task-dependencies:
+ *   post:
+ *     summary: Create a task dependency
+ *     tags: [Task Dependencies]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - taskId
+ *               - dependsOnTaskId
+ *             properties:
+ *               taskId:
+ *                 type: string
+ *                 description: The task that has the dependency
+ *               dependsOnTaskId:
+ *                 type: string
+ *                 description: The task that must be completed first
+ *               type:
+ *                 type: string
+ *                 enum: [BLOCKS, IS_BLOCKED_BY, RELATES_TO]
+ *                 default: BLOCKS
+ *     responses:
+ *       201:
+ *         description: Dependency created successfully
+ *       400:
+ *         description: Invalid dependency (circular dependency detected)
+ *       404:
+ *         description: Task not found
+ *   get:
+ *     summary: Get all task dependencies
+ *     tags: [Task Dependencies]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [BLOCKS, IS_BLOCKED_BY, RELATES_TO]
+ *     responses:
+ *       200:
+ *         description: List of dependencies
  */
 router.post("/", (req, res) =>
   TaskDependencyController.createDependency(req, res)
 );
-
-/**
- * @route   GET /api/task-dependencies
- * @desc    Get all dependencies (with optional filters)
- * @query   projectId, type
- * @access  Authenticated users
- */
 router.get("/", (req, res) =>
   TaskDependencyController.getAllDependencies(req, res)
 );
 
 /**
- * @route   GET /api/task-dependencies/tasks/:taskId
- * @desc    Get dependencies for a specific task
- * @access  Authenticated users
+ * @swagger
+ * /api/task-dependencies/tasks/{taskId}:
+ *   get:
+ *     summary: Get all dependencies for a specific task
+ *     tags: [Task Dependencies]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task dependencies
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 blocking:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 blockedBy:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 relatedTo:
+ *                   type: array
+ *                   items:
+ *                     type: object
  */
 router.get("/tasks/:taskId", (req, res) =>
   TaskDependencyController.getTaskDependencies(req, res)
 );
 
 /**
- * @route   GET /api/task-dependencies/tasks/:taskId/blocking-info
- * @desc    Get blocking information for a task
- * @access  Authenticated users
+ * @swagger
+ * /api/task-dependencies/tasks/{taskId}/blocking-info:
+ *   get:
+ *     summary: Get blocking information for a task
+ *     tags: [Task Dependencies]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Blocking status and details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isBlocked:
+ *                   type: boolean
+ *                 blockingTasks:
+ *                   type: array
+ *                   items:
+ *                     type: object
  */
 router.get("/tasks/:taskId/blocking-info", (req, res) =>
   TaskDependencyController.getBlockingInfo(req, res)

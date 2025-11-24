@@ -11,27 +11,104 @@ const router = express.Router();
 router.use(authenticate);
 
 /**
- * @route   POST /api/tasks/:id/comments
- * @desc    Create a comment on a task
- * @access  Authenticated users
+ * @swagger
+ * /api/tasks/{id}/comments:
+ *   post:
+ *     summary: Create a comment on a task
+ *     tags: [Comments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 example: This task looks good! @john can you review?
+ *     responses:
+ *       201:
+ *         description: Comment created successfully
+ *       400:
+ *         description: Invalid input
+ *       404:
+ *         description: Task not found
+ *   get:
+ *     summary: Get all comments for a task
+ *     tags: [Comments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of comments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   content:
+ *                     type: string
+ *                   userId:
+ *                     type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
  */
 router.post("/:id/comments", (req, res) =>
   commentController.createComment(req, res)
 );
 
-/**
- * @route   GET /api/tasks/:id/comments
- * @desc    Get all comments for a task
- * @access  Authenticated users
- */
 router.get("/:id/comments", (req, res) =>
   commentController.getTaskComments(req, res)
 );
 
 /**
- * @route   DELETE /api/tasks/:taskId/comments/:commentId
- * @desc    Delete a comment
- * @access  Comment creator or Management
+ * @swagger
+ * /api/tasks/{taskId}/comments/{commentId}:
+ *   delete:
+ *     summary: Delete a comment
+ *     tags: [Comments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Comment deleted successfully
+ *       404:
+ *         description: Comment not found
+ *       403:
+ *         description: Forbidden - not comment creator
  */
 router.delete("/:taskId/comments/:commentId", (req, res) =>
   commentController.deleteComment(req, res)
