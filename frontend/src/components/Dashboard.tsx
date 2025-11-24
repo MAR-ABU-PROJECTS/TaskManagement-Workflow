@@ -27,7 +27,7 @@ export default function DashboardPage() {
 					<div>
 						<div className="flex justify-between items-center mb-2 flex-wrap gap-2.5">
 							<h2 className="text-2xl font-bold tracking-tight">
-								Welcome back, John
+								Welcome back, John doe
 							</h2>
 							<Button size="lg" variant={"default"} asChild>
 								<Link href="/projects/new">
