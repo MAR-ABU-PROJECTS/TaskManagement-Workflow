@@ -187,6 +187,8 @@ const options = {
             },
             department: {
               $ref: "#/components/schemas/Department",
+              nullable: true,
+              description: "Optional department assignment",
             },
             isActive: { type: "boolean" },
             createdAt: { type: "string", format: "date-time" },

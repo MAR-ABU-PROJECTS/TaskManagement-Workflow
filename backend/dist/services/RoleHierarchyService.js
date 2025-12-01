@@ -67,12 +67,6 @@ class RoleHierarchyService {
             return canModify;
         }
         if (promoterIsSuperAdmin) {
-            if (targetRole === enums_1.UserRole.HOO) {
-                return { allowed: true, requiredDepartment: enums_1.Department.OPS };
-            }
-            if (targetRole === enums_1.UserRole.HR) {
-                return { allowed: true, requiredDepartment: enums_1.Department.HR };
-            }
             return { allowed: true };
         }
         if (promoterRole === enums_1.UserRole.CEO) {
@@ -82,30 +76,24 @@ class RoleHierarchyService {
                     reason: "Only Super Admin can promote to CEO",
                 };
             }
-            if (targetRole === enums_1.UserRole.HOO) {
-                return { allowed: true, requiredDepartment: enums_1.Department.OPS };
-            }
-            if (targetRole === enums_1.UserRole.HR) {
-                return { allowed: true, requiredDepartment: enums_1.Department.HR };
-            }
             return { allowed: true };
         }
         if (promoterRole === enums_1.UserRole.HOO) {
             if (currentRole === enums_1.UserRole.STAFF && targetRole === enums_1.UserRole.ADMIN) {
-                return { allowed: true, requiredDepartment: enums_1.Department.OPS };
+                return { allowed: true };
             }
             return {
                 allowed: false,
-                reason: "HOO can only promote Staff to Admin in Operations department",
+                reason: "HOO can only promote Staff to Admin",
             };
         }
         if (promoterRole === enums_1.UserRole.HR) {
             if (currentRole === enums_1.UserRole.STAFF && targetRole === enums_1.UserRole.ADMIN) {
-                return { allowed: true, requiredDepartment: enums_1.Department.HR };
+                return { allowed: true };
             }
             return {
                 allowed: false,
-                reason: "HR can only promote Staff to Admin in HR department",
+                reason: "HR can only promote Staff to Admin",
             };
         }
         return {

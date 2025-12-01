@@ -67,11 +67,8 @@ class UserHierarchyController {
         return res.status(403).json({ message: validation.reason });
       }
 
-      // Determine department assignment
-      let assignedDepartment = targetUser.department;
-      if (validation.requiredDepartment) {
-        assignedDepartment = validation.requiredDepartment;
-      }
+      // Department remains unchanged or can be updated separately
+      const assignedDepartment = targetUser.department;
 
       // Perform promotion
       const updatedUser = await prisma.user.update({

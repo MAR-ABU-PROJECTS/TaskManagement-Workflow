@@ -1,170 +1,93 @@
 import express from "express";
-import SearchController from "../controllers/SearchController";
 import { authenticate } from "../middleware/auth";
+import { hasProjectPermission } from "../middleware/rbac";
+import { Permission } from "../types/enums";
+import JQLController from "../controllers/JQLController";
+import SavedFilterController from "../controllers/SavedFilterController";
 
 const router = express.Router();
 
+// All routes require authentication
 router.use(authenticate);
 
-/**
- * @swagger
- * /api/search/advanced:
- *   post:
- *     summary: Advanced multi-criteria task search
- *     tags: [Search]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               projectId:
- *                 type: string
- *                 description: Filter by project ID
- *               assigneeId:
- *                 type: string
- *                 description: Filter by assignee ID
- *               reporterId:
- *                 type: string
- *                 description: Filter by reporter/creator ID
- *               status:
- *                 type: array
- *                 items:
- *                   type: string
- *                   enum: [PENDING, IN_PROGRESS, COMPLETED, REJECTED]
- *                 description: Filter by task status (multiple values)
- *               priority:
- *                 type: array
- *                 items:
- *                   type: string
- *                   enum: [LOW, MEDIUM, HIGH, CRITICAL]
- *                 description: Filter by priority (multiple values)
- *               labels:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: Filter by labels
- *               searchText:
- *                 type: string
- *                 description: Search in title and description
- *               createdAfter:
- *                 type: string
- *                 format: date-time
- *                 description: Created after this date
- *               createdBefore:
- *                 type: string
- *                 format: date-time
- *                 description: Created before this date
- *               updatedAfter:
- *                 type: string
- *                 format: date-time
- *               updatedBefore:
- *                 type: string
- *                 format: date-time
- *               dueAfter:
- *                 type: string
- *                 format: date-time
- *               dueBefore:
- *                 type: string
- *                 format: date-time
- *               storyPointsMin:
- *                 type: integer
- *                 minimum: 1
- *               storyPointsMax:
- *                 type: integer
- *                 maximum: 100
- *               page:
- *                 type: integer
- *                 default: 1
- *               limit:
- *                 type: integer
- *                 default: 20
- *               sortBy:
- *                 type: string
- *                 enum: [createdAt, updatedAt, priority, dueDate]
- *                 default: createdAt
- *               sortOrder:
- *                 type: string
- *                 enum: [asc, desc]
- *                 default: desc
- *     responses:
- *       200:
- *         description: Search results
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 tasks:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Task'
- *                 total:
- *                   type: integer
- *                 page:
- *                   type: integer
- *                 totalPages:
- *                   type: integer
- *       400:
- *         description: Invalid search criteria
- *       401:
- *         description: Unauthorized
- */
-router.post("/search/advanced", SearchController.advancedSearch);
+// ==================== JQL SEARCH ====================
 
 /**
  * @swagger
- * /api/search/jql:
- *   post:
- *     summary: JQL-style query search (Jira Query Language)
+ * /api/search:
+ *   get:
+ *     summary: Search tasks using JQL (Jira Query Language)
  *     tags: [Search]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - query
- *             properties:
- *               query:
- *                 type: string
- *                 description: JQL query string
- *                 example: 'project=PROJECT-123 AND status IN (IN_PROGRESS,PENDING) AND priority=HIGH'
- *               page:
- *                 type: integer
- *                 default: 1
- *               limit:
- *                 type: integer
- *                 default: 20
- *     responses:
- *       200:
- *         description: Search results from JQL query
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 tasks:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Task'
- *                 total:
- *                   type: integer
- *                 page:
- *                   type: integer
- *                 totalPages:
- *                   type: integer
- *       400:
- *         description: Invalid JQL syntax
- *       401:
- *         description: Unauthorized
  */
-router.post("/search/jql", SearchController.jqlSearch);
+router.get(
+  "/",
+  hasProjectPermission(Permission.BROWSE_PROJECT),
+  JQLController.searchWithJQL
+);
+
+/**
+ * @swagger
+ * /api/search/validate:
+ *   post:
+ *     summary: Validate JQL syntax without executing
+ *     tags: [Search]
+ */
+router.post("/validate", JQLController.validateJQL);
+
+/**
+ * @swagger
+ * /api/search/autocomplete:
+ *   get:
+ *     summary: Get JQL autocomplete suggestions
+ *     tags: [Search]
+ */
+router.get("/autocomplete", JQLController.getJQLSuggestions);
+
+// ==================== SAVED FILTERS ====================
+
+/**
+ * @swagger
+ * /api/search/filters:
+ *   get:
+ *     summary: Get all saved filters accessible by user
+ *     tags: [Search]
+ */
+router.get("/filters", SavedFilterController.getUserFilters);
+
+/**
+ * @swagger
+ * /api/search/filters:
+ *   post:
+ *     summary: Create a new saved filter
+ *     tags: [Search]
+ */
+router.post("/filters", SavedFilterController.createFilter);
+
+/**
+ * @swagger
+ * /api/search/filters/{id}:
+ *   get:
+ *     summary: Get saved filter by ID
+ *     tags: [Search]
+ */
+router.get("/filters/:id", SavedFilterController.getFilterById);
+
+/**
+ * @swagger
+ * /api/search/filters/{id}:
+ *   patch:
+ *     summary: Update saved filter
+ *     tags: [Search]
+ */
+router.patch("/filters/:id", SavedFilterController.updateFilter);
+
+/**
+ * @swagger
+ * /api/search/filters/{id}:
+ *   delete:
+ *     summary: Delete saved filter
+ *     tags: [Search]
+ */
+router.delete("/filters/:id", SavedFilterController.deleteFilter);
 
 export default router;

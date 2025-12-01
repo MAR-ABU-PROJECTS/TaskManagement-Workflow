@@ -44,10 +44,7 @@ class UserHierarchyController {
             if (!validation.allowed) {
                 return res.status(403).json({ message: validation.reason });
             }
-            let assignedDepartment = targetUser.department;
-            if (validation.requiredDepartment) {
-                assignedDepartment = validation.requiredDepartment;
-            }
+            const assignedDepartment = targetUser.department;
             const updatedUser = await prisma_1.default.user.update({
                 where: { id: userId },
                 data: {

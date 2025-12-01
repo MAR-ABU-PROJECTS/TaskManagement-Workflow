@@ -1,77 +1,46 @@
 import express from "express";
 import authRoutes from "./auth";
-import projectRoutes from "./projects.routes";
-import taskRoutes from "./tasks.routes";
-import commentRoutes from "./comments.routes";
+import usersRoutes from "./users.routes";
+import projectsRoutes from "./projects.routes";
+import tasksRoutes from "./tasks.routes";
 import notificationRoutes from "./notifications.routes";
-import taskDependencyRoutes from "./taskDependency.routes";
-import timeTrackingRoutes from "./timeTracking.routes";
-import taskAttachmentRoutes from "./taskAttachment.routes";
-import sprintRoutes from "./sprint.routes";
-import epicRoutes from "./epic.routes";
-import backlogRoutes from "./backlog.routes";
-import reportRoutes from "./report.routes";
 import searchRoutes from "./search.routes";
-import userHierarchyRoutes from "./user-hierarchy.routes";
 import auditLogRoutes from "./audit-logs.routes";
 
 // Jira-like Project Management routes
-import projectMemberRoutes from "./projectMember.routes";
-import boardRoutes from "./board.routes";
-import workflowRoutes from "./workflow.routes";
-import permissionSchemeRoutes from "./permissionScheme.routes";
+import configRoutes from "./config.routes";
 import componentRoutes from "./component.routes";
 import versionRoutes from "./version.routes";
-import jqlRoutes from "./jql.routes";
-import savedFilterRoutes from "./savedFilter.routes";
 import bulkOperationsRoutes from "./bulkOperations.routes";
-
-// Role-specific routes
-import ceoRoutes from "./ceo.routes";
-import hrRoutes from "./hr.routes";
-import adminRoutes from "./admin.routes";
-import staffRoutes from "./staff.routes";
 
 const router = express.Router();
 
 // Auth routes (public)
 router.use("/auth", authRoutes);
 
-// User hierarchy management (protected)
-router.use("/users", userHierarchyRoutes);
+// Consolidated user management
+router.use("/users", usersRoutes);
 
-// Audit logs (protected - admin only)
+// Audit logs
 router.use("/audit-logs", auditLogRoutes);
 
-// Role-specific routes (protected)
-router.use("/ceo", ceoRoutes);
-router.use("/hr", hrRoutes);
-router.use("/admin", adminRoutes);
-router.use("/staff", staffRoutes);
+// Consolidated task management (includes comments, attachments, dependencies, time tracking)
+router.use("/tasks", tasksRoutes);
+
+// Consolidated project management (includes sprints, epics, backlog, members, reports)
+router.use("/projects", projectsRoutes);
+
+// Consolidated configuration management (workflows, permissions)
+router.use("/config", configRoutes);
+
+// Consolidated search (JQL, saved filters)
+router.use("/search", searchRoutes);
 
 // Protected routes (require authentication)
-router.use("/projects", projectRoutes);
-router.use("/projects", projectMemberRoutes); // Project member management
-router.use("/projects", boardRoutes); // Board routes nested under projects
-router.use("/boards", boardRoutes); // Board routes (direct access)
-router.use("/workflows", workflowRoutes); // Workflow scheme management
-router.use("/permission-schemes", permissionSchemeRoutes); // Permission scheme management
-router.use("/", componentRoutes); // Component routes (includes /projects/:id/components and /components/:id)
-router.use("/", versionRoutes); // Version routes (includes /projects/:id/versions and /versions/:id)
-router.use("/jql", jqlRoutes); // JQL search routes
-router.use("/filters", savedFilterRoutes); // Saved filter routes
-router.use("/bulk", bulkOperationsRoutes); // Bulk operations routes
-router.use("/tasks", taskRoutes);
-router.use("/tasks", commentRoutes); // Comment and activity log routes
+router.use("/", componentRoutes);
+router.use("/", versionRoutes);
+router.use("/bulk", bulkOperationsRoutes);
 router.use("/notifications", notificationRoutes);
-router.use("/task-dependencies", taskDependencyRoutes);
-router.use("/", timeTrackingRoutes); // Time tracking routes (includes /tasks/:id/time, /time-entries, /time/*)
-router.use("/", taskAttachmentRoutes); // Task attachment routes
-router.use("/", sprintRoutes); // Sprint routes
-router.use("/", epicRoutes); // Epic routes
-router.use("/", backlogRoutes); // Backlog routes
-router.use("/", reportRoutes); // Report and analytics routes
-router.use("/", searchRoutes); // Advanced search routes
 
 // Health check
 router.get("/health", (_req, res) => {
