@@ -126,15 +126,19 @@ router.get("/analytics/team-performance", async (req, res) => {
             dateFilter.gte = new Date(startDate);
         if (endDate)
             dateFilter.lte = new Date(endDate);
-        const departmentFilter = department ? { department: department } : {};
+        const departmentFilter = department
+            ? { department: department }
+            : {};
         const [totalUsers, activeUsers, tasksByUser, completedTasksByUser] = await Promise.all([
-            prisma_1.default.user.count({ where: { role: "STAFF", ...departmentFilter } }),
+            prisma_1.default.user.count({
+                where: { role: "STAFF", ...departmentFilter },
+            }),
             prisma_1.default.user.count({
                 where: {
                     role: "STAFF",
                     ...departmentFilter,
-                    assignedTasks: { some: {} }
-                }
+                    assignedTasks: { some: {} },
+                },
             }),
             prisma_1.default.task.groupBy({
                 by: ["assigneeId"],
@@ -146,12 +150,19 @@ router.get("/analytics/team-performance", async (req, res) => {
                 _count: true,
                 where: {
                     status: "COMPLETED",
-                    ...(Object.keys(dateFilter).length > 0 ? { updatedAt: dateFilter } : {}),
+                    ...(Object.keys(dateFilter).length > 0
+                        ? { updatedAt: dateFilter }
+                        : {}),
                 },
             }),
         ]);
-        const avgTasksPerUser = totalUsers > 0 ? tasksByUser.reduce((sum, t) => sum + t._count, 0) / totalUsers : 0;
-        const avgCompletedPerUser = totalUsers > 0 ? completedTasksByUser.reduce((sum, t) => sum + t._count, 0) / totalUsers : 0;
+        const avgTasksPerUser = totalUsers > 0
+            ? tasksByUser.reduce((sum, t) => sum + t._count, 0) / totalUsers
+            : 0;
+        const avgCompletedPerUser = totalUsers > 0
+            ? completedTasksByUser.reduce((sum, t) => sum + t._count, 0) /
+                totalUsers
+            : 0;
         res.json({
             analytics: {
                 totalUsers,

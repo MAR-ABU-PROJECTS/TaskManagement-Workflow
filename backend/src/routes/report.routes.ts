@@ -113,10 +113,87 @@ router.get(
   "/projects/:projectId/reports/health",
   ReportController.getProjectHealth
 );
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/reports/cycle-time:
+ *   get:
+ *     summary: Get cycle time report for tasks
+ *     tags: [Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Cycle time data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 averageCycleTime:
+ *                   type: number
+ *                 tasks:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ */
 router.get(
   "/projects/:projectId/reports/cycle-time",
   ReportController.getCycleTimeReport
 );
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/reports/burnup:
+ *   get:
+ *     summary: Get burnup chart data for project
+ *     tags: [Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: sprintId
+ *         schema:
+ *           type: string
+ *         description: Optional sprint ID to filter data
+ *     responses:
+ *       200:
+ *         description: Burnup chart data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalScope:
+ *                   type: number
+ *                 completed:
+ *                   type: number
+ *                 daily:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ */
 router.get(
   "/projects/:projectId/reports/burnup",
   ReportController.getBurnupData

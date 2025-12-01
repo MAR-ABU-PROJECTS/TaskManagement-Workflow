@@ -12,6 +12,8 @@ import epicRoutes from "./epic.routes";
 import backlogRoutes from "./backlog.routes";
 import reportRoutes from "./report.routes";
 import searchRoutes from "./search.routes";
+import userHierarchyRoutes from "./user-hierarchy.routes";
+import auditLogRoutes from "./audit-logs.routes";
 
 // Jira-like Project Management routes
 import projectMemberRoutes from "./projectMember.routes";
@@ -34,6 +36,12 @@ const router = express.Router();
 
 // Auth routes (public)
 router.use("/auth", authRoutes);
+
+// User hierarchy management (protected)
+router.use("/users", userHierarchyRoutes);
+
+// Audit logs (protected - admin only)
+router.use("/audit-logs", auditLogRoutes);
 
 // Role-specific routes (protected)
 router.use("/ceo", ceoRoutes);

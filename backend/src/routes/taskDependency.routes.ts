@@ -64,6 +64,29 @@ router.use(authenticate);
 router.post("/", (req, res) =>
   TaskDependencyController.createDependency(req, res)
 );
+
+/**
+ * @swagger
+ * /api/task-dependencies:
+ *   get:
+ *     summary: Get all task dependencies
+ *     tags: [Task Dependencies]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [BLOCKS, IS_BLOCKED_BY, RELATES_TO]
+ *     responses:
+ *       200:
+ *         description: List of dependencies
+ */
 router.get("/", (req, res) =>
   TaskDependencyController.getAllDependencies(req, res)
 );
@@ -141,18 +164,59 @@ router.get("/tasks/:taskId/blocking-info", (req, res) =>
 );
 
 /**
- * @route   GET /api/task-dependencies/tasks/:taskId/subtask-summary
- * @desc    Get subtask summary for a parent task
- * @access  Authenticated users
+ * @swagger
+ * /api/task-dependencies/tasks/{taskId}/subtask-summary:
+ *   get:
+ *     summary: Get subtask summary for a parent task
+ *     tags: [Task Dependencies]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Subtask summary
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalSubtasks:
+ *                   type: integer
+ *                 completedSubtasks:
+ *                   type: integer
+ *                 inProgressSubtasks:
+ *                   type: integer
+ *                 pendingSubtasks:
+ *                   type: integer
  */
 router.get("/tasks/:taskId/subtask-summary", (req, res) =>
   TaskDependencyController.getSubtaskSummary(req, res)
 );
 
 /**
- * @route   DELETE /api/task-dependencies/:id
- * @desc    Delete task dependency
- * @access  Authenticated users
+ * @swagger
+ * /api/task-dependencies/{id}:
+ *   delete:
+ *     summary: Delete a task dependency
+ *     tags: [Task Dependencies]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Dependency deleted successfully
+ *       404:
+ *         description: Dependency not found
  */
 router.delete("/:id", (req, res) =>
   TaskDependencyController.deleteDependency(req, res)

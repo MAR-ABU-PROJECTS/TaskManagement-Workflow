@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PROJECT_ROLE_HIERARCHY = exports.ROLE_HIERARCHY = exports.ALLOWED_STATUS_TRANSITIONS = exports.DependencyType = exports.SprintStatus = exports.WorkflowStatus = exports.BoardType = exports.Permission = exports.ProjectRole = exports.NotificationType = exports.ActivityAction = exports.IssueType = exports.TaskPriority = exports.TaskStatus = exports.Department = exports.UserRole = void 0;
 var UserRole;
 (function (UserRole) {
+    UserRole["SUPER_ADMIN"] = "SUPER_ADMIN";
     UserRole["CEO"] = "CEO";
     UserRole["HOO"] = "HOO";
     UserRole["HR"] = "HR";
@@ -139,11 +140,12 @@ exports.ALLOWED_STATUS_TRANSITIONS = {
     [TaskStatus.REJECTED]: [TaskStatus.DRAFT],
 };
 exports.ROLE_HIERARCHY = {
-    [UserRole.CEO]: 5,
-    [UserRole.HOO]: 4,
-    [UserRole.HR]: 3,
-    [UserRole.ADMIN]: 2,
-    [UserRole.STAFF]: 1,
+    [UserRole.SUPER_ADMIN]: 100,
+    [UserRole.CEO]: 80,
+    [UserRole.HOO]: 60,
+    [UserRole.HR]: 60,
+    [UserRole.ADMIN]: 40,
+    [UserRole.STAFF]: 20,
 };
 exports.PROJECT_ROLE_HIERARCHY = {
     [ProjectRole.PROJECT_ADMIN]: 4,

@@ -89,12 +89,48 @@ router.post(
   TaskAttachmentController.uploadAttachment
 );
 
+/**
+ * @swagger
+ * /api/tasks/{taskId}/attachments:
+ *   get:
+ *     summary: Get all attachments for a task
+ *     tags: [Attachments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of task attachments
+ */
 router.get(
   "/tasks/:taskId/attachments",
   authenticate,
   TaskAttachmentController.getTaskAttachments
 );
 
+/**
+ * @swagger
+ * /api/tasks/{taskId}/attachments/stats:
+ *   get:
+ *     summary: Get attachment statistics for a task
+ *     tags: [Attachments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Attachment statistics (total count, total size)
+ */
 router.get(
   "/tasks/:taskId/attachments/stats",
   authenticate,
@@ -102,6 +138,26 @@ router.get(
 );
 
 // Attachment routes
+/**
+ * @swagger
+ * /api/attachments/{id}:
+ *   get:
+ *     summary: Get attachment details by ID
+ *     tags: [Attachments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Attachment details
+ *       404:
+ *         description: Attachment not found
+ */
 router.get(
   "/attachments/:id",
   authenticate,

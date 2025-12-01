@@ -8,6 +8,7 @@ const prisma_1 = __importDefault(require("../db/prisma"));
 const enums_1 = require("../types/enums");
 const NotificationService_1 = __importDefault(require("./NotificationService"));
 const ActivityLogService_1 = __importDefault(require("./ActivityLogService"));
+const EmailService_1 = __importDefault(require("./EmailService"));
 class TaskService {
     async createTask(data, creatorId, creatorRole) {
         if (data.projectId) {
@@ -57,6 +58,16 @@ class TaskService {
         if (requiresApproval && !autoApprove) {
             await NotificationService_1.default.notifyApprovalRequired(task.id);
         }
+        await prisma_1.default.task
+            .update({
+            where: { id: task.id },
+            data: {
+                watchers: {
+                    connect: { id: creatorId },
+                },
+            },
+        })
+            .catch(() => { });
         return task;
     }
     async getAllTasks(userId, userRole, filters) {
@@ -199,6 +210,26 @@ class TaskService {
                 dueDate: data.dueDate,
             },
         });
+        if (userId === task.assigneeId && task.status === enums_1.TaskStatus.ASSIGNED) {
+            await prisma_1.default.task.update({
+                where: { id },
+                data: { status: enums_1.TaskStatus.IN_PROGRESS },
+            });
+            await ActivityLogService_1.default.logActivity({
+                taskId: id,
+                userId,
+                action: enums_1.ActivityAction.STATUS_UPDATE,
+                previousStatus: enums_1.TaskStatus.ASSIGNED,
+                newStatus: enums_1.TaskStatus.IN_PROGRESS,
+                metadata: { autoTriggered: true },
+            });
+        }
+        await ActivityLogService_1.default.logActivity({
+            taskId: id,
+            userId,
+            action: enums_1.ActivityAction.STATUS_UPDATE,
+            metadata: { updates: data },
+        });
         return updated;
     }
     async changeStatus(id, newStatus, userId, userRole) {
@@ -220,6 +251,23 @@ class TaskService {
             where: { id },
             data: { status: newStatus },
         });
+        if (newStatus === enums_1.TaskStatus.COMPLETED &&
+            task.requiresApproval &&
+            task.approvedById) {
+            await ActivityLogService_1.default.logActivity({
+                taskId: id,
+                userId,
+                action: enums_1.ActivityAction.STATUS_UPDATE,
+                previousStatus: task.status,
+                newStatus,
+                metadata: { autoCompleted: true, approved: true },
+            });
+        }
+        if (newStatus === enums_1.TaskStatus.COMPLETED && userId === task.assigneeId) {
+            if (task.creatorId && task.creatorId !== userId) {
+                await NotificationService_1.default.notifyTaskAssigned(id, task.creatorId, userId);
+            }
+        }
         await ActivityLogService_1.default.logActivity({
             taskId: id,
             userId,
@@ -253,6 +301,18 @@ class TaskService {
                 assigneeId,
                 status: enums_1.TaskStatus.ASSIGNED,
             },
+            include: {
+                project: {
+                    select: {
+                        name: true,
+                    },
+                },
+                creator: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
         });
         await ActivityLogService_1.default.logActivity({
             taskId: id,
@@ -261,6 +321,27 @@ class TaskService {
             metadata: { assigneeId, assigneeName: assignee.name },
         });
         await NotificationService_1.default.notifyTaskAssigned(id, assigneeId, userId);
+        EmailService_1.default
+            .sendTaskAssignmentEmail(assignee.email, {
+            assigneeName: assignee.name,
+            taskTitle: updated.title,
+            taskId: updated.id,
+            projectName: updated.project?.name || "No Project",
+            assignedBy: updated.creator?.name || "Unknown",
+            priority: updated.priority,
+            dueDate: updated.dueDate?.toISOString(),
+        })
+            .catch((err) => console.error("Failed to send task assignment email:", err));
+        await prisma_1.default.task
+            .update({
+            where: { id },
+            data: {
+                watchers: {
+                    connect: { id: assigneeId },
+                },
+            },
+        })
+            .catch(() => { });
         return updated;
     }
     async approveTask(id, approverId, userRole) {
@@ -288,6 +369,21 @@ class TaskService {
             metadata: {},
         });
         await NotificationService_1.default.notifyTaskApproved(id);
+        if (task.status === enums_1.TaskStatus.COMPLETED ||
+            task.status === enums_1.TaskStatus.REVIEW) {
+            await prisma_1.default.task.update({
+                where: { id },
+                data: { status: enums_1.TaskStatus.COMPLETED },
+            });
+            await ActivityLogService_1.default.logActivity({
+                taskId: id,
+                userId: approverId,
+                action: enums_1.ActivityAction.STATUS_UPDATE,
+                previousStatus: task.status,
+                newStatus: enums_1.TaskStatus.COMPLETED,
+                metadata: { autoCompleted: true },
+            });
+        }
         return updated;
     }
     async rejectTask(id, rejectionReason, userId, userRole) {

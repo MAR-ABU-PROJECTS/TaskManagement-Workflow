@@ -84,33 +84,141 @@ router.post("/tasks/:taskId/time", (req, res) =>
   TimeTrackingController.logTime(req, res)
 );
 
+/**
+ * @swagger
+ * /api/tasks/{taskId}/time:
+ *   get:
+ *     summary: Get all time entries for a task
+ *     tags: [Time Tracking]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of time entries
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   hours:
+ *                     type: number
+ *                   description:
+ *                     type: string
+ *                   userId:
+ *                     type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ */
 router.get("/tasks/:taskId/time", (req, res) =>
   TimeTrackingController.getTaskTimeEntries(req, res)
 );
 
 /**
- * @route   GET /api/time-entries
- * @desc    Get user's time entries (with optional filters)
- * @query   startDate, endDate, taskId, projectId
- * @access  Authenticated users
+ * @swagger
+ * /api/time-entries:
+ *   get:
+ *     summary: Get user's time entries with optional filters
+ *     tags: [Time Tracking]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: taskId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: projectId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of time entries
  */
 router.get("/time-entries", (req, res) =>
   TimeTrackingController.getUserTimeEntries(req, res)
 );
 
 /**
- * @route   PUT /api/time-entries/:id
- * @desc    Update time entry
- * @access  Entry creator or management
+ * @swagger
+ * /api/time-entries/{id}:
+ *   put:
+ *     summary: Update a time entry
+ *     tags: [Time Tracking]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               hours:
+ *                 type: number
+ *               description:
+ *                 type: string
+ *               date:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       200:
+ *         description: Time entry updated
+ *       403:
+ *         description: Forbidden - not your entry
+ *       404:
+ *         description: Time entry not found
  */
 router.put("/time-entries/:id", (req, res) =>
   TimeTrackingController.updateTimeEntry(req, res)
 );
 
 /**
- * @route   DELETE /api/time-entries/:id
- * @desc    Delete time entry
- * @access  Entry creator or management
+ * @swagger
+ * /api/time-entries/{id}:
+ *   delete:
+ *     summary: Delete a time entry
+ *     tags: [Time Tracking]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Time entry deleted
+ *       403:
+ *         description: Forbidden - not your entry
+ *       404:
+ *         description: Time entry not found
  */
 router.delete("/time-entries/:id", (req, res) =>
   TimeTrackingController.deleteTimeEntry(req, res)
@@ -164,28 +272,111 @@ router.post("/time/stop", (req, res) =>
 );
 
 /**
- * @route   GET /api/time/active
- * @desc    Get active timer for current user
- * @access  Authenticated users
+ * @swagger
+ * /api/time/active:
+ *   get:
+ *     summary: Get active timer for current user
+ *     tags: [Time Tracking]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Active timer details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 taskId:
+ *                   type: string
+ *                 startTime:
+ *                   type: string
+ *                   format: date-time
+ *       404:
+ *         description: No active timer
  */
 router.get("/time/active", (req, res) =>
   TimeTrackingController.getActiveTimer(req, res)
 );
 
 /**
- * @route   GET /api/time/summary
- * @desc    Get user's time summary for a date range
- * @query   startDate, endDate (required)
- * @access  Authenticated users
+ * @swagger
+ * /api/time/summary:
+ *   get:
+ *     summary: Get user's time summary for a date range
+ *     tags: [Time Tracking]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Time summary
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalHours:
+ *                   type: number
+ *                 entries:
+ *                   type: array
+ *                   items:
+ *                     type: object
  */
 router.get("/time/summary", (req, res) =>
   TimeTrackingController.getUserTimeSummary(req, res)
 );
 
 /**
- * @route   GET /api/projects/:projectId/time-summary
- * @desc    Get project time summary
- * @access  Authenticated users
+ * @swagger
+ * /api/projects/{projectId}/time-summary:
+ *   get:
+ *     summary: Get project time summary
+ *     tags: [Time Tracking]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Project time summary
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalHours:
+ *                   type: number
+ *                 userBreakdown:
+ *                   type: array
+ *                   items:
+ *                     type: object
  */
 router.get("/projects/:projectId/time-summary", (req, res) =>
   TimeTrackingController.getProjectTimeSummary(req, res)

@@ -55,6 +55,115 @@ class EmailService {
     stripHtml(html) {
         return html.replace(/<[^>]*>/g, "");
     }
+    async sendWelcomeEmail(to, data) {
+        const subject = "Welcome to Task Management System!";
+        const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #0052CC; color: white; padding: 30px; text-align: center; }
+          .content { background-color: #f4f5f7; padding: 30px; margin: 20px 0; }
+          .welcome-box { background-color: white; padding: 20px; margin: 15px 0; border-radius: 8px; }
+          .button { display: inline-block; padding: 12px 24px; background-color: #0052CC; color: white; text-decoration: none; border-radius: 4px; margin-top: 15px; }
+          .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; padding: 20px; }
+          .feature-list { list-style: none; padding: 0; }
+          .feature-list li { padding: 8px 0; padding-left: 25px; position: relative; }
+          .feature-list li:before { content: "✓"; position: absolute; left: 0; color: #36B37E; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎉 Welcome to Task Management System!</h1>
+          </div>
+          <div class="content">
+            <div class="welcome-box">
+              <h2>Hi ${data.userName},</h2>
+              <p>Welcome aboard! We're excited to have you as part of our team.</p>
+              <p>Your account has been successfully created with the following details:</p>
+              <ul style="list-style: none; padding: 0; margin: 15px 0;">
+                <li><strong>Email:</strong> ${data.userEmail}</li>
+                <li><strong>Role:</strong> ${data.role}</li>
+              </ul>
+            </div>
+            
+            <div class="welcome-box">
+              <h3>What you can do:</h3>
+              <ul class="feature-list">
+                <li>Create and manage tasks</li>
+                <li>Collaborate with your team</li>
+                <li>Track project progress</li>
+                <li>Receive real-time notifications</li>
+                <li>Access detailed reports and analytics</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center;">
+              <a href="${process.env.FRONTEND_URL || "http://localhost:3000"}/login" class="button">Get Started</a>
+            </div>
+          </div>
+          <div class="footer">
+            <p>If you have any questions, feel free to reach out to our support team.</p>
+            <p>This is an automated email from Task Management System.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+        await this.sendEmail({ to, subject, html });
+    }
+    async sendLoginNotification(to, data) {
+        const subject = "New Login to Your Account";
+        const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #00875A; color: white; padding: 20px; text-align: center; }
+          .content { background-color: #f4f5f7; padding: 20px; margin: 20px 0; }
+          .login-details { background-color: white; padding: 15px; margin: 10px 0; border-left: 4px solid #00875A; }
+          .alert-box { background-color: #FFF3CD; border: 1px solid #FFE69C; padding: 15px; border-radius: 4px; margin-top: 15px; }
+          .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>🔐 Login Notification</h2>
+          </div>
+          <div class="content">
+            <p>Hi ${data.userName},</p>
+            <p>We detected a new login to your account. Here are the details:</p>
+            
+            <div class="login-details">
+              <p><strong>Time:</strong> ${data.loginTime}</p>
+              ${data.ipAddress
+            ? `<p><strong>IP Address:</strong> ${data.ipAddress}</p>`
+            : ""}
+              ${data.userAgent
+            ? `<p><strong>Device:</strong> ${data.userAgent}</p>`
+            : ""}
+            </div>
+            
+            <div class="alert-box">
+              <p><strong>⚠️ Didn't recognize this activity?</strong></p>
+              <p>If this wasn't you, please secure your account immediately by changing your password.</p>
+            </div>
+          </div>
+          <div class="footer">
+            <p>This is an automated security notification from Task Management System.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+        await this.sendEmail({ to, subject, html });
+    }
     async sendTaskAssignmentEmail(to, data) {
         const subject = `Task Assigned: ${data.taskTitle}`;
         const html = `
@@ -136,6 +245,48 @@ class EmailService {
             </div>
             
             <a href="${process.env.FRONTEND_URL || "http://localhost:3000"}/tasks/${data.taskId}" class="button">View Task</a>
+          </div>
+          <div class="footer">
+            <p>This is an automated email from Task Management System. Please do not reply.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+        await this.sendEmail({ to, subject, html });
+    }
+    async sendCommentNotificationEmail(to, data) {
+        const subject = `New Comment on: ${data.taskTitle}`;
+        const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #0052CC; color: white; padding: 20px; text-align: center; }
+          .content { background-color: #f4f5f7; padding: 20px; margin: 20px 0; }
+          .comment { background-color: white; padding: 15px; margin: 10px 0; border-left: 4px solid #0052CC; border-radius: 4px; }
+          .comment-header { font-weight: bold; color: #0052CC; margin-bottom: 10px; }
+          .button { display: inline-block; padding: 10px 20px; background-color: #0052CC; color: white; text-decoration: none; border-radius: 4px; margin-top: 15px; }
+          .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>💬 New Comment</h2>
+          </div>
+          <div class="content">
+            <p>Hi ${data.recipientName},</p>
+            <p>${data.commenterName} commented on <strong>${data.taskTitle}</strong>${data.projectName ? ` in project <strong>${data.projectName}</strong>` : ""}.</p>
+            
+            <div class="comment">
+              <div class="comment-header">${data.commenterName} wrote:</div>
+              <p>${data.commentText}</p>
+            </div>
+            
+            <a href="${process.env.FRONTEND_URL || "http://localhost:3000"}/tasks/${data.taskId}" class="button">View Task & Reply</a>
           </div>
           <div class="footer">
             <p>This is an automated email from Task Management System. Please do not reply.</p>

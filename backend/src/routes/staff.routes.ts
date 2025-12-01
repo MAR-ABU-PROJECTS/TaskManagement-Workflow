@@ -242,6 +242,30 @@ router.get("/my-profile", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/staff/my-profile:
+ *   put:
+ *     summary: Update my profile
+ *     description: Update current user's profile (name only, role/email require admin).
+ *     tags: [Staff]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ *       401:
+ *         description: Unauthorized
+ */
 router.put("/my-profile", async (req, res) => {
   try {
     const userId = req.user?.id;

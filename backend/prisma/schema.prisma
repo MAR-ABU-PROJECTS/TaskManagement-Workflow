@@ -11,6 +11,7 @@ datasource db {
 }
 
 enum UserRole {
+   SUPER_ADMIN
    CEO
    HOO
    HR
@@ -52,6 +53,51 @@ enum ActivityAction {
    REJECT
    STATUS_UPDATE
    COMMENT
+}
+
+enum AuditAction {
+   // Authentication
+   LOGIN
+   LOGOUT
+   REGISTER
+   PASSWORD_CHANGE
+   TOKEN_REFRESH
+
+   // User Management
+   USER_CREATE
+   USER_UPDATE
+   USER_DELETE
+   USER_PROMOTE
+   USER_DEMOTE
+   USER_ACTIVATE
+   USER_DEACTIVATE
+
+   // Task Management
+   TASK_CREATE
+   TASK_UPDATE
+   TASK_DELETE
+   TASK_ASSIGN
+   TASK_STATUS_CHANGE
+   TASK_COMMENT
+
+   // Project Management
+   PROJECT_CREATE
+   PROJECT_UPDATE
+   PROJECT_DELETE
+   PROJECT_MEMBER_ADD
+   PROJECT_MEMBER_REMOVE
+
+   // Sprint Management
+   SPRINT_CREATE
+   SPRINT_UPDATE
+   SPRINT_DELETE
+   SPRINT_START
+   SPRINT_COMPLETE
+
+   // System
+   SETTINGS_UPDATE
+   PERMISSION_CHANGE
+   WORKFLOW_CHANGE
 }
 
 enum NotificationType {
@@ -151,6 +197,9 @@ model User {
    role         UserRole    @default(STAFF)
    department   Department?
    isActive     Boolean     @default(true) @map("is_active")
+   isSuperAdmin Boolean     @default(false) @map("is_super_admin") // Immutable flag for 2 Super Admins
+   promotedById String?     @map("promoted_by_id") // Who promoted this user
+   promotedAt   DateTime?   @map("promoted_at") // When they were last promoted
    createdAt    DateTime    @default(now()) @map("created_at")
    updatedAt    DateTime    @updatedAt @map("updated_at")
 
@@ -168,6 +217,9 @@ model User {
    activeTimer     ActiveTimer?
    attachments     TaskAttachment[]  @relation("TaskAttachmentUploader")
    addedMembers    ProjectMember[]   @relation("MemberAdder")
+   promotedBy      User?             @relation("UserPromoter", fields: [promotedById], references: [id])
+   promotedUsers   User[]            @relation("UserPromoter")
+   auditLogs       AuditLog[]
 
    @@map("users")
 }
@@ -601,4 +653,32 @@ model SavedFilter {
 
    @@index([userId])
    @@map("saved_filters")
+}
+
+// ============================================================================
+// AUDIT LOGS - System-wide Activity Tracking
+// ============================================================================
+
+model AuditLog {
+   id           String      @id @default(uuid())
+   userId       String?     @map("user_id") // Nullable for system actions
+   action       AuditAction
+   entityType   String      @map("entity_type") // e.g., "User", "Task", "Project"
+   entityId     String?     @map("entity_id") // ID of the entity affected
+   changes      Json? // Before/after values for updates
+   metadata     Json? // Additional context (IP, user agent, etc.)
+   ipAddress    String?     @map("ip_address")
+   userAgent    String?     @map("user_agent")
+   success      Boolean     @default(true) // Track failed attempts too
+   errorMessage String?     @map("error_message")
+   createdAt    DateTime    @default(now()) @map("created_at")
+
+   // Relations
+   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+   @@index([userId])
+   @@index([action])
+   @@index([entityType, entityId])
+   @@index([createdAt])
+   @@map("audit_logs")
 }
