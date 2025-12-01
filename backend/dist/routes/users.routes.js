@@ -67,6 +67,7 @@ router.get("/", async (req, res) => {
         const { department, role, isActive, search } = req.query;
         const userRole = req.user.role;
         const where = {
+            isSuperAdmin: false,
             ...(department && { department: department }),
             ...(role && { role: role }),
             ...(isActive !== undefined && { isActive: isActive === "true" }),
@@ -184,20 +185,29 @@ router.patch("/:id", (0, rbac_1.requireRoles)(enums_1.UserRole.CEO, enums_1.User
                 isActive: true,
             },
         });
-        res.json({ message: "User updated", user });
+        return res.json({ message: "User updated", user });
     }
     catch (error) {
-        res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: error.message });
     }
 });
 router.delete("/:id", (0, rbac_1.requireRoles)(enums_1.UserRole.CEO, enums_1.UserRole.HOO, enums_1.UserRole.HR), async (req, res) => {
     try {
         const { id } = req.params;
+        const targetUser = await prisma_1.default.user.findUnique({
+            where: { id },
+            select: { isSuperAdmin: true },
+        });
+        if (targetUser?.isSuperAdmin) {
+            return res.status(403).json({
+                message: "Super Admin accounts cannot be deleted",
+            });
+        }
         await prisma_1.default.user.delete({ where: { id } });
-        res.json({ message: "User deleted successfully" });
+        return res.json({ message: "User deleted successfully" });
     }
     catch (error) {
-        res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: error.message });
     }
 });
 router.post("/:userId/promote", (req, res) => UserHierarchyController_1.default.promoteUser(req, res));
@@ -205,6 +215,15 @@ router.post("/:userId/demote", (req, res) => UserHierarchyController_1.default.d
 router.post("/:id/deactivate", (0, rbac_1.requireRoles)(enums_1.UserRole.CEO, enums_1.UserRole.HOO, enums_1.UserRole.HR), async (req, res) => {
     try {
         const { id } = req.params;
+        const targetUser = await prisma_1.default.user.findUnique({
+            where: { id },
+            select: { isSuperAdmin: true },
+        });
+        if (targetUser?.isSuperAdmin) {
+            return res.status(403).json({
+                message: "Super Admin accounts cannot be deactivated",
+            });
+        }
         const user = await prisma_1.default.user.update({
             where: { id },
             data: { isActive: false },
@@ -215,15 +234,24 @@ router.post("/:id/deactivate", (0, rbac_1.requireRoles)(enums_1.UserRole.CEO, en
                 isActive: true,
             },
         });
-        res.json({ message: "User deactivated", user });
+        return res.json({ message: "User deactivated", user });
     }
     catch (error) {
-        res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: error.message });
     }
 });
 router.post("/:id/activate", (0, rbac_1.requireRoles)(enums_1.UserRole.CEO, enums_1.UserRole.HOO, enums_1.UserRole.HR), async (req, res) => {
     try {
         const { id } = req.params;
+        const targetUser = await prisma_1.default.user.findUnique({
+            where: { id },
+            select: { isSuperAdmin: true },
+        });
+        if (targetUser?.isSuperAdmin) {
+            return res.status(403).json({
+                message: "Super Admin accounts cannot be modified",
+            });
+        }
         const user = await prisma_1.default.user.update({
             where: { id },
             data: { isActive: true },
@@ -234,16 +262,25 @@ router.post("/:id/activate", (0, rbac_1.requireRoles)(enums_1.UserRole.CEO, enum
                 isActive: true,
             },
         });
-        res.json({ message: "User activated", user });
+        return res.json({ message: "User activated", user });
     }
     catch (error) {
-        res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: error.message });
     }
 });
 router.patch("/:id/change-department", (0, rbac_1.requireRoles)(enums_1.UserRole.CEO, enums_1.UserRole.HOO, enums_1.UserRole.HR), async (req, res) => {
     try {
         const { id } = req.params;
         const { department } = req.body;
+        const targetUser = await prisma_1.default.user.findUnique({
+            where: { id },
+            select: { isSuperAdmin: true },
+        });
+        if (targetUser?.isSuperAdmin) {
+            return res.status(403).json({
+                message: "Super Admin accounts cannot be modified",
+            });
+        }
         const user = await prisma_1.default.user.update({
             where: { id },
             data: { department: department || null },
@@ -254,26 +291,29 @@ router.patch("/:id/change-department", (0, rbac_1.requireRoles)(enums_1.UserRole
                 department: true,
             },
         });
-        res.json({ message: "Department updated", user });
+        return res.json({ message: "Department updated", user });
     }
     catch (error) {
-        res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: error.message });
     }
 });
 router.get("/dashboard/overview", (0, rbac_1.requireRoles)(enums_1.UserRole.CEO, enums_1.UserRole.HOO, enums_1.UserRole.HR, enums_1.UserRole.ADMIN), async (_req, res) => {
     try {
         const [totalUsers, activeUsers, usersByRole, usersByDepartment, recentUsers,] = await Promise.all([
-            prisma_1.default.user.count(),
-            prisma_1.default.user.count({ where: { isActive: true } }),
+            prisma_1.default.user.count({ where: { isSuperAdmin: false } }),
+            prisma_1.default.user.count({ where: { isActive: true, isSuperAdmin: false } }),
             prisma_1.default.user.groupBy({
                 by: ["role"],
+                where: { isSuperAdmin: false },
                 _count: true,
             }),
             prisma_1.default.user.groupBy({
                 by: ["department"],
+                where: { isSuperAdmin: false },
                 _count: true,
             }),
             prisma_1.default.user.findMany({
+                where: { isSuperAdmin: false },
                 take: 10,
                 orderBy: { createdAt: "desc" },
                 select: {
@@ -306,7 +346,10 @@ router.post("/bulk/deactivate", rbac_1.isCEO, async (req, res) => {
             return res.status(400).json({ message: "userIds array is required" });
         }
         const result = await prisma_1.default.user.updateMany({
-            where: { id: { in: userIds } },
+            where: {
+                id: { in: userIds },
+                isSuperAdmin: false,
+            },
             data: { isActive: false },
         });
         return res.json({ message: "Users deactivated", count: result.count });

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../db/prisma";
 import { UserRole } from "../types/enums";
 import { RoleHierarchyService } from "../services/RoleHierarchyService";
+import emailService from "../services/EmailService";
 
 /**
  * User Hierarchy Controller
@@ -96,6 +97,18 @@ class UserHierarchyController {
           },
         },
       });
+
+      // Send promotion email (async, don't block response)
+      emailService
+        .sendPromotionEmail(updatedUser.email, {
+          userName: updatedUser.name,
+          oldRole: targetUser.role as string,
+          newRole: newRole as string,
+          promotedBy: updatedUser.promotedBy?.name || "Administrator",
+        })
+        .catch((error) =>
+          console.error("Failed to send promotion email:", error)
+        );
 
       return res.json({
         message: `User promoted to ${newRole}`,
@@ -201,6 +214,18 @@ class UserHierarchyController {
           },
         },
       });
+
+      // Send demotion email (async, don't block response)
+      emailService
+        .sendDemotionEmail(updatedUser.email, {
+          userName: updatedUser.name,
+          oldRole: targetUser.role as string,
+          newRole: newRole as string,
+          demotedBy: updatedUser.promotedBy?.name || "Administrator",
+        })
+        .catch((error) =>
+          console.error("Failed to send demotion email:", error)
+        );
 
       return res.json({
         message: `User demoted to ${newRole}`,

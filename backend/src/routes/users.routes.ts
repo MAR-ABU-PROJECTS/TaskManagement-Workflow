@@ -142,6 +142,7 @@ router.get("/", async (req, res) => {
 
     // Build where clause based on filters
     const where: any = {
+      isSuperAdmin: false, // Exclude Super Admins from organization listings
       ...(department && { department: department as any }),
       ...(role && { role: role as UserRole }),
       ...(isActive !== undefined && { isActive: isActive === "true" }),
@@ -326,9 +327,9 @@ router.patch(
         },
       });
 
-      res.json({ message: "User updated", user });
+      return res.json({ message: "User updated", user });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   }
 );
@@ -359,11 +360,23 @@ router.delete(
     try {
       const { id } = req.params;
 
+      // Check if target user is SUPER_ADMIN
+      const targetUser = await prisma.user.findUnique({
+        where: { id },
+        select: { isSuperAdmin: true },
+      });
+
+      if (targetUser?.isSuperAdmin) {
+        return res.status(403).json({
+          message: "Super Admin accounts cannot be deleted",
+        });
+      }
+
       await prisma.user.delete({ where: { id } });
 
-      res.json({ message: "User deleted successfully" });
+      return res.json({ message: "User deleted successfully" });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   }
 );
@@ -462,6 +475,18 @@ router.post(
     try {
       const { id } = req.params;
 
+      // Check if target user is SUPER_ADMIN
+      const targetUser = await prisma.user.findUnique({
+        where: { id },
+        select: { isSuperAdmin: true },
+      });
+
+      if (targetUser?.isSuperAdmin) {
+        return res.status(403).json({
+          message: "Super Admin accounts cannot be deactivated",
+        });
+      }
+
       const user = await prisma.user.update({
         where: { id },
         data: { isActive: false },
@@ -473,9 +498,9 @@ router.post(
         },
       });
 
-      res.json({ message: "User deactivated", user });
+      return res.json({ message: "User deactivated", user });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   }
 );
@@ -506,6 +531,18 @@ router.post(
     try {
       const { id } = req.params;
 
+      // Check if target user is SUPER_ADMIN
+      const targetUser = await prisma.user.findUnique({
+        where: { id },
+        select: { isSuperAdmin: true },
+      });
+
+      if (targetUser?.isSuperAdmin) {
+        return res.status(403).json({
+          message: "Super Admin accounts cannot be modified",
+        });
+      }
+
       const user = await prisma.user.update({
         where: { id },
         data: { isActive: true },
@@ -517,9 +554,9 @@ router.post(
         },
       });
 
-      res.json({ message: "User activated", user });
+      return res.json({ message: "User activated", user });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   }
 );
@@ -561,6 +598,18 @@ router.patch(
       const { id } = req.params;
       const { department } = req.body;
 
+      // Check if target user is SUPER_ADMIN
+      const targetUser = await prisma.user.findUnique({
+        where: { id },
+        select: { isSuperAdmin: true },
+      });
+
+      if (targetUser?.isSuperAdmin) {
+        return res.status(403).json({
+          message: "Super Admin accounts cannot be modified",
+        });
+      }
+
       const user = await prisma.user.update({
         where: { id },
         data: { department: department || null },
@@ -572,9 +621,9 @@ router.patch(
         },
       });
 
-      res.json({ message: "Department updated", user });
+      return res.json({ message: "Department updated", user });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   }
 );
@@ -604,17 +653,20 @@ router.get(
         usersByDepartment,
         recentUsers,
       ] = await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({ where: { isActive: true } }),
+        prisma.user.count({ where: { isSuperAdmin: false } }),
+        prisma.user.count({ where: { isActive: true, isSuperAdmin: false } }),
         prisma.user.groupBy({
           by: ["role"],
+          where: { isSuperAdmin: false },
           _count: true,
         }),
         prisma.user.groupBy({
           by: ["department"],
+          where: { isSuperAdmin: false },
           _count: true,
         }),
         prisma.user.findMany({
+          where: { isSuperAdmin: false },
           take: 10,
           orderBy: { createdAt: "desc" },
           select: {
@@ -676,8 +728,12 @@ router.post("/bulk/deactivate", isCEO, async (req, res) => {
       return res.status(400).json({ message: "userIds array is required" });
     }
 
+    // Exclude SUPER_ADMIN accounts from bulk operations
     const result = await prisma.user.updateMany({
-      where: { id: { in: userIds } },
+      where: {
+        id: { in: userIds },
+        isSuperAdmin: false, // Cannot deactivate Super Admins
+      },
       data: { isActive: false },
     });
 

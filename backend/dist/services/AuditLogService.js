@@ -8,6 +8,15 @@ const prisma_1 = __importDefault(require("../db/prisma"));
 class AuditLogService {
     static async createLog(data) {
         try {
+            if (data.userId) {
+                const user = await prisma_1.default.user.findUnique({
+                    where: { id: data.userId },
+                    select: { isSuperAdmin: true },
+                });
+                if (user?.isSuperAdmin) {
+                    return;
+                }
+            }
             await prisma_1.default.auditLog.create({
                 data: {
                     userId: data.userId,

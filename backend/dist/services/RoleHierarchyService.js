@@ -62,6 +62,12 @@ class RoleHierarchyService {
                 reason: "Cannot promote to Super Admin role",
             };
         }
+        if (targetRole === enums_1.UserRole.CEO && !promoterIsSuperAdmin) {
+            return {
+                allowed: false,
+                reason: "Only Super Admin can promote users to CEO",
+            };
+        }
         const canModify = this.canModifyUser(promoterRole, promoterIsSuperAdmin, targetRole, false);
         if (!canModify.allowed) {
             return canModify;

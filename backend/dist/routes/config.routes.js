@@ -57,7 +57,9 @@ router.patch("/workflows/:id", (0, rbac_1.requireRoles)(enums_1.UserRole.ADMIN),
     try {
         const { id } = req.params;
         if (!id) {
-            return res.status(400).json({ error: "Workflow scheme ID is required" });
+            return res
+                .status(400)
+                .json({ error: "Workflow scheme ID is required" });
         }
         const updates = req.body;
         const scheme = await WorkflowService_1.default.updateWorkflowScheme(id, updates);
@@ -71,7 +73,9 @@ router.delete("/workflows/:id", (0, rbac_1.requireRoles)(enums_1.UserRole.ADMIN)
     try {
         const { id } = req.params;
         if (!id) {
-            return res.status(400).json({ error: "Workflow scheme ID is required" });
+            return res
+                .status(400)
+                .json({ error: "Workflow scheme ID is required" });
         }
         await WorkflowService_1.default.deleteWorkflowScheme(id);
         return res.json({ message: "Workflow scheme deleted" });
@@ -110,7 +114,9 @@ router.get("/permissions/:id", async (req, res) => {
     try {
         const { id } = req.params;
         if (!id) {
-            return res.status(400).json({ error: "Permission scheme ID is required" });
+            return res
+                .status(400)
+                .json({ error: "Permission scheme ID is required" });
         }
         const scheme = await PermissionSchemeService_1.default.getPermissionSchemeById(id);
         if (!scheme) {
@@ -126,7 +132,9 @@ router.patch("/permissions/:id", (0, rbac_1.requireRoles)(enums_1.UserRole.ADMIN
     try {
         const { id } = req.params;
         if (!id) {
-            return res.status(400).json({ error: "Permission scheme ID is required" });
+            return res
+                .status(400)
+                .json({ error: "Permission scheme ID is required" });
         }
         const updates = req.body;
         const scheme = await PermissionSchemeService_1.default.updatePermissionScheme(id, updates);
@@ -140,7 +148,9 @@ router.delete("/permissions/:id", (0, rbac_1.requireRoles)(enums_1.UserRole.ADMI
     try {
         const { id } = req.params;
         if (!id) {
-            return res.status(400).json({ error: "Permission scheme ID is required" });
+            return res
+                .status(400)
+                .json({ error: "Permission scheme ID is required" });
         }
         await PermissionSchemeService_1.default.deletePermissionScheme(id);
         return res.json({ message: "Permission scheme deleted" });

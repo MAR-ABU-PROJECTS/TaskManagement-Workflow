@@ -114,6 +114,14 @@ export class RoleHierarchyService {
       };
     }
 
+    // Only Super Admin can promote to CEO
+    if (targetRole === UserRole.CEO && !promoterIsSuperAdmin) {
+      return {
+        allowed: false,
+        reason: "Only Super Admin can promote users to CEO",
+      };
+    }
+
     // Check if promoter has authority
     const canModify = this.canModifyUser(
       promoterRole,
@@ -125,12 +133,12 @@ export class RoleHierarchyService {
       return canModify;
     }
 
-    // Super Admin can promote to any role
+    // Super Admin can promote to any role (including CEO)
     if (promoterIsSuperAdmin) {
       return { allowed: true };
     }
 
-    // CEO can promote to HOO, HR, or ADMIN
+    // CEO can promote to HOO, HR, or ADMIN (but not CEO)
     if (promoterRole === UserRole.CEO) {
       if (targetRole === UserRole.CEO) {
         return {
