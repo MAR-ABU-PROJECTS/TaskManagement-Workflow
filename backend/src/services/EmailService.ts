@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 interface EmailOptions {
   to: string;
@@ -72,73 +72,31 @@ interface DemotionEmailData {
 }
 
 export class EmailService {
-  private transporter: nodemailer.Transporter;
-  private isConfigured: boolean = false;
+  private resend: Resend;
 
   constructor() {
-    this.transporter = this.createTransporter();
+    this.resend = new Resend(process.env.RESEND_API_KEY);
   }
 
   /**
-   * Create email transporter
-   */
-  private createTransporter(): nodemailer.Transporter {
-    // Check if email configuration is available
-    const emailConfig = {
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    };
-
-    if (!emailConfig.host || !emailConfig.auth.user) {
-      console.warn("Email service not configured. Emails will be logged only.");
-      this.isConfigured = false;
-      // Return a test transporter for logging
-      return nodemailer.createTransport({
-        jsonTransport: true,
-      });
-    }
-
-    this.isConfigured = true;
-    return nodemailer.createTransport(emailConfig);
-  }
-
-  /**
-   * Send email
+   * Send email using Resend
    */
   private async sendEmail(options: EmailOptions): Promise<void> {
     try {
-      const mailOptions = {
-        from: process.env.SMTP_FROM || "noreply@taskmanagement.com",
+      const from = process.env.EMAIL_FROM || "no-reply@marprojects.com";
+
+      await this.resend.emails.send({
+        from,
         to: options.to,
         subject: options.subject,
         html: options.html,
-        text: options.text || this.stripHtml(options.html),
-      };
+        text: options.text,
+      });
 
-      if (this.isConfigured) {
-        await this.transporter.sendMail(mailOptions);
-        console.log(`Email sent to ${options.to}: ${options.subject}`);
-      } else {
-        console.log(
-          `[EMAIL NOT SENT - NOT CONFIGURED] To: ${options.to}, Subject: ${options.subject}`
-        );
-      }
+      console.log(`Email sent to ${options.to}: ${options.subject}`);
     } catch (error) {
-      console.error("Failed to send email:", error);
-      throw error;
+      console.error("Error sending email:", error);
     }
-  }
-
-  /**
-   * Strip HTML tags for plain text version
-   */
-  private stripHtml(html: string): string {
-    return html.replace(/<[^>]*>/g, "");
   }
 
   /**

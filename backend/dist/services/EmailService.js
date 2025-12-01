@@ -1,59 +1,26 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmailService = void 0;
-const nodemailer_1 = __importDefault(require("nodemailer"));
+const resend_1 = require("resend");
 class EmailService {
     constructor() {
-        this.isConfigured = false;
-        this.transporter = this.createTransporter();
-    }
-    createTransporter() {
-        const emailConfig = {
-            host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT || "587"),
-            secure: process.env.SMTP_SECURE === "true",
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-        };
-        if (!emailConfig.host || !emailConfig.auth.user) {
-            console.warn("Email service not configured. Emails will be logged only.");
-            this.isConfigured = false;
-            return nodemailer_1.default.createTransport({
-                jsonTransport: true,
-            });
-        }
-        this.isConfigured = true;
-        return nodemailer_1.default.createTransport(emailConfig);
+        this.resend = new resend_1.Resend(process.env.RESEND_API_KEY);
     }
     async sendEmail(options) {
         try {
-            const mailOptions = {
-                from: process.env.SMTP_FROM || "noreply@taskmanagement.com",
+            const from = process.env.EMAIL_FROM || "no-reply@marprojects.com";
+            await this.resend.emails.send({
+                from,
                 to: options.to,
                 subject: options.subject,
                 html: options.html,
-                text: options.text || this.stripHtml(options.html),
-            };
-            if (this.isConfigured) {
-                await this.transporter.sendMail(mailOptions);
-                console.log(`Email sent to ${options.to}: ${options.subject}`);
-            }
-            else {
-                console.log(`[EMAIL NOT SENT - NOT CONFIGURED] To: ${options.to}, Subject: ${options.subject}`);
-            }
+                text: options.text,
+            });
+            console.log(`Email sent to ${options.to}: ${options.subject}`);
         }
         catch (error) {
-            console.error("Failed to send email:", error);
-            throw error;
+            console.error("Error sending email:", error);
         }
-    }
-    stripHtml(html) {
-        return html.replace(/<[^>]*>/g, "");
     }
     async sendWelcomeEmail(to, data) {
         const subject = "Welcome to Task Management System!";
