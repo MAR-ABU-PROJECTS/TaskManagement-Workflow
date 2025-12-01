@@ -88,6 +88,36 @@ router.post(
   hasProjectPermission(Permission.MANAGE_SPRINTS),
   SprintController.createSprint
 );
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/sprints:
+ *   get:
+ *     summary: Get all sprints for a project
+ *     tags: [Sprints]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PLANNING, ACTIVE, COMPLETED, CANCELLED]
+ *     responses:
+ *       200:
+ *         description: List of sprints
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Sprint'
+ */
 router.get(
   "/projects/:projectId/sprints",
   hasProjectPermission(Permission.VIEW_SPRINTS),
@@ -155,6 +185,43 @@ router.get(
   hasProjectPermission(Permission.VIEW_SPRINTS),
   SprintController.getSprintById
 );
+
+/**
+ * @swagger
+ * /api/sprints/{sprintId}:
+ *   put:
+ *     summary: Update sprint details
+ *     tags: [Sprints]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sprintId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               goal:
+ *                 type: string
+ *               startDate:
+ *                 type: string
+ *                 format: date-time
+ *               endDate:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       200:
+ *         description: Sprint updated successfully
+ *       404:
+ *         description: Sprint not found
+ */
 router.put(
   "/sprints/:sprintId",
   hasProjectPermission(Permission.MANAGE_SPRINTS),

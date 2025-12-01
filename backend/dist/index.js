@@ -11,6 +11,7 @@ const logger_1 = __importDefault(require("./utils/logger"));
 const rateLimiter_1 = require("./middleware/rateLimiter");
 const errorHandler_1 = require("./middleware/errorHandler");
 const swagger_1 = require("./config/swagger");
+const automationJobs_1 = require("./jobs/automationJobs");
 const routes_1 = __importDefault(require("./routes"));
 const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
@@ -35,5 +36,7 @@ app.listen(config_1.default.PORT, () => {
     logger_1.default.info(`Environment: ${config_1.default.NODE_ENV}`);
     logger_1.default.info(`Swagger UI: ${config_1.default.BASE_URL}/api-docs`);
     logger_1.default.info(`Jira-style Task Management System Ready`);
+    (0, automationJobs_1.startAutomationJobs)();
+    logger_1.default.info(`Automation jobs started`);
 });
 exports.default = app;

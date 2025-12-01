@@ -1,5 +1,6 @@
 // User Roles
 export enum UserRole {
+  SUPER_ADMIN = "SUPER_ADMIN",
   CEO = "CEO",
   HOO = "HOO",
   HR = "HR",
@@ -169,11 +170,12 @@ export const ALLOWED_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
 
 // Role Hierarchy
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  [UserRole.CEO]: 5,
-  [UserRole.HOO]: 4,
-  [UserRole.HR]: 3,
-  [UserRole.ADMIN]: 2,
-  [UserRole.STAFF]: 1,
+  [UserRole.SUPER_ADMIN]: 100,
+  [UserRole.CEO]: 80,
+  [UserRole.HOO]: 60,
+  [UserRole.HR]: 60,
+  [UserRole.ADMIN]: 40,
+  [UserRole.STAFF]: 20,
 };
 
 // Project Role Hierarchy

@@ -115,9 +115,22 @@ router.delete("/:taskId/comments/:commentId", (req, res) =>
 );
 
 /**
- * @route   GET /api/tasks/:id/logs
- * @desc    Get activity logs for a task
- * @access  Authenticated users
+ * @swagger
+ * /api/tasks/{id}/logs:
+ *   get:
+ *     summary: Get activity logs for a task
+ *     tags: [Comments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task activity logs
  */
 router.get("/:id/logs", (req, res) =>
   activityLogController.getTaskLogs(req, res)

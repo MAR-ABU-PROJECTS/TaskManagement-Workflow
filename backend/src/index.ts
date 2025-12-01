@@ -6,6 +6,7 @@ import logger from "./utils/logger";
 import { apiLimiter } from "./middleware/rateLimiter";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { setupSwagger } from "./config/swagger";
+import { startAutomationJobs } from "./jobs/automationJobs";
 
 import routes from "./routes";
 
@@ -48,6 +49,10 @@ app.listen(config.PORT, () => {
   logger.info(`Environment: ${config.NODE_ENV}`);
   logger.info(`Swagger UI: ${config.BASE_URL}/api-docs`);
   logger.info(`Jira-style Task Management System Ready`);
+
+  // Start automation jobs (deadline reminders, overdue labeling)
+  startAutomationJobs();
+  logger.info(`Automation jobs started`);
 });
 
 export default app;

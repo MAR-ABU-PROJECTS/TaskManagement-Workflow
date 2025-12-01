@@ -9,6 +9,7 @@ import {
 } from "../types/enums";
 import NotificationService from "./NotificationService";
 import ActivityLogService from "./ActivityLogService";
+import emailService from "./EmailService";
 
 export class TaskService {
   /**
@@ -41,8 +42,10 @@ export class TaskService {
       }
     }
 
-    // Determine if task requires approval
-    // Admin creating task for Staff requires approval
+    // AUTOMATION RULE: Determine if task requires approval
+    // Admin → Staff tasks require approval
+    // HOO/HR → Admin/Staff tasks auto-approved
+    // CEO tasks skip approval
     const requiresApproval = await this.checkIfRequiresApproval(
       creatorId,
       creatorRole,
@@ -72,7 +75,7 @@ export class TaskService {
       },
     });
 
-    // Log activity
+    // AUTOMATION: Auto activity logs
     await ActivityLogService.logActivity({
       taskId: task.id,
       userId: creatorId,
@@ -80,7 +83,7 @@ export class TaskService {
       metadata: { taskData: data },
     });
 
-    // Send notification if task is assigned
+    // AUTOMATION: Send notification if task is assigned
     if (data.assigneeId && data.assigneeId !== creatorId) {
       await NotificationService.notifyTaskAssigned(
         task.id,
@@ -89,10 +92,22 @@ export class TaskService {
       );
     }
 
-    // Notify approvers if approval required
+    // AUTOMATION: Notify approvers if approval required
     if (requiresApproval && !autoApprove) {
       await NotificationService.notifyApprovalRequired(task.id);
     }
+
+    // AUTOMATION: Creator auto-added as watcher
+    await prisma.task
+      .update({
+        where: { id: task.id },
+        data: {
+          watchers: {
+            connect: { id: creatorId },
+          },
+        },
+      })
+      .catch(() => {}); // Ignore if watchers relation fails
 
     return task as Task;
   }
@@ -283,6 +298,31 @@ export class TaskService {
       },
     });
 
+    // AUTOMATION: Auto-set to In Progress when assignee updates work
+    if (userId === task.assigneeId && task.status === TaskStatus.ASSIGNED) {
+      await prisma.task.update({
+        where: { id },
+        data: { status: TaskStatus.IN_PROGRESS },
+      });
+
+      await ActivityLogService.logActivity({
+        taskId: id,
+        userId,
+        action: ActivityAction.STATUS_UPDATE,
+        previousStatus: TaskStatus.ASSIGNED,
+        newStatus: TaskStatus.IN_PROGRESS,
+        metadata: { autoTriggered: true },
+      });
+    }
+
+    // AUTOMATION: Auto activity logs
+    await ActivityLogService.logActivity({
+      taskId: id,
+      userId,
+      action: ActivityAction.STATUS_UPDATE,
+      metadata: { updates: data },
+    });
+
     return updated as Task;
   }
 
@@ -327,7 +367,36 @@ export class TaskService {
       data: { status: newStatus },
     });
 
-    // Log activity
+    // AUTOMATION: Auto-complete when approved (status moved to COMPLETED after approval)
+    if (
+      newStatus === TaskStatus.COMPLETED &&
+      task.requiresApproval &&
+      task.approvedById
+    ) {
+      // Task is being completed and has been approved
+      await ActivityLogService.logActivity({
+        taskId: id,
+        userId,
+        action: ActivityAction.STATUS_UPDATE,
+        previousStatus: task.status as TaskStatus,
+        newStatus,
+        metadata: { autoCompleted: true, approved: true },
+      });
+    }
+
+    // AUTOMATION: Auto-move to Review when assignee marks done
+    if (newStatus === TaskStatus.COMPLETED && userId === task.assigneeId) {
+      // Notify assignor when Review starts
+      if (task.creatorId && task.creatorId !== userId) {
+        await NotificationService.notifyTaskAssigned(
+          id,
+          task.creatorId,
+          userId
+        );
+      }
+    }
+
+    // AUTOMATION: Auto activity logs
     await ActivityLogService.logActivity({
       taskId: id,
       userId,
@@ -390,9 +459,21 @@ export class TaskService {
         assigneeId,
         status: TaskStatus.ASSIGNED,
       },
+      include: {
+        project: {
+          select: {
+            name: true,
+          },
+        },
+        creator: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
 
-    // Log activity
+    // AUTOMATION: Auto activity logs
     await ActivityLogService.logActivity({
       taskId: id,
       userId,
@@ -400,8 +481,35 @@ export class TaskService {
       metadata: { assigneeId, assigneeName: assignee.name },
     });
 
-    // Notify assignee
+    // AUTOMATION: Notify assignee
     await NotificationService.notifyTaskAssigned(id, assigneeId, userId);
+
+    // AUTOMATION: Send email notification to assignee
+    emailService
+      .sendTaskAssignmentEmail(assignee.email, {
+        assigneeName: assignee.name,
+        taskTitle: updated.title,
+        taskId: updated.id,
+        projectName: updated.project?.name || "No Project",
+        assignedBy: updated.creator?.name || "Unknown",
+        priority: updated.priority,
+        dueDate: updated.dueDate?.toISOString(),
+      })
+      .catch((err) =>
+        console.error("Failed to send task assignment email:", err)
+      );
+
+    // AUTOMATION: Add assignee as watcher
+    await prisma.task
+      .update({
+        where: { id },
+        data: {
+          watchers: {
+            connect: { id: assigneeId },
+          },
+        },
+      })
+      .catch(() => {}); // Ignore if already exists or watchers relation fails
 
     return updated as Task;
   }
@@ -438,7 +546,7 @@ export class TaskService {
       data: { approvedById: approverId },
     });
 
-    // Log activity
+    // AUTOMATION: Auto activity logs
     await ActivityLogService.logActivity({
       taskId: id,
       userId: approverId,
@@ -446,8 +554,28 @@ export class TaskService {
       metadata: {},
     });
 
-    // Notify creator and assignee
+    // AUTOMATION: Notify assignee on approval
     await NotificationService.notifyTaskApproved(id);
+
+    // AUTOMATION: Auto-complete when approved
+    if (
+      task.status === TaskStatus.COMPLETED ||
+      task.status === TaskStatus.REVIEW
+    ) {
+      await prisma.task.update({
+        where: { id },
+        data: { status: TaskStatus.COMPLETED },
+      });
+
+      await ActivityLogService.logActivity({
+        taskId: id,
+        userId: approverId,
+        action: ActivityAction.STATUS_UPDATE,
+        previousStatus: task.status as TaskStatus,
+        newStatus: TaskStatus.COMPLETED,
+        metadata: { autoCompleted: true },
+      });
+    }
 
     return updated as Task;
   }
@@ -484,7 +612,7 @@ export class TaskService {
       },
     });
 
-    // Log activity
+    // AUTOMATION: Auto activity logs
     await ActivityLogService.logActivity({
       taskId: id,
       userId,
@@ -493,7 +621,7 @@ export class TaskService {
       metadata: { rejectionReason },
     });
 
-    // Notify creator and assignee
+    // AUTOMATION: Notify assignee on rejection (Auto-reject with reason)
     await NotificationService.notifyTaskRejected(id, rejectionReason);
 
     return updated as Task;

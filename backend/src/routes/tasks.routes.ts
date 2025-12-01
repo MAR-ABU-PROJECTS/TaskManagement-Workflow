@@ -116,6 +116,52 @@ router.use(authenticate);
 router.post("/", hasProjectPermission(Permission.CREATE_ISSUES), (req, res) =>
   TaskController.createTask(req, res)
 );
+
+/**
+ * @swagger
+ * /api/tasks:
+ *   get:
+ *     summary: Get all tasks (filtered by user role and permissions)
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         schema:
+ *           type: string
+ *         description: Filter by project ID
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, IN_PROGRESS, COMPLETED, REJECTED]
+ *         description: Filter by task status
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: [LOW, MEDIUM, HIGH, CRITICAL]
+ *         description: Filter by priority
+ *       - in: query
+ *         name: assigneeId
+ *         schema:
+ *           type: string
+ *         description: Filter by assignee ID
+ *     responses:
+ *       200:
+ *         description: List of tasks
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Task'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 router.get("/", hasProjectPermission(Permission.BROWSE_PROJECT), (req, res) =>
   TaskController.getAllTasks(req, res)
 );
@@ -200,6 +246,59 @@ router.get(
   hasProjectPermission(Permission.BROWSE_PROJECT),
   (req, res) => TaskController.getTaskById(req, res)
 );
+
+/**
+ * @swagger
+ * /api/tasks/{id}:
+ *   patch:
+ *     summary: Update task details
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *                 enum: [LOW, MEDIUM, HIGH, CRITICAL]
+ *               storyPoints:
+ *                 type: integer
+ *               labels:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       200:
+ *         description: Task updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Task'
+ *       400:
+ *         description: Invalid input
+ *       404:
+ *         description: Task not found
+ *       403:
+ *         description: Forbidden - insufficient permissions
+ */
 router.patch("/:id", canEditIssue, (req, res) =>
   TaskController.updateTask(req, res)
 );
