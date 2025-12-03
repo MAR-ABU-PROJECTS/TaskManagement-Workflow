@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const prisma_1 = __importDefault(require("../db/prisma"));
 const enums_1 = require("../types/enums");
 const RoleHierarchyService_1 = require("../services/RoleHierarchyService");
+const EmailService_1 = __importDefault(require("../services/EmailService"));
 class UserHierarchyController {
     async promoteUser(req, res) {
         try {
@@ -44,10 +45,7 @@ class UserHierarchyController {
             if (!validation.allowed) {
                 return res.status(403).json({ message: validation.reason });
             }
-            let assignedDepartment = targetUser.department;
-            if (validation.requiredDepartment) {
-                assignedDepartment = validation.requiredDepartment;
-            }
+            const assignedDepartment = targetUser.department;
             const updatedUser = await prisma_1.default.user.update({
                 where: { id: userId },
                 data: {
@@ -73,6 +71,14 @@ class UserHierarchyController {
                     },
                 },
             });
+            EmailService_1.default
+                .sendPromotionEmail(updatedUser.email, {
+                userName: updatedUser.name,
+                oldRole: targetUser.role,
+                newRole: newRole,
+                promotedBy: updatedUser.promotedBy?.name || "Administrator",
+            })
+                .catch((error) => console.error("Failed to send promotion email:", error));
             return res.json({
                 message: `User promoted to ${newRole}`,
                 user: updatedUser,
@@ -152,6 +158,14 @@ class UserHierarchyController {
                     },
                 },
             });
+            EmailService_1.default
+                .sendDemotionEmail(updatedUser.email, {
+                userName: updatedUser.name,
+                oldRole: targetUser.role,
+                newRole: newRole,
+                demotedBy: updatedUser.promotedBy?.name || "Administrator",
+            })
+                .catch((error) => console.error("Failed to send demotion email:", error));
             return res.json({
                 message: `User demoted to ${newRole}`,
                 user: updatedUser,

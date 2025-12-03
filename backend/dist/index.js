@@ -15,7 +15,12 @@ const automationJobs_1 = require("./jobs/automationJobs");
 const routes_1 = __importDefault(require("./routes"));
 const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
-app.use((0, cors_1.default)());
+app.use((0, cors_1.default)({
+    origin: process.env.NODE_ENV === "production"
+        ? process.env.FRONTEND_URL || "*"
+        : "*",
+    credentials: true,
+}));
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use(rateLimiter_1.apiLimiter);

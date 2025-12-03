@@ -17,9 +17,22 @@ interface AuditLogData {
 export class AuditLogService {
   /**
    * Create audit log entry
+   * Note: Super Admin actions are NOT logged as they are outside the organization
    */
   static async createLog(data: AuditLogData): Promise<void> {
     try {
+      // Skip logging for Super Admin users (they're outside the organization)
+      if (data.userId) {
+        const user = await prisma.user.findUnique({
+          where: { id: data.userId },
+          select: { isSuperAdmin: true },
+        });
+
+        if (user?.isSuperAdmin) {
+          return; // Do not log Super Admin actions
+        }
+      }
+
       await prisma.auditLog.create({
         data: {
           userId: data.userId,

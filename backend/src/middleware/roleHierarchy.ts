@@ -216,15 +216,10 @@ export const hasDepartmentAuthority = async (
       return next();
     }
 
-    // HOO and HR must have a department
-    if (!user.department) {
-      return res.status(403).json({
-        message: "Department authority required",
-      });
+    // Store department in request for later use (optional)
+    if (user.department) {
+      req.body.requesterDepartment = user.department;
     }
-
-    // Store department in request for later use
-    req.body.requesterDepartment = user.department;
 
     next();
   } catch (error: any) {

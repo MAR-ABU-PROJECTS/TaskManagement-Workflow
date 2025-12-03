@@ -114,6 +114,14 @@ export class RoleHierarchyService {
       };
     }
 
+    // Only Super Admin can promote to CEO
+    if (targetRole === UserRole.CEO && !promoterIsSuperAdmin) {
+      return {
+        allowed: false,
+        reason: "Only Super Admin can promote users to CEO",
+      };
+    }
+
     // Check if promoter has authority
     const canModify = this.canModifyUser(
       promoterRole,
@@ -125,19 +133,12 @@ export class RoleHierarchyService {
       return canModify;
     }
 
-    // Super Admin can promote to any role
+    // Super Admin can promote to any role (including CEO)
     if (promoterIsSuperAdmin) {
-      // Auto-assign departments for HOO and HR
-      if (targetRole === UserRole.HOO) {
-        return { allowed: true, requiredDepartment: Department.OPS };
-      }
-      if (targetRole === UserRole.HR) {
-        return { allowed: true, requiredDepartment: Department.HR };
-      }
       return { allowed: true };
     }
 
-    // CEO can promote to HOO, HR, or ADMIN
+    // CEO can promote to HOO, HR, or ADMIN (but not CEO)
     if (promoterRole === UserRole.CEO) {
       if (targetRole === UserRole.CEO) {
         return {
@@ -145,34 +146,28 @@ export class RoleHierarchyService {
           reason: "Only Super Admin can promote to CEO",
         };
       }
-      if (targetRole === UserRole.HOO) {
-        return { allowed: true, requiredDepartment: Department.OPS };
-      }
-      if (targetRole === UserRole.HR) {
-        return { allowed: true, requiredDepartment: Department.HR };
-      }
       return { allowed: true };
     }
 
-    // HOO can only promote STAFF to ADMIN in OPS department
+    // HOO can only promote STAFF to ADMIN
     if (promoterRole === UserRole.HOO) {
       if (currentRole === UserRole.STAFF && targetRole === UserRole.ADMIN) {
-        return { allowed: true, requiredDepartment: Department.OPS };
+        return { allowed: true };
       }
       return {
         allowed: false,
-        reason: "HOO can only promote Staff to Admin in Operations department",
+        reason: "HOO can only promote Staff to Admin",
       };
     }
 
-    // HR can only promote STAFF to ADMIN in HR department
+    // HR can only promote STAFF to ADMIN
     if (promoterRole === UserRole.HR) {
       if (currentRole === UserRole.STAFF && targetRole === UserRole.ADMIN) {
-        return { allowed: true, requiredDepartment: Department.HR };
+        return { allowed: true };
       }
       return {
         allowed: false,
-        reason: "HR can only promote Staff to Admin in HR department",
+        reason: "HR can only promote Staff to Admin",
       };
     }
 

@@ -26,68 +26,33 @@ const options = {
         description: "User registration and login endpoints",
       },
       {
+        name: "Users",
+        description: "User management and profile operations",
+      },
+      {
         name: "Projects",
-        description: "Project management operations",
+        description: "Project management, sprints, epics, backlog, and reports",
       },
       {
         name: "Tasks",
-        description: "Task CRUD operations, assignments, and approvals",
+        description:
+          "Task CRUD, comments, attachments, dependencies, and time tracking",
       },
       {
-        name: "Comments",
-        description: "Task comments and activity logs",
+        name: "Configuration",
+        description: "Workflow and permission scheme management",
       },
       {
-        name: "Sprints",
-        description: "Sprint planning and management",
-      },
-      {
-        name: "Epics",
-        description: "Epic creation and task grouping",
-      },
-      {
-        name: "Backlog",
-        description: "Backlog management and prioritization",
-      },
-      {
-        name: "Time Tracking",
-        description: "Time logging and timer management",
+        name: "Search",
+        description: "JQL search and saved filters",
       },
       {
         name: "Notifications",
         description: "User notifications and alerts",
       },
       {
-        name: "Search",
-        description: "Advanced search and JQL queries",
-      },
-      {
-        name: "Task Dependencies",
-        description: "Task relationships and blocking",
-      },
-      {
-        name: "Attachments",
-        description: "File upload and download",
-      },
-      {
         name: "Reports",
-        description: "Analytics and reporting endpoints",
-      },
-      {
-        name: "CEO",
-        description: "CEO-only endpoints (organization-wide control)",
-      },
-      {
-        name: "HR",
-        description: "HR endpoints (user management and team analytics)",
-      },
-      {
-        name: "Admin",
-        description: "Admin endpoints (project oversight and system settings)",
-      },
-      {
-        name: "Staff",
-        description: "Staff endpoints (personal tasks and profile)",
+        description: "Project analytics and reporting endpoints",
       },
     ],
     components: {
@@ -187,6 +152,8 @@ const options = {
             },
             department: {
               $ref: "#/components/schemas/Department",
+              nullable: true,
+              description: "Optional department assignment",
             },
             isActive: { type: "boolean" },
             createdAt: { type: "string", format: "date-time" },

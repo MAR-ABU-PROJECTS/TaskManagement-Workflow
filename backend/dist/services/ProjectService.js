@@ -144,7 +144,7 @@ class ProjectService {
             data: {
                 name: data.name,
                 description: data.description,
-                department: data.department,
+                department: data.department || null,
             },
         });
         return updated;

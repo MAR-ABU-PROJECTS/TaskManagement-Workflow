@@ -160,12 +160,9 @@ const hasDepartmentAuthority = async (req, res, next) => {
         if (user.isSuperAdmin || user.role === enums_1.UserRole.CEO) {
             return next();
         }
-        if (!user.department) {
-            return res.status(403).json({
-                message: "Department authority required",
-            });
+        if (user.department) {
+            req.body.requesterDepartment = user.department;
         }
-        req.body.requesterDepartment = user.department;
         next();
     }
     catch (error) {
