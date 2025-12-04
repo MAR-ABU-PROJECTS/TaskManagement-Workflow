@@ -9,8 +9,5 @@ cmds = [
   'npm run build'
 ]
 
-[phases.deploy]
-cmds = ['cd backend && npm start']
-
 [start]
 cmd = 'cd backend && npm start'
