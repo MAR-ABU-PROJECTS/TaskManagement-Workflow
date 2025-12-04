@@ -72,10 +72,22 @@ interface DemotionEmailData {
 }
 
 export class EmailService {
-  private resend: Resend;
+  private resend: Resend | null;
+  private isConfigured: boolean;
 
   constructor() {
-    this.resend = new Resend(process.env.RESEND_API_KEY);
+    const apiKey = process.env.RESEND_API_KEY;
+
+    if (!apiKey) {
+      console.warn(
+        "⚠️  WARNING: RESEND_API_KEY not set. Email notifications will be disabled."
+      );
+      this.resend = null;
+      this.isConfigured = false;
+    } else {
+      this.resend = new Resend(apiKey);
+      this.isConfigured = true;
+    }
   }
 
   /**
@@ -83,6 +95,13 @@ export class EmailService {
    */
   private async sendEmail(options: EmailOptions): Promise<void> {
     try {
+      if (!this.isConfigured || !this.resend) {
+        console.log(
+          `[EMAIL NOT SENT - NOT CONFIGURED] To: ${options.to}, Subject: ${options.subject}`
+        );
+        return;
+      }
+
       const from = process.env.EMAIL_FROM || "no-reply@marprojects.com";
 
       await this.resend.emails.send({
