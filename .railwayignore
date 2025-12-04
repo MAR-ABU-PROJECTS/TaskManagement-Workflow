@@ -1,4 +1,5 @@
 # Railway Deployment Ignore
+frontend/
 node_modules/
 dist/
 .env

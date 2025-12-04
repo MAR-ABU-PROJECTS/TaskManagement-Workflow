@@ -3,13 +3,14 @@ nixPkgs = ['nodejs_20', 'openssl']
 
 [phases.build]
 cmds = [
+  'cd backend',
   'npm install',
   'npx prisma generate',
   'npm run build'
 ]
 
 [phases.deploy]
-cmds = ['npm start']
+cmds = ['cd backend && npm start']
 
 [start]
-cmd = 'npm start'
+cmd = 'cd backend && npm start'
