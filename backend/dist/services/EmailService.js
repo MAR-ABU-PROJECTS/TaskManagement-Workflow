@@ -4,10 +4,23 @@ exports.EmailService = void 0;
 const resend_1 = require("resend");
 class EmailService {
     constructor() {
-        this.resend = new resend_1.Resend(process.env.RESEND_API_KEY);
+        const apiKey = process.env.RESEND_API_KEY;
+        if (!apiKey) {
+            console.warn("⚠️  WARNING: RESEND_API_KEY not set. Email notifications will be disabled.");
+            this.resend = null;
+            this.isConfigured = false;
+        }
+        else {
+            this.resend = new resend_1.Resend(apiKey);
+            this.isConfigured = true;
+        }
     }
     async sendEmail(options) {
         try {
+            if (!this.isConfigured || !this.resend) {
+                console.log(`[EMAIL NOT SENT - NOT CONFIGURED] To: ${options.to}, Subject: ${options.subject}`);
+                return;
+            }
             const from = process.env.EMAIL_FROM || "no-reply@marprojects.com";
             await this.resend.emails.send({
                 from,
