@@ -6,9 +6,8 @@ cmds = [
   'cd backend',
   'npm install',
   'npx prisma generate',
-  'npm run build',
-  'chmod +x start.sh'
+  'npm run build'
 ]
 
 [start]
-cmd = 'cd backend && ./start.sh'
+cmd = 'cd backend && npm run start:migrate'
