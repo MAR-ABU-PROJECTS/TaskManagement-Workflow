@@ -1,10 +1,10 @@
-'use client';
+"use client";
 import React from "react";
 import { SidebarTrigger } from "./ui/sidebar";
 import { Separator } from "./ui/separator";
 import { Button } from "./ui/button";
 // import Link from "next/link";
-import { Bell, } from "lucide-react";
+import { Bell } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -24,7 +24,9 @@ const Navbar = () => {
         <BreadcrumbList>
           <BreadcrumbItem className="hidden md:block">
             {/* <BreadcrumbLink href="#">Dashboard</BreadcrumbLink> */}
-			  <BreadcrumbPage className="text-[18px] font-medium">Dashboard</BreadcrumbPage>
+            <BreadcrumbPage className="text-[18px] font-medium">
+              Dashboard
+            </BreadcrumbPage>
           </BreadcrumbItem>
           {/* <BreadcrumbSeparator className="hidden md:block" />
           <BreadcrumbItem>
@@ -33,7 +35,12 @@ const Navbar = () => {
         </BreadcrumbList>
       </Breadcrumb>
       <div className="ml-auto flex items-center gap-2">
-        <Button variant="outline" size="icon" aria-label="Submit" onClick={()=> toast.success('wroifwof')}>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="Submit"
+          onClick={() => toast.success("wroifwof")}
+        >
           <Bell />
         </Button>
       </div>

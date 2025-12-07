@@ -80,7 +80,10 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+      font-family: "Geist", sans-serif;
+      font-weight: 400;
+    /* @apply bg-background text-foreground; */
+    overflow-x: hidden;
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
