@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -63,7 +63,7 @@ export default function EditProjectPage() {
   ];
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -109,7 +109,6 @@ export default function EditProjectPage() {
               <ArrowLeft className="h-5 w-5" />
               <span className="text-sm">Back to Projects</span>
             </Link>
-            
           </div>
           <form onSubmit={handleSubmit} className="space-y-6 max-w-6xl mx-auto">
             {/* Basic Information Card */}
@@ -117,15 +116,12 @@ export default function EditProjectPage() {
               <CardHeader>
                 <CardTitle>Basic Information</CardTitle>
                 <CardDescription>
-                  Provide the foundational details for your
-                  project
+                  Provide the foundational details for your project
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Project Name *
-                  </label>
+                  <label className="text-sm font-medium">Project Name *</label>
                   <Input
                     name="name"
                     placeholder="Enter project name"
@@ -137,9 +133,7 @@ export default function EditProjectPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Description
-                  </label>
+                  <label className="text-sm font-medium">Description</label>
                   <Textarea
                     name="description"
                     placeholder="Describe your project goals and scope"
@@ -163,16 +157,11 @@ export default function EditProjectPage() {
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Team *
-                    </label>
+                    <label className="text-sm font-medium">Team *</label>
                     <Select
                       value={formData.team}
                       onValueChange={(value) =>
-                        handleSelectChange(
-                          "team",
-                          value
-                        )
+                        handleSelectChange("team", value)
                       }
                     >
                       <SelectTrigger className="border-slate-200 dark:border-slate-800">
@@ -180,10 +169,7 @@ export default function EditProjectPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {teams.map((team) => (
-                          <SelectItem
-                            key={team.id}
-                            value={team.id}
-                          >
+                          <SelectItem key={team.id} value={team.id}>
                             {team.name}
                           </SelectItem>
                         ))}
@@ -192,31 +178,20 @@ export default function EditProjectPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Status *
-                    </label>
+                    <label className="text-sm font-medium">Status *</label>
                     <Select
                       value={formData.status}
                       onValueChange={(value) =>
-                        handleSelectChange(
-                          "status",
-                          value
-                        )
+                        handleSelectChange("status", value)
                       }
                     >
                       <SelectTrigger className="border-slate-200 dark:border-slate-800">
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Planning">
-                          Planning
-                        </SelectItem>
-                        <SelectItem value="In Progress">
-                          In Progress
-                        </SelectItem>
-                        <SelectItem value="Completed">
-                          Completed
-                        </SelectItem>
+                        <SelectItem value="Planning">Planning</SelectItem>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -224,9 +199,7 @@ export default function EditProjectPage() {
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Due Date
-                    </label>
+                    <label className="text-sm font-medium">Due Date</label>
                     <div className="relative">
                       <Input
                         type="date"
@@ -235,36 +208,24 @@ export default function EditProjectPage() {
                         onChange={handleInputChange}
                         className="border-slate-200 dark:border-slate-800 w-full"
                       />
-        
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Visibility *
-                    </label>
+                    <label className="text-sm font-medium">Visibility *</label>
                     <Select
                       value={formData.visibility}
                       onValueChange={(value) =>
-                        handleSelectChange(
-                          "visibility",
-                          value
-                        )
+                        handleSelectChange("visibility", value)
                       }
                     >
                       <SelectTrigger className="border-slate-200 dark:border-slate-800">
                         <SelectValue placeholder="Select visibility" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="public">
-                          Public
-                        </SelectItem>
-                        <SelectItem value="team-only">
-                          Team Only
-                        </SelectItem>
-                        <SelectItem value="private">
-                          Private
-                        </SelectItem>
+                        <SelectItem value="public">Public</SelectItem>
+                        <SelectItem value="team-only">Team Only</SelectItem>
+                        <SelectItem value="private">Private</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -286,9 +247,7 @@ export default function EditProjectPage() {
                     <div
                       key={member.id}
                       className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors"
-                      onClick={() =>
-                        handleMemberToggle(member.id)
-                      }
+                      onClick={() => handleMemberToggle(member.id)}
                     >
                       <div className="flex items-center gap-3 flex-1">
                         <Avatar className="h-8 w-8">
@@ -300,9 +259,7 @@ export default function EditProjectPage() {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-medium">
-                            {member.name}
-                          </p>
+                          <p className="text-sm font-medium">{member.name}</p>
                           <p className="text-xs text-muted-foreground">
                             {member.email}
                           </p>
@@ -310,14 +267,8 @@ export default function EditProjectPage() {
                       </div>
                       <input
                         type="checkbox"
-                        checked={formData.members.includes(
-                          member.id
-                        )}
-                        onChange={() =>
-                          handleMemberToggle(
-                            member.id
-                          )
-                        }
+                        checked={formData.members.includes(member.id)}
+                        onChange={() => handleMemberToggle(member.id)}
                         className="h-4 w-4 rounded border-slate-200"
                       />
                     </div>
@@ -339,16 +290,10 @@ export default function EditProjectPage() {
               </Link>
               <Button
                 type="submit"
-                disabled={
-                  !formData.name ||
-                  !formData.team ||
-                  isSubmitting
-                }
+                disabled={!formData.name || !formData.team || isSubmitting}
                 className="bg-primary hover:bg-primary/90 text-white"
               >
-                {isSubmitting
-                  ? "Creating..."
-                  : "Create Project"}
+                {isSubmitting ? "Creating..." : "Create Project"}
               </Button>
             </div>
           </form>

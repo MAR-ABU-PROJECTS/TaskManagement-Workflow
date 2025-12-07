@@ -1,26 +1,26 @@
-import { AlertCircle, CheckCircle2, Clock } from "lucide-react"
+import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
 
 export function getStatusIcon(status: string) {
   switch (status) {
     case "Done":
-      return <CheckCircle2 className="h-4 w-4 text-green-500" />
+      return <CheckCircle2 className="h-4 w-4 text-green-500" />;
     case "In Progress":
-      return <Clock className="h-4 w-4 text-yellow-500" />
+      return <Clock className="h-4 w-4 text-yellow-500" />;
     default:
-      return <AlertCircle className="h-4 w-4 text-blue-500" />
+      return <AlertCircle className="h-4 w-4 text-blue-500" />;
   }
 }
 
 export function getPriorityColor(priority: string) {
   switch (priority) {
     case "Critical":
-      return "destructive"
+      return "destructive";
     case "High":
-      return "default"
+      return "default";
     case "Medium":
-      return "secondary"
+      return "secondary";
     default:
-      return "outline"
+      return "outline";
   }
 }
 
@@ -75,4 +75,4 @@ export const tasks = [
     dueDate: "2025-01-30",
     progress: 0,
   },
-]
+];

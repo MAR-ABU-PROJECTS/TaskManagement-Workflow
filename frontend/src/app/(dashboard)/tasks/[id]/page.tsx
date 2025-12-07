@@ -2,7 +2,7 @@ import TaskDetailPage from "@/components/TaskDetailPage";
 import React from "react";
 
 const page = () => {
-	return <TaskDetailPage />;
+  return <TaskDetailPage />;
 };
 
 export default page;

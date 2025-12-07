@@ -20,20 +20,20 @@
 // export const taskKeys = {
 //   all: ['tasks'] as const,
 //   lists: () => [...taskKeys.all, 'list'] as const,
-//   list: (filters: TaskFilters, options: TaskQueryOptions) => 
+//   list: (filters: TaskFilters, options: TaskQueryOptions) =>
 //     [...taskKeys.lists(), { filters, options }] as const,
 //   details: () => [...taskKeys.all, 'detail'] as const,
-//   detail: (id: string, options?: TaskQueryOptions) => 
+//   detail: (id: string, options?: TaskQueryOptions) =>
 //     [...taskKeys.details(), id, options] as const,
-//   statistics: (filters: TaskFilters) => 
+//   statistics: (filters: TaskFilters) =>
 //     [...taskKeys.all, 'statistics', filters] as const,
-//   dependencies: (filters: any) => 
+//   dependencies: (filters: any) =>
 //     [...taskKeys.all, 'dependencies', filters] as const,
-//   blockingInfo: (taskId: string) => 
+//   blockingInfo: (taskId: string) =>
 //     [...taskKeys.all, 'blocking-info', taskId] as const,
-//   subtaskSummary: (taskId: string) => 
+//   subtaskSummary: (taskId: string) =>
 //     [...taskKeys.all, 'subtask-summary', taskId] as const,
-//   tree: (taskId: string, maxDepth?: number) => 
+//   tree: (taskId: string, maxDepth?: number) =>
 //     [...taskKeys.all, 'tree', taskId, maxDepth] as const,
 // };
 
@@ -130,14 +130,14 @@
 //       // Invalidate and refetch task lists
 //       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
 //       queryClient.invalidateQueries({ queryKey: taskKeys.statistics({}) });
-      
+
 //       // If it's a subtask, invalidate parent's subtask summary
 //       if (newTask.parentId) {
-//         queryClient.invalidateQueries({ 
-//           queryKey: taskKeys.subtaskSummary(newTask.parentId) 
+//         queryClient.invalidateQueries({
+//           queryKey: taskKeys.subtaskSummary(newTask.parentId)
 //         });
-//         queryClient.invalidateQueries({ 
-//           queryKey: taskKeys.tree(newTask.parentId) 
+//         queryClient.invalidateQueries({
+//           queryKey: taskKeys.tree(newTask.parentId)
 //         });
 //       }
 
@@ -165,10 +165,10 @@
 //       // Invalidate related queries
 //       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
 //       queryClient.invalidateQueries({ queryKey: taskKeys.statistics({}) });
-      
+
 //       if (updatedTask.parentId) {
-//         queryClient.invalidateQueries({ 
-//           queryKey: taskKeys.subtaskSummary(updatedTask.parentId) 
+//         queryClient.invalidateQueries({
+//           queryKey: taskKeys.subtaskSummary(updatedTask.parentId)
 //         });
 //       }
 
@@ -188,7 +188,7 @@
 //     onSuccess: (_, taskId) => {
 //       // Remove task from cache
 //       queryClient.removeQueries({ queryKey: taskKeys.detail(taskId) });
-      
+
 //       // Invalidate lists and statistics
 //       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
 //       queryClient.invalidateQueries({ queryKey: taskKeys.statistics({}) });
@@ -205,10 +205,10 @@
 //   const queryClient = useQueryClient();
 
 //   return useMutation({
-//     mutationFn: ({ taskId, assigneeId, comment }: { 
-//       taskId: string; 
-//       assigneeId: string; 
-//       comment?: string; 
+//     mutationFn: ({ taskId, assigneeId, comment }: {
+//       taskId: string;
+//       assigneeId: string;
+//       comment?: string;
 //     }) => TaskService.assignTask(taskId, assigneeId, comment),
 //     onSuccess: (updatedTask) => {
 //       queryClient.setQueryData(
@@ -230,16 +230,16 @@
 //   const queryClient = useQueryClient();
 
 //   return useMutation({
-//     mutationFn: ({ 
-//       taskId, 
-//       toStatus, 
-//       comment, 
-//       transitionId 
-//     }: { 
-//       taskId: string; 
-//       toStatus: string; 
-//       comment?: string; 
-//       transitionId?: string; 
+//     mutationFn: ({
+//       taskId,
+//       toStatus,
+//       comment,
+//       transitionId
+//     }: {
+//       taskId: string;
+//       toStatus: string;
+//       comment?: string;
+//       transitionId?: string;
 //     }) => TaskService.transitionTaskStatus(taskId, toStatus, comment, transitionId),
 //     onSuccess: (updatedTask) => {
 //       queryClient.setQueryData(
@@ -251,8 +251,8 @@
 //       queryClient.invalidateQueries({ queryKey: taskKeys.blockingInfo(updatedTask.id) });
 
 //       if (updatedTask.parentId) {
-//         queryClient.invalidateQueries({ 
-//           queryKey: taskKeys.subtaskSummary(updatedTask.parentId) 
+//         queryClient.invalidateQueries({
+//           queryKey: taskKeys.subtaskSummary(updatedTask.parentId)
 //         });
 //       }
 
@@ -294,14 +294,14 @@
 //   const queryClient = useQueryClient();
 
 //   return useMutation({
-//     mutationFn: ({ 
-//       dependentTaskId, 
-//       blockingTaskId, 
-//       type 
-//     }: { 
-//       dependentTaskId: string; 
-//       blockingTaskId: string; 
-//       type: DependencyType; 
+//     mutationFn: ({
+//       dependentTaskId,
+//       blockingTaskId,
+//       type
+//     }: {
+//       dependentTaskId: string;
+//       blockingTaskId: string;
+//       type: DependencyType;
 //     }) => TaskService.createDependency(dependentTaskId, blockingTaskId, type),
 //     onSuccess: () => {
 //       queryClient.invalidateQueries({ queryKey: taskKeys.dependencies({}) });
@@ -334,25 +334,25 @@
 //   const queryClient = useQueryClient();
 
 //   return useMutation({
-//     mutationFn: ({ 
-//       taskId, 
-//       newParentId, 
-//       position 
-//     }: { 
-//       taskId: string; 
-//       newParentId?: string; 
-//       position?: number; 
+//     mutationFn: ({
+//       taskId,
+//       newParentId,
+//       position
+//     }: {
+//       taskId: string;
+//       newParentId?: string;
+//       position?: number;
 //     }) => TaskService.moveTask(taskId, newParentId, position),
 //     onSuccess: (_, { taskId, newParentId }) => {
 //       queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) });
 //       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
-      
+
 //       if (newParentId) {
-//         queryClient.invalidateQueries({ 
-//           queryKey: taskKeys.subtaskSummary(newParentId) 
+//         queryClient.invalidateQueries({
+//           queryKey: taskKeys.subtaskSummary(newParentId)
 //         });
-//         queryClient.invalidateQueries({ 
-//           queryKey: taskKeys.tree(newParentId) 
+//         queryClient.invalidateQueries({
+//           queryKey: taskKeys.tree(newParentId)
 //         });
 //       }
 

@@ -1,33 +1,39 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Calendar } from "lucide-react"
-import Link from "next/link"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useParams } from "next/navigation"
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, Calendar } from "lucide-react";
+import Link from "next/link";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useParams } from "next/navigation";
 
 interface FormData {
-  title: string
-  description: string
-  project: string
-  priority: string
-  status: string
-  dueDate: string
-  assignee: string
-  estimatedHours: string
+  title: string;
+  description: string;
+  project: string;
+  priority: string;
+  status: string;
+  dueDate: string;
+  assignee: string;
+  estimatedHours: string;
 }
 
 export default function EditTaskPage() {
-  const params = useParams()
-  const taskId = params.id
+  const params = useParams();
+  const taskId = params.id;
 
   const [formData, setFormData] = useState<FormData>({
     title: "Design homepage mockup",
@@ -38,47 +44,52 @@ export default function EditTaskPage() {
     dueDate: "2025-01-20",
     assignee: "jd",
     estimatedHours: "8",
-  })
+  });
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const projects = [
     { id: "website", name: "Website Redesign" },
     { id: "mobile", name: "Mobile App Development" },
     { id: "marketing", name: "Marketing Campaign Q1" },
-  ]
+  ];
 
   const teamMembers = [
     { id: "jd", name: "John Doe" },
     { id: "js", name: "Jane Smith" },
     { id: "mj", name: "Mike Johnson" },
-  ]
+  ];
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    e.preventDefault();
+    setIsSubmitting(true);
 
-    console.log("[v0] Updating task:", formData)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    console.log("[v0] Updating task:", formData);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    window.location.href = `/tasks/${taskId}`
-  }
+    window.location.href = `/tasks/${taskId}`;
+  };
 
   return (
     <div className="flex flex-1 flex-col">
       <header className="flex h-16 shrink-0 items-center gap-2 border-b border-slate-200 dark:border-slate-800 px-4">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
-        <Link href={`/tasks/${taskId}`} className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+        <Link
+          href={`/tasks/${taskId}`}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="h-4 w-4" />
           <span className="text-sm">Back to Task</span>
         </Link>
@@ -125,7 +136,12 @@ export default function EditTaskPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Project *</label>
-                    <Select value={formData.project} onValueChange={(value) => handleSelectChange("project", value)}>
+                    <Select
+                      value={formData.project}
+                      onValueChange={(value) =>
+                        handleSelectChange("project", value)
+                      }
+                    >
                       <SelectTrigger className="border-slate-200 dark:border-slate-800">
                         <SelectValue />
                       </SelectTrigger>
@@ -141,7 +157,12 @@ export default function EditTaskPage() {
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Priority</label>
-                    <Select value={formData.priority} onValueChange={(value) => handleSelectChange("priority", value)}>
+                    <Select
+                      value={formData.priority}
+                      onValueChange={(value) =>
+                        handleSelectChange("priority", value)
+                      }
+                    >
                       <SelectTrigger className="border-slate-200 dark:border-slate-800">
                         <SelectValue />
                       </SelectTrigger>
@@ -158,7 +179,12 @@ export default function EditTaskPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Status</label>
-                    <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) =>
+                        handleSelectChange("status", value)
+                      }
+                    >
                       <SelectTrigger className="border-slate-200 dark:border-slate-800">
                         <SelectValue />
                       </SelectTrigger>
@@ -190,7 +216,12 @@ export default function EditTaskPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Assignee</label>
-                    <Select value={formData.assignee} onValueChange={(value) => handleSelectChange("assignee", value)}>
+                    <Select
+                      value={formData.assignee}
+                      onValueChange={(value) =>
+                        handleSelectChange("assignee", value)
+                      }
+                    >
                       <SelectTrigger className="border-slate-200 dark:border-slate-800">
                         <SelectValue />
                       </SelectTrigger>
@@ -205,7 +236,9 @@ export default function EditTaskPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Estimated Hours</label>
+                    <label className="text-sm font-medium">
+                      Estimated Hours
+                    </label>
                     <Input
                       name="estimatedHours"
                       type="number"
@@ -240,5 +273,5 @@ export default function EditTaskPage() {
         </div>
       </main>
     </div>
-  )
+  );
 }
