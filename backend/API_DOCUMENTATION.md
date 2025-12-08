@@ -1,8 +1,9 @@
 # Task Management System - Complete API Documentation
 
-**Version:** 1.0.0  
-**Last Updated:** December 1, 2025  
-**Total Endpoints:** 165  
+**Version:** 2.0.0  
+**Last Updated:** December 8, 2025  
+**Base URL:** `https://taskmanagement-workflow-production.up.railway.app`  
+**Total Endpoints:** 73 (consolidated from 165)  
 **Documentation Coverage:** 100%
 
 ---
@@ -10,11 +11,11 @@
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Authentication](#authentication)
-3. [RBAC System](#rbac-system)
-4. [API Endpoints by Category](#api-endpoints-by-category)
-5. [Permission Matrix](#permission-matrix)
-6. [Role Hierarchy](#role-hierarchy)
+2. [Quick Start](#quick-start)
+3. [Authentication](#authentication)
+4. [RBAC System](#rbac-system)
+5. [API Endpoints](#api-endpoints)
+6. [Error Handling](#error-handling)
 
 ---
 
@@ -28,7 +29,49 @@ This is a comprehensive **Jira-like Task Management System** with advanced featu
 - ✅ **Advanced Features**: JQL-like search, Saved Filters, Bulk Operations, Time Tracking
 - ✅ **Team Collaboration**: Comments, Mentions, Attachments, Activity Logs
 - ✅ **Reporting**: Burndown/Burnup charts, Velocity reports, Team productivity metrics
+- ✅ **Email Notifications**: Resend integration for promotion, demotion, task assignment, etc.
 - ✅ **Automation System**: 17 built-in automation rules for workflow optimization
+
+---
+
+## Quick Start
+
+### 1. Register & Login
+
+```bash
+# Register new user (defaults to STAFF role)
+POST https://taskmanagement-workflow-production.up.railway.app/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "name": "John Doe"
+}
+
+# Login
+POST https://taskmanagement-workflow-production.up.railway.app/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+# Response
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "...",
+  "user": { "id": "...", "email": "...", "role": "STAFF" }
+}
+```
+
+### 2. Make Authenticated Requests
+
+```bash
+GET https://taskmanagement-workflow-production.up.railway.app/api/users/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
 
 ---
 
@@ -44,6 +87,11 @@ All API endpoints (except `/api/auth/login` and `/api/auth/register`) require au
 | POST | `/api/auth/login` | Login and get JWT token | ❌ |
 | GET | `/api/auth/me` | Get current user profile | ✅ |
 | POST | `/api/auth/logout` | Logout (invalidate token) | ✅ |
+| POST | `/api/auth/refresh` | Refresh access token | ✅ |
+
+**Token Expiry:**
+- Access Token: 24 hours
+- Refresh Token: 7 days
 
 **Example Authorization Header:**
 ```
@@ -83,9 +131,11 @@ The system implements a **Jira-style hierarchical role system** with strict prom
 - **ADMIN** (by HR) → Gets `HR` department
 
 **Protection Rules:**
-- Super Admins cannot be removed or modified (except by other Super Admins)
+- Super Admins cannot be removed, modified, promoted, demoted, or deactivated
+- Super Admins don't appear in company logs (outside organization)
 - Only 2 Super Admin accounts exist in the system
 - User removal requires task reassignment if user has assigned tasks
+- Email notifications sent for promotions and demotions
 
 ### Project Roles
 
@@ -96,8 +146,6 @@ The system implements a **Jira-style hierarchical role system** with strict prom
 | **DEVELOPER** | 2 | Create, edit own issues, work on tasks |
 | **REPORTER** | 1 | Create issues, add comments |
 | **VIEWER** | 0 | Read-only access to project |
-
-### Permission System
 
 The system uses **32 granular permissions** organized into categories:
 

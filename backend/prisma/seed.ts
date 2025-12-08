@@ -23,10 +23,11 @@ interface SeedConfig {
 const CONFIG: SeedConfig = {
   environment: process.env.NODE_ENV || "development",
   clearExistingData: process.env.CLEAR_EXISTING_DATA !== "false",
-  superAdminPassword: process.env.SUPER_ADMIN_PASSWORD || "password123",
+  superAdminPassword:
+    process.env.SUPER_ADMIN_PASSWORD || "SuperAdmin@2025!SecurePass#MAR",
   superAdminEmails: [
-    process.env.SUPER_ADMIN_1_EMAIL || "superadmin1@company.com",
-    process.env.SUPER_ADMIN_2_EMAIL || "superadmin2@company.com",
+    process.env.SUPER_ADMIN_1_EMAIL || "m.a.r.abuproperties6@gmail.com",
+    process.env.SUPER_ADMIN_2_EMAIL || "adejaretaye33@gmail.com",
   ],
 };
 
