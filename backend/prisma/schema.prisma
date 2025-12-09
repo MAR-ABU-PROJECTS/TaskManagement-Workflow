@@ -22,6 +22,11 @@ enum UserRole {
 enum Department {
    OPS
    HR
+   IT
+   SALES
+   MARKETING
+   FINANCE
+   OTHER
 }
 
 enum TaskStatus {
