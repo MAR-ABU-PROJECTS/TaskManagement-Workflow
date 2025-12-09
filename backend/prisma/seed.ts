@@ -120,8 +120,6 @@ async function clearDatabase(): Promise<void> {
         await tx.sprint.deleteMany();
         await tx.projectMember.deleteMany();
         await tx.board.deleteMany();
-        await tx.permissionGrant.deleteMany();
-        await tx.permissionScheme.deleteMany();
         await tx.workflowTransition.deleteMany();
         await tx.workflowScheme.deleteMany();
         await tx.project.deleteMany();
@@ -146,6 +144,8 @@ async function seedSuperAdmins(): Promise<void> {
     CONFIG.environment === "production" ? 12 : 10
   );
 
+  const createdUsers: string[] = [];
+
   for (let i = 0; i < CONFIG.superAdminEmails.length; i++) {
     const email = CONFIG.superAdminEmails[i];
 
@@ -158,7 +158,7 @@ async function seedSuperAdmins(): Promise<void> {
       continue;
     }
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         email,
         passwordHash: hashedPassword,
@@ -168,7 +168,11 @@ async function seedSuperAdmins(): Promise<void> {
         department: null,
       },
     });
+
+    createdUsers.push(user.id);
   }
+
+  return;
 }
 
 /**

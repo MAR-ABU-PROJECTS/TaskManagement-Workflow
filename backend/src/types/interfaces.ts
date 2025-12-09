@@ -83,12 +83,16 @@ export interface CreateProjectDTO {
   key: string; // Project key like "PROJ", "DEV"
   description?: string;
   department?: Department;
+  workflowType?: string; // BASIC, AGILE, BUG_TRACKING, or CUSTOM
+  workflowSchemeId?: string; // Only used when workflowType = CUSTOM
 }
 
 export interface UpdateProjectDTO {
   name?: string;
   description?: string;
   department?: Department;
+  workflowType?: string;
+  workflowSchemeId?: string;
 }
 
 export interface CreateTaskDTO {

@@ -131,6 +131,13 @@ enum ProjectRole {
    VIEWER // Read-only access
 }
 
+enum WorkflowType {
+   BASIC // Simple: DRAFT → ASSIGNED → IN_PROGRESS → COMPLETED
+   AGILE // Scrum/Kanban: BACKLOG → TO_DO → IN_PROGRESS → REVIEW → DONE
+   BUG_TRACKING // Bug workflow: NEW → CONFIRMED → IN_PROGRESS → TESTING → CLOSED
+   CUSTOM // Uses database WorkflowScheme for advanced customization
+}
+
 enum Permission {
    // Project Permissions
    ADMINISTER_PROJECT
@@ -225,29 +232,28 @@ model User {
 }
 
 model Project {
-   id                 String      @id @default(uuid())
-   name               String
-   key                String      @unique // Project key like "PROJ", "DEV"
-   description        String?
-   department         Department?
-   creatorId          String      @map("creator_id")
-   permissionSchemeId String?     @map("permission_scheme_id")
-   workflowSchemeId   String?     @map("workflow_scheme_id")
-   isPublic           Boolean     @default(false) @map("is_public")
-   createdAt          DateTime    @default(now()) @map("created_at")
-   updatedAt          DateTime    @updatedAt @map("updated_at")
+   id               String       @id @default(uuid())
+   name             String
+   key              String       @unique // Project key like "PROJ", "DEV"
+   description      String?
+   department       Department?
+   creatorId        String       @map("creator_id")
+   workflowType     WorkflowType @default(BASIC) @map("workflow_type")
+   workflowSchemeId String?      @map("workflow_scheme_id") // Only used when workflowType = CUSTOM
+   isPublic         Boolean      @default(false) @map("is_public")
+   createdAt        DateTime     @default(now()) @map("created_at")
+   updatedAt        DateTime     @updatedAt @map("updated_at")
 
    // Relations
-   creator          User               @relation("ProjectCreator", fields: [creatorId], references: [id])
-   members          ProjectMember[]
-   tasks            Task[]
-   epics            Epic[]
-   sprints          Sprint[]
-   components       ProjectComponent[]
-   versions         ProjectVersion[]
-   boards           Board[]
-   permissionScheme PermissionScheme?  @relation(fields: [permissionSchemeId], references: [id])
-   workflowScheme   WorkflowScheme?    @relation(fields: [workflowSchemeId], references: [id])
+   creator        User               @relation("ProjectCreator", fields: [creatorId], references: [id])
+   members        ProjectMember[]
+   tasks          Task[]
+   epics          Epic[]
+   sprints        Sprint[]
+   components     ProjectComponent[]
+   versions       ProjectVersion[]
+   boards         Board[]
+   workflowScheme WorkflowScheme?    @relation(fields: [workflowSchemeId], references: [id])
 
    @@map("projects")
 }
@@ -476,41 +482,7 @@ model ProjectMember {
 }
 
 // ============================================================================
-// PERMISSION SYSTEM - Granular Access Control
-// ============================================================================
-
-model PermissionScheme {
-   id          String   @id @default(uuid())
-   name        String   @unique
-   description String?
-   isDefault   Boolean  @default(false) @map("is_default")
-   createdAt   DateTime @default(now()) @map("created_at")
-   updatedAt   DateTime @updatedAt @map("updated_at")
-
-   // Relations
-   grants   PermissionGrant[]
-   projects Project[]
-
-   @@map("permission_schemes")
-}
-
-model PermissionGrant {
-   id                String       @id @default(uuid())
-   schemeId          String       @map("scheme_id")
-   permission        Permission
-   grantedToRole     ProjectRole? @map("granted_to_role")
-   grantedToUserRole UserRole?    @map("granted_to_user_role")
-   createdAt         DateTime     @default(now()) @map("created_at")
-
-   // Relations
-   scheme PermissionScheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-
-   @@index([schemeId])
-   @@map("permission_grants")
-}
-
-// ============================================================================
-// WORKFLOW SYSTEM - Custom Issue Workflows
+// WORKFLOW SYSTEM - Custom Issue Workflows (for CUSTOM workflow type only)
 // ============================================================================
 
 model WorkflowScheme {

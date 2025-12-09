@@ -34,9 +34,93 @@ router.use(authenticate);
  * /api/tasks:
  *   post:
  *     summary: Create a new task
+ *     description: |
+ *       Create a new task in a project. Requires CREATE_ISSUES permission.
+ *       Task key is auto-generated based on project key (e.g., WEB-123).
  *     tags: [Tasks]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - projectId
+ *               - summary
+ *               - issueType
+ *             properties:
+ *               projectId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Project ID
+ *               summary:
+ *                 type: string
+ *                 maxLength: 255
+ *                 description: Task title/summary
+ *                 example: Fix login button not working
+ *               description:
+ *                 type: string
+ *                 description: Detailed task description (supports markdown)
+ *                 example: Users report that the login button is unresponsive on mobile devices
+ *               issueType:
+ *                 type: string
+ *                 enum: [TASK, BUG, STORY, EPIC]
+ *                 description: Type of task
+ *                 example: BUG
+ *               priority:
+ *                 type: string
+ *                 enum: [LOW, MEDIUM, HIGH, CRITICAL]
+ *                 default: MEDIUM
+ *                 example: HIGH
+ *               assigneeId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: User ID to assign task to
+ *               sprintId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Sprint to add task to
+ *               epicId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Epic to link task to
+ *               storyPoints:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 100
+ *                 description: Story points estimate
+ *                 example: 5
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Task deadline
+ *               labels:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Task labels/tags
+ *                 example: ["frontend", "urgent"]
+ *               componentIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *                 description: Component IDs
+ *     responses:
+ *       201:
+ *         description: Task created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Task'
+ *       400:
+ *         description: Invalid input
+ *       403:
+ *         description: Insufficient permissions
+ *       500:
+ *         description: Server error
  */
 router.post("/", hasProjectPermission(Permission.CREATE_ISSUES), (req, res) =>
   TaskController.createTask(req, res)
@@ -119,7 +203,54 @@ router.get(
  * /api/tasks/{id}:
  *   patch:
  *     summary: Update task
+ *     description: Update task fields. Requires EDIT_ISSUES or EDIT_OWN_ISSUES permission.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               summary:
+ *                 type: string
+ *                 maxLength: 255
+ *               description:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *                 enum: [LOW, MEDIUM, HIGH, CRITICAL]
+ *               assigneeId:
+ *                 type: string
+ *                 format: uuid
+ *               storyPoints:
+ *                 type: integer
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *               labels:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Task updated successfully
+ *       400:
+ *         description: Invalid input
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Task not found
  */
 router.patch("/:id", canEditIssue, (req, res) =>
   TaskController.updateTask(req, res)
@@ -132,7 +263,40 @@ router.patch("/:id", canEditIssue, (req, res) =>
  * /api/tasks/{id}/assign:
  *   post:
  *     summary: Assign task to user
+ *     description: Assign or reassign a task to a specific user. Sends notification to assignee.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - assigneeId
+ *             properties:
+ *               assigneeId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: User ID to assign task to (must be project member)
+ *     responses:
+ *       200:
+ *         description: Task assigned successfully
+ *       400:
+ *         description: Invalid assignee or user not in project
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Task not found
  */
 router.post(
   "/:id/assign",
@@ -145,7 +309,45 @@ router.post(
  * /api/tasks/{id}/transition:
  *   post:
  *     summary: Transition task status
+ *     description: |
+ *       Move task through workflow states (TO_DO → IN_PROGRESS → IN_REVIEW → DONE).
+ *       Validates workflow transitions and updates task history.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [TO_DO, IN_PROGRESS, IN_REVIEW, DONE, BLOCKED, ON_HOLD]
+ *                 description: Target status
+ *               comment:
+ *                 type: string
+ *                 description: Optional transition comment
+ *     responses:
+ *       200:
+ *         description: Task status updated successfully
+ *       400:
+ *         description: Invalid transition
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Task not found
  */
 router.post(
   "/:id/transition",
@@ -158,7 +360,36 @@ router.post(
  * /api/tasks/{id}/approve:
  *   post:
  *     summary: Approve task
+ *     description: |
+ *       Approve a task that requires approval. Transitions task to DONE status.
+ *       Only PROJECT_LEAD, PROJECT_ADMIN, or authorized approvers can approve.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               comment:
+ *                 type: string
+ *                 description: Approval comment
+ *     responses:
+ *       200:
+ *         description: Task approved successfully
+ *       403:
+ *         description: Insufficient permissions to approve
+ *       404:
+ *         description: Task not found
  */
 router.post("/:id/approve", canApproveTask, (req, res) =>
   TaskController.approveTask(req, res)
@@ -169,7 +400,42 @@ router.post("/:id/approve", canApproveTask, (req, res) =>
  * /api/tasks/{id}/reject:
  *   post:
  *     summary: Reject task
+ *     description: |
+ *       Reject a task that requires approval. Returns task to IN_PROGRESS for revisions.
+ *       Requires PROJECT_LEAD, PROJECT_ADMIN, or authorized approver role.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - reason
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 description: Reason for rejection
+ *                 example: Code quality does not meet standards
+ *     responses:
+ *       200:
+ *         description: Task rejected successfully
+ *       400:
+ *         description: Reason is required
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Task not found
  */
 router.post("/:id/reject", canApproveTask, (req, res) =>
   TaskController.rejectTask(req, res)
@@ -193,7 +459,55 @@ router.get(":id/comments", (req, res) =>
  * /api/tasks/{id}/comments:
  *   post:
  *     summary: Add comment to task
+ *     description: |
+ *       Add a comment to a task. Supports @mentions to notify users.
+ *       Markdown formatting is supported.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 description: Comment text (supports markdown and @mentions)
+ *                 example: "@john.doe Please review the changes in the latest commit"
+ *     responses:
+ *       201:
+ *         description: Comment added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *                 content:
+ *                   type: string
+ *                 authorId:
+ *                   type: string
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: Content is required
+ *       404:
+ *         description: Task not found
  */
 router.post("/:id/comments", (req, res) =>
   commentController.createComment(req, res)
@@ -228,7 +542,60 @@ router.get("/:taskId/attachments", authenticate, (req, res) =>
  * /api/tasks/{taskId}/attachments:
  *   post:
  *     summary: Upload attachment to task
+ *     description: |
+ *       Upload a file attachment to a task. Max file size: 10MB.
+ *       Supported formats: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, ZIP, etc.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - file
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: File to upload (max 10MB)
+ *               description:
+ *                 type: string
+ *                 description: Optional file description
+ *     responses:
+ *       201:
+ *         description: File uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *                 filename:
+ *                   type: string
+ *                 fileSize:
+ *                   type: integer
+ *                 mimeType:
+ *                   type: string
+ *                 uploadedAt:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: No file uploaded or file too large
+ *       404:
+ *         description: Task not found
  */
 router.post(
   "/:taskId/attachments",
@@ -277,7 +644,47 @@ router.get("/:id/dependencies", (req, res) =>
  * /api/tasks/{id}/dependencies:
  *   post:
  *     summary: Add dependency to task
+ *     description: |
+ *       Create a dependency link between tasks.
+ *       Types: BLOCKS (this task blocks target), BLOCKED_BY (this task is blocked by target),
+ *       RELATES_TO (general relation), DUPLICATES (duplicate of target).
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Source task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - targetTaskId
+ *               - linkType
+ *             properties:
+ *               targetTaskId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Target task ID
+ *               linkType:
+ *                 type: string
+ *                 enum: [BLOCKS, BLOCKED_BY, RELATES_TO, DUPLICATES]
+ *                 description: Type of dependency
+ *                 example: BLOCKS
+ *     responses:
+ *       201:
+ *         description: Dependency created successfully
+ *       400:
+ *         description: Invalid dependency or circular dependency detected
+ *       404:
+ *         description: Task not found
  */
 router.post("/:id/dependencies", (req, res) =>
   TaskDependencyController.createDependency(req, res)
@@ -312,7 +719,62 @@ router.get("/:taskId/time-entries", (req, res) =>
  * /api/tasks/{taskId}/time-entries:
  *   post:
  *     summary: Log time for a task
+ *     description: |
+ *       Log work time spent on a task. Time formats supported: "2h 30m", "2.5h", "150m".
+ *       Automatically updates task's total logged time.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - timeSpent
+ *             properties:
+ *               timeSpent:
+ *                 type: string
+ *                 description: Time spent (e.g., "2h 30m", "2.5h", "150m")
+ *                 example: "2h 30m"
+ *               description:
+ *                 type: string
+ *                 description: What was done during this time
+ *                 example: "Implemented user authentication logic"
+ *               date:
+ *                 type: string
+ *                 format: date
+ *                 description: Date when work was done (defaults to today)
+ *     responses:
+ *       201:
+ *         description: Time logged successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 timeSpentMinutes:
+ *                   type: integer
+ *                 description:
+ *                   type: string
+ *                 loggedAt:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: Invalid time format
+ *       404:
+ *         description: Task not found
  */
 router.post("/:taskId/time-entries", (req, res) =>
   TimeTrackingController.logTime(req, res)
@@ -323,7 +785,44 @@ router.post("/:taskId/time-entries", (req, res) =>
  * /api/tasks/{taskId}/time-entries/{entryId}:
  *   patch:
  *     summary: Update time entry
+ *     description: Update a previously logged time entry. Only the user who created it can update.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: entryId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               timeSpent:
+ *                 type: string
+ *                 example: "3h"
+ *               description:
+ *                 type: string
+ *               date:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       200:
+ *         description: Time entry updated successfully
+ *       403:
+ *         description: Cannot edit others' time entries
+ *       404:
+ *         description: Time entry not found
  */
 router.patch("/:taskId/time-entries/:entryId", (req, res) =>
   TimeTrackingController.updateTimeEntry(req, res)

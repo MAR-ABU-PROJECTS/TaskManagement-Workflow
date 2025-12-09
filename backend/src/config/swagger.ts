@@ -12,13 +12,12 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:4000",
-        description: "Development server",
+        url: process.env.BASE_URL || "http://localhost:4000",
+        description:
+          process.env.NODE_ENV === "production"
+            ? "Production server"
+            : "Development server",
       },
-      // {
-      //   url: "https://api.taskmanagement.com",
-      //   description: "Production server",
-      // },
     ],
     tags: [
       {
@@ -239,7 +238,13 @@ const options = {
       },
     ],
   },
-  apis: ["./src/routes/*.ts", "./src/controllers/*.ts"],
+  apis: [
+    "./src/routes/*.ts",
+    "./src/routes/**/*.ts",
+    "./src/controllers/*.ts",
+    "./dist/routes/*.js",
+    "./dist/routes/**/*.js",
+  ],
 };
 
 const specs = swaggerJsdoc(options);
