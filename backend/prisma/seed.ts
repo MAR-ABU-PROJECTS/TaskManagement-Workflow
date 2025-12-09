@@ -165,7 +165,6 @@ async function seedSuperAdmins(): Promise<void> {
         name: `Super Admin ${i + 1}`,
         role: "SUPER_ADMIN",
         isSuperAdmin: true,
-        department: null,
       },
     });
 
