@@ -8,12 +8,6 @@ export enum UserRole {
   STAFF = "STAFF",
 }
 
-// Departments
-export enum Department {
-  OPS = "OPS",
-  HR = "HR",
-}
-
 // Task Status
 export enum TaskStatus {
   DRAFT = "DRAFT",

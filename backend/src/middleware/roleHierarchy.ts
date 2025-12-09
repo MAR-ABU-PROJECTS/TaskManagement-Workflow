@@ -188,7 +188,7 @@ export const hasRoleAuthority = (minimumRole: UserRole) => {
 };
 
 /**
- * Middleware to verify department-level authority
+ * Middleware to verify organizational authority
  */
 export const hasDepartmentAuthority = async (
   req: Request,
@@ -204,28 +204,23 @@ export const hasDepartmentAuthority = async (
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { isSuperAdmin: true, role: true, department: true },
+      select: { isSuperAdmin: true, role: true },
     });
 
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
 
-    // Super Admin and CEO have authority across all departments
+    // Super Admin and CEO have authority across organization
     if (user.isSuperAdmin || user.role === UserRole.CEO) {
       return next();
     }
 
-    // Store department in request for later use (optional)
-    if (user.department) {
-      req.body.requesterDepartment = user.department;
-    }
-
     next();
   } catch (error: any) {
-    console.error("Department authority verification error:", error);
+    console.error("Authority verification error:", error);
     return res.status(500).json({
-      message: "Failed to verify department authority",
+      message: "Failed to verify authority",
       error: error.message,
     });
   }

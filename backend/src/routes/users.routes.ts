@@ -36,7 +36,6 @@ router.get("/me", async (req, res) => {
         email: true,
         name: true,
         role: true,
-        department: true,
         isActive: true,
         isSuperAdmin: true,
         createdAt: true,
@@ -93,7 +92,6 @@ router.patch("/me", async (req, res) => {
         email: true,
         name: true,
         role: true,
-        department: true,
         isActive: true,
       },
     });
@@ -115,10 +113,6 @@ router.patch("/me", async (req, res) => {
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: department
- *         schema:
- *           $ref: '#/components/schemas/Department'
- *       - in: query
  *         name: role
  *         schema:
  *           $ref: '#/components/schemas/UserRole'
@@ -137,13 +131,12 @@ router.patch("/me", async (req, res) => {
  */
 router.get("/", async (req, res) => {
   try {
-    const { department, role, isActive, search } = req.query;
+    const { role, isActive, search } = req.query;
     const userRole = req.user!.role as UserRole;
 
     // Build where clause based on filters
     const where: any = {
       isSuperAdmin: false, // Exclude Super Admins from organization listings
-      ...(department && { department: department as any }),
       ...(role && { role: role as UserRole }),
       ...(isActive !== undefined && { isActive: isActive === "true" }),
     };
@@ -170,7 +163,6 @@ router.get("/", async (req, res) => {
           email: true,
           name: true,
           role: true,
-          department: true,
           isActive: true,
           isSuperAdmin: true,
           createdAt: true,
@@ -184,7 +176,6 @@ router.get("/", async (req, res) => {
           id: true,
           name: true,
           role: true,
-          department: true,
         };
 
     const users = await prisma.user.findMany({
@@ -238,7 +229,6 @@ router.get("/:id", async (req, res) => {
           email: true,
           name: true,
           role: true,
-          department: true,
           isActive: true,
           isSuperAdmin: true,
           createdAt: true,
@@ -252,7 +242,6 @@ router.get("/:id", async (req, res) => {
           id: true,
           name: true,
           role: true,
-          department: true,
         };
 
     const user = await prisma.user.findUnique({
@@ -295,8 +284,6 @@ router.get("/:id", async (req, res) => {
  *                 type: string
  *               email:
  *                 type: string
- *               department:
- *                 $ref: '#/components/schemas/Department'
  *     responses:
  *       200:
  *         description: User updated successfully
@@ -307,12 +294,11 @@ router.patch(
   async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, email, department } = req.body;
+      const { name, email } = req.body;
 
       const updateData: any = {};
       if (name) updateData.name = name;
       if (email) updateData.email = email;
-      if (department !== undefined) updateData.department = department || null;
 
       const user = await prisma.user.update({
         where: { id },
@@ -322,7 +308,6 @@ router.patch(
           email: true,
           name: true,
           role: true,
-          department: true,
           isActive: true,
         },
       });
@@ -563,73 +548,6 @@ router.post(
 
 /**
  * @swagger
- * /api/users/{id}/change-department:
- *   patch:
- *     summary: Change user department
- *     description: Update user's department. Requires HR or above.
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               department:
- *                 $ref: '#/components/schemas/Department'
- *                 nullable: true
- *     responses:
- *       200:
- *         description: Department updated successfully
- */
-router.patch(
-  "/:id/change-department",
-  requireRoles(UserRole.CEO, UserRole.HOO, UserRole.HR),
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { department } = req.body;
-
-      // Check if target user is SUPER_ADMIN
-      const targetUser = await prisma.user.findUnique({
-        where: { id },
-        select: { isSuperAdmin: true },
-      });
-
-      if (targetUser?.isSuperAdmin) {
-        return res.status(403).json({
-          message: "Super Admin accounts cannot be modified",
-        });
-      }
-
-      const user = await prisma.user.update({
-        where: { id },
-        data: { department: department || null },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          department: true,
-        },
-      });
-
-      return res.json({ message: "Department updated", user });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
-    }
-  }
-);
-
-/**
- * @swagger
  * /api/users/dashboard/overview:
  *   get:
  *     summary: Get user management dashboard
@@ -650,18 +568,12 @@ router.get(
         totalUsers,
         activeUsers,
         usersByRole,
-        usersByDepartment,
         recentUsers,
       ] = await Promise.all([
         prisma.user.count({ where: { isSuperAdmin: false } }),
         prisma.user.count({ where: { isActive: true, isSuperAdmin: false } }),
         prisma.user.groupBy({
           by: ["role"],
-          where: { isSuperAdmin: false },
-          _count: true,
-        }),
-        prisma.user.groupBy({
-          by: ["department"],
           where: { isSuperAdmin: false },
           _count: true,
         }),
@@ -674,7 +586,6 @@ router.get(
             name: true,
             email: true,
             role: true,
-            department: true,
             createdAt: true,
           },
         }),
@@ -685,7 +596,6 @@ router.get(
         activeUsers,
         inactiveUsers: totalUsers - activeUsers,
         usersByRole,
-        usersByDepartment,
         recentUsers,
       });
     } catch (error: any) {

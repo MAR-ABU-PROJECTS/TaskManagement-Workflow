@@ -69,13 +69,6 @@ const options = {
           description:
             "User role in the system. CEO and HOO have highest privileges, HR manages personnel, ADMIN manages projects, STAFF are regular users.",
         },
-        Department: {
-          type: "string",
-          enum: ["OPS", "HR"],
-          nullable: true,
-          description:
-            "Department assignment for users. OPS for operations team, HR for human resources.",
-        },
         RegisterRequest: {
           type: "object",
           required: ["email", "password", "name"],
@@ -102,10 +95,6 @@ const options = {
               $ref: "#/components/schemas/UserRole",
               default: "STAFF",
               description: "User role (defaults to STAFF if not specified)",
-            },
-            department: {
-              $ref: "#/components/schemas/Department",
-              description: "Optional department assignment",
             },
           },
         },
@@ -148,11 +137,6 @@ const options = {
             name: { type: "string" },
             role: {
               $ref: "#/components/schemas/UserRole",
-            },
-            department: {
-              $ref: "#/components/schemas/Department",
-              nullable: true,
-              description: "Optional department assignment",
             },
             isActive: { type: "boolean" },
             createdAt: { type: "string", format: "date-time" },
