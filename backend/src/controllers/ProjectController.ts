@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import ProjectService from "../services/ProjectService";
 import { CreateProjectDTO, UpdateProjectDTO } from "../types/interfaces";
-import { UserRole, Department } from "../types/enums";
+import { UserRole } from "../types/enums";
 
 export class ProjectController {
   /**
@@ -44,8 +44,7 @@ export class ProjectController {
 
       const projects = await ProjectService.getAllProjects(
         req.user.id,
-        req.user.role as UserRole,
-        (req.user.department as Department) || null
+        req.user.role as UserRole
       );
 
       return res.status(200).json({

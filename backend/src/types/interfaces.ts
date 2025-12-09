@@ -1,6 +1,5 @@
 import {
   UserRole,
-  Department,
   TaskStatus,
   TaskPriority,
   IssueType,
@@ -14,7 +13,6 @@ export interface User {
   passwordHash: string;
   name: string;
   role: UserRole;
-  department: Department | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -24,7 +22,6 @@ export interface Project {
   id: string;
   name: string;
   description: string | null;
-  department: Department | null;
   creatorId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -82,7 +79,6 @@ export interface CreateProjectDTO {
   name: string;
   key: string; // Project key like "PROJ", "DEV"
   description?: string;
-  department?: Department;
   workflowType?: string; // BASIC, AGILE, BUG_TRACKING, or CUSTOM
   workflowSchemeId?: string; // Only used when workflowType = CUSTOM
 }
@@ -90,7 +86,6 @@ export interface CreateProjectDTO {
 export interface UpdateProjectDTO {
   name?: string;
   description?: string;
-  department?: Department;
   workflowType?: string;
   workflowSchemeId?: string;
 }

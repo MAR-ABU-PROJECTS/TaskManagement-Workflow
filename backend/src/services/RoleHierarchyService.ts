@@ -1,15 +1,15 @@
-import { UserRole, Department } from "../types/enums";
+import { UserRole } from "../types/enums";
 import prisma from "../db/prisma";
 
 /**
  * Role Hierarchy Service
  *
- * Implements Jira-style hierarchical role system with strict promotion/demotion rules.
+ * Implements hierarchical role system with strict promotion/demotion rules.
  *
  * Hierarchy (top to bottom):
  * 1. SUPER_ADMIN - Outside organization, controls everything
- * 2. CEO - Top of organization, controls department heads
- * 3. HOO & HR - Department heads, control Admins in their departments
+ * 2. CEO - Top of organization
+ * 3. HOO & HR - Operations and personnel management
  * 4. ADMIN - Manages tasks, cannot change roles
  * 5. STAFF - Base level, default role
  */
@@ -68,7 +68,7 @@ export class RoleHierarchyService {
       return { allowed: true };
     }
 
-    // HOO can only modify ADMIN in OPS department
+    // HOO can only modify ADMIN
     if (promoterRole === UserRole.HOO) {
       if (targetRole === UserRole.ADMIN) {
         return { allowed: true };
@@ -79,7 +79,7 @@ export class RoleHierarchyService {
       };
     }
 
-    // HR can only modify ADMIN in HR department
+    // HR can only modify ADMIN
     if (promoterRole === UserRole.HR) {
       if (targetRole === UserRole.ADMIN) {
         return { allowed: true };
@@ -105,7 +105,7 @@ export class RoleHierarchyService {
     promoterIsSuperAdmin: boolean,
     currentRole: UserRole,
     targetRole: UserRole
-  ): { allowed: boolean; reason?: string; requiredDepartment?: Department } {
+  ): { allowed: boolean; reason?: string } {
     // Cannot promote to Super Admin
     if (targetRole === UserRole.SUPER_ADMIN) {
       return {
@@ -248,7 +248,6 @@ export class RoleHierarchyService {
       select: {
         role: true,
         isSuperAdmin: true,
-        department: true,
       },
     });
 
@@ -270,13 +269,11 @@ export class RoleHierarchyService {
         in: [UserRole.HOO, UserRole.HR, UserRole.ADMIN, UserRole.STAFF],
       };
     } else if (promoter.role === UserRole.HOO) {
-      // HOO can only modify ADMINs in OPS department
+      // HOO can only modify ADMINs and STAFF
       whereClause.role = { in: [UserRole.ADMIN, UserRole.STAFF] };
-      whereClause.department = Department.OPS;
     } else if (promoter.role === UserRole.HR) {
-      // HR can only modify ADMINs in HR department
+      // HR can only modify ADMINs and STAFF
       whereClause.role = { in: [UserRole.ADMIN, UserRole.STAFF] };
-      whereClause.department = Department.HR;
     } else {
       // ADMIN and STAFF cannot modify anyone
       return [];
@@ -289,7 +286,6 @@ export class RoleHierarchyService {
         name: true,
         email: true,
         role: true,
-        department: true,
       },
     });
   }

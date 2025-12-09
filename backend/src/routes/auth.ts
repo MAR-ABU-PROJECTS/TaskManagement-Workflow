@@ -111,14 +111,12 @@ router.post("/register", async (req, res) => {
         passwordHash,
         name,
         role: UserRole.STAFF, // All new users start as STAFF
-        department: null, // Department assigned during promotion
       },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
-        department: true,
       },
     });
 
@@ -166,14 +164,14 @@ router.post("/register", async (req, res) => {
  *     summary: Login with email and password
  *     description: |
  *       Authenticate user and receive JWT token for accessing protected endpoints. Token is valid for 24 hours.
- *       The user's current role and department are returned in the response.
+ *       The user's current role is returned in the response.
  *
  *       **User Roles:**
  *       - SUPER_ADMIN → System-level administrator (2 permanent accounts)
  *       - CEO → Organization administrator
  *       - HOO → Head of Operations
  *       - HR → Head of Human Resources
- *       - ADMIN → Department administrator
+ *       - ADMIN → Project administrator
  *       - STAFF → Base level user
  *     tags: [Authentication]
  *     requestBody:
@@ -297,7 +295,6 @@ router.post("/login", async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
-        department: user.department,
       },
     });
   } catch (error: any) {

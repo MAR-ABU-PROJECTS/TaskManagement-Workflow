@@ -56,11 +56,6 @@ router.use(authenticate);
  *                 type: string
  *                 description: Project description
  *                 example: Complete redesign of company website with modern UI/UX
- *               department:
- *                 type: string
- *                 enum: [OPS, HR, IT, SALES, MARKETING, FINANCE, OTHER]
- *                 description: Department owning this project
- *                 example: IT
  *               workflowType:
  *                 type: string
  *                 enum: [BASIC, AGILE, BUG_TRACKING, CUSTOM]
@@ -89,8 +84,6 @@ router.use(authenticate);
  *                   type: string
  *                 description:
  *                   type: string
- *                 department:
- *                   type: string
  *                 workflowType:
  *                   type: string
  *                   enum: [BASIC, AGILE, BUG_TRACKING, CUSTOM]
@@ -110,7 +103,6 @@ router.use(authenticate);
  *               name: Website Redesign
  *               key: WEB
  *               description: Complete redesign of company website
- *               department: IT
  *               workflowType: AGILE
  *               workflowSchemeId: null
  *               isArchived: false
@@ -219,9 +211,6 @@ router.get(
  *                 type: string
  *               description:
  *                 type: string
- *               department:
- *                 type: string
- *                 enum: [OPS, HR, IT, SALES, MARKETING, FINANCE, OTHER]
  *               workflowId:
  *                 type: string
  *                 format: uuid
@@ -283,7 +272,6 @@ router.get(
               name: true,
               email: true,
               role: true,
-              department: true,
             },
           },
         },

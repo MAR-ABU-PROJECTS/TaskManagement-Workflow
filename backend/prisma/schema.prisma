@@ -19,16 +19,6 @@ enum UserRole {
    STAFF
 }
 
-enum Department {
-   OPS
-   HR
-   IT
-   SALES
-   MARKETING
-   FINANCE
-   OTHER
-}
-
 enum TaskStatus {
    DRAFT
    ASSIGNED
@@ -207,7 +197,6 @@ model User {
    passwordHash String      @map("password_hash")
    name         String
    role         UserRole    @default(STAFF)
-   department   Department?
    isActive     Boolean     @default(true) @map("is_active")
    isSuperAdmin Boolean     @default(false) @map("is_super_admin") // Immutable flag for 2 Super Admins
    promotedById String?     @map("promoted_by_id") // Who promoted this user
@@ -241,7 +230,6 @@ model Project {
    name             String
    key              String       @unique // Project key like "PROJ", "DEV"
    description      String?
-   department       Department?
    creatorId        String       @map("creator_id")
    workflowType     WorkflowType @default(BASIC) @map("workflow_type")
    workflowSchemeId String?      @map("workflow_scheme_id") // Only used when workflowType = CUSTOM

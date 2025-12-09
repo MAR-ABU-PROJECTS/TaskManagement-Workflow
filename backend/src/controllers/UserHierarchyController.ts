@@ -31,7 +31,6 @@ class UserHierarchyController {
         select: {
           isSuperAdmin: true,
           role: true,
-          department: true,
         },
       });
 
@@ -47,7 +46,6 @@ class UserHierarchyController {
           email: true,
           name: true,
           role: true,
-          department: true,
           isSuperAdmin: true,
         },
       });
@@ -68,15 +66,11 @@ class UserHierarchyController {
         return res.status(403).json({ message: validation.reason });
       }
 
-      // Department remains unchanged or can be updated separately
-      const assignedDepartment = targetUser.department;
-
       // Perform promotion
       const updatedUser = await prisma.user.update({
         where: { id: userId },
         data: {
           role: newRole as UserRole,
-          department: assignedDepartment,
           promotedById: promoterId,
           promotedAt: new Date(),
         },
@@ -85,7 +79,6 @@ class UserHierarchyController {
           email: true,
           name: true,
           role: true,
-          department: true,
           promotedAt: true,
           promotedBy: {
             select: {
@@ -158,7 +151,6 @@ class UserHierarchyController {
           email: true,
           name: true,
           role: true,
-          department: true,
           isSuperAdmin: true,
         },
       });
@@ -179,21 +171,11 @@ class UserHierarchyController {
         return res.status(403).json({ message: validation.reason });
       }
 
-      // Reset department if demoted from HOO or HR
-      let newDepartment = targetUser.department;
-      if (
-        (targetUser.role === UserRole.HOO || targetUser.role === UserRole.HR) &&
-        newRole === UserRole.STAFF
-      ) {
-        newDepartment = null;
-      }
-
       // Perform demotion
       const updatedUser = await prisma.user.update({
         where: { id: userId },
         data: {
           role: newRole as UserRole,
-          department: newDepartment,
           promotedById: promoterId,
           promotedAt: new Date(),
         },
@@ -202,7 +184,6 @@ class UserHierarchyController {
           email: true,
           name: true,
           role: true,
-          department: true,
           promotedAt: true,
           promotedBy: {
             select: {
@@ -409,7 +390,6 @@ class UserHierarchyController {
         select: {
           role: true,
           isSuperAdmin: true,
-          department: true,
         },
       });
 
@@ -428,8 +408,7 @@ class UserHierarchyController {
           currentUser.role === UserRole.HOO ||
           currentUser.role === UserRole.HR
         ) {
-          // Department heads see their department
-          whereClause.department = currentUser.department;
+          // HOO and HR see all staff except Super Admins
           whereClause.isSuperAdmin = false;
         } else {
           // ADMIN and STAFF see only themselves
@@ -445,7 +424,6 @@ class UserHierarchyController {
           email: true,
           name: true,
           role: true,
-          department: true,
           isSuperAdmin: true,
           isActive: true,
           promotedAt: true,

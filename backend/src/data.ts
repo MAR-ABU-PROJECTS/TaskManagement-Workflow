@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { UserRole, Department } from "./types/enums";
+import { UserRole } from "./types/enums";
 
 export interface User {
   id: string;
@@ -7,7 +7,6 @@ export interface User {
   passwordHash: string;
   name: string;
   role: UserRole;
-  department: Department | null;
   isActive: boolean;
   createdAt: Date;
 }

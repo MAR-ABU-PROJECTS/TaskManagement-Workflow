@@ -153,7 +153,7 @@ export const SYSTEM_ROLE_PERMISSIONS: Partial<Record<UserRole, Permission[]>> =
     SUPER_ADMIN: Object.values(Permission), // All permissions
     CEO: Object.values(Permission), // All permissions
     HOO: [
-      // Department-wide control
+      // Operations oversight
       Permission.ADMINISTER_PROJECT,
       Permission.BROWSE_PROJECT,
       Permission.EDIT_PROJECT,

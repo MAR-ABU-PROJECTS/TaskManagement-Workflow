@@ -6,7 +6,6 @@ import {
 } from "../types/interfaces";
 import {
   UserRole,
-  Department,
   WorkflowType,
   ProjectRole,
 } from "@prisma/client";
@@ -24,7 +23,6 @@ export class ProjectService {
         name: data.name,
         key: data.key,
         description: data.description || null,
-        department: data.department || null,
         workflowType: (data.workflowType as WorkflowType) || WorkflowType.BASIC,
         workflowSchemeId: data.workflowSchemeId || null,
         creatorId,
@@ -49,8 +47,7 @@ export class ProjectService {
    */
   async getAllProjects(
     userId: string,
-    userRole: UserRole,
-    userDepartment: Department | null
+    userRole: UserRole
   ): Promise<Project[]> {
     // CEO sees all projects
     if (userRole === UserRole.CEO) {
@@ -74,14 +71,9 @@ export class ProjectService {
       })) as any;
     }
 
-    // HOO and HR see projects in their department or all if no department set
+    // HOO and HR see all projects
     if (userRole === UserRole.HOO || userRole === UserRole.HR) {
       return (await prisma.project.findMany({
-        where: userDepartment
-          ? {
-              OR: [{ department: userDepartment }, { department: null }],
-            }
-          : undefined,
         orderBy: { createdAt: "desc" },
         include: {
           creator: {
@@ -212,7 +204,6 @@ export class ProjectService {
       data: {
         name: data.name,
         description: data.description,
-        department: data.department || null,
       },
     });
 
