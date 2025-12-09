@@ -19,18 +19,33 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
-      
+
       // In development, allow all origins
       if (process.env.NODE_ENV !== "production") {
         return callback(null, true);
       }
-      
+
       // In production, allow configured origins
       const allowedOrigins = process.env.FRONTEND_URL
         ? process.env.FRONTEND_URL.split(",")
-        : ["*"];
-      
-      if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+        : [];
+
+      // Always allow the production backend URL (for Swagger UI)
+      if (process.env.BASE_URL) {
+        allowedOrigins.push(process.env.BASE_URL);
+      }
+
+      // Remove protocol and trailing slash for flexible matching
+      const normalizeUrl = (url: string) =>
+        url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+      if (
+        allowedOrigins.includes("*") ||
+        allowedOrigins.includes(origin) ||
+        allowedOrigins.some(
+          (allowed) => normalizeUrl(allowed) === normalizeUrl(origin)
+        )
+      ) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));

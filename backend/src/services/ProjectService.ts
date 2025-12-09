@@ -4,7 +4,12 @@ import {
   UpdateProjectDTO,
   Project,
 } from "../types/interfaces";
-import { UserRole, Department } from "../types/enums";
+import {
+  UserRole,
+  Department,
+  WorkflowType,
+  ProjectRole,
+} from "@prisma/client";
 
 export class ProjectService {
   /**
@@ -20,7 +25,19 @@ export class ProjectService {
         key: data.key,
         description: data.description || null,
         department: data.department || null,
+        workflowType: (data.workflowType as WorkflowType) || WorkflowType.BASIC,
+        workflowSchemeId: data.workflowSchemeId || null,
         creatorId,
+      },
+    });
+
+    // Auto-assign creator as PROJECT_ADMIN
+    await prisma.projectMember.create({
+      data: {
+        projectId: project.id,
+        userId: creatorId,
+        role: ProjectRole.PROJECT_ADMIN,
+        addedById: creatorId,
       },
     });
 
