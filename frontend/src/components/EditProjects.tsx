@@ -1,14 +1,12 @@
 "use client";
 
 import type React from "react";
-
-import { useState } from "react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,138 +14,159 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useCreateProject } from "@/app/(dashboard)/projects/hooks/useCreateProject";
 
-interface FormData {
-  name: string;
-  description: string;
-  team: string;
-  status: string;
-  dueDate: string;
-  visibility: string;
-  members: string[];
-}
+export type createProjectType = z.infer<typeof CreateProjectSchema>;
 
 export default function EditProjectPage() {
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    description: "",
-    team: "",
-    status: "Planning",
-    dueDate: "",
-    visibility: "team-only",
-    members: [],
-  });
+	const { mutate, isPending } = useCreateProject();
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+	const teams = [
+		{ id: "design", name: "Design Team" },
+		{ id: "engineering", name: "Engineering" },
+		{ id: "marketing", name: "Marketing" },
+		{ id: "product", name: "Product" },
+	];
 
-  const teams = [
-    { id: "design", name: "Design Team" },
-    { id: "engineering", name: "Engineering" },
-    { id: "marketing", name: "Marketing" },
-    { id: "product", name: "Product" },
-  ];
+	const teamMembers = [
+		{ id: "jd", name: "John Doe", email: "john@marprojects.com" },
+		{ id: "js", name: "Jane Smith", email: "jane@marprojects.com" },
+		{ id: "mj", name: "Mike Johnson", email: "mike@marprojects.com" },
+		{ id: "sw", name: "Sarah Williams", email: "sarah@marprojects.com" },
+		{ id: "tb", name: "Tom Brown", email: "tom@marprojects.com" },
+	];
 
-  const teamMembers = [
-    { id: "jd", name: "John Doe", email: "john@marprojects.com" },
-    { id: "js", name: "Jane Smith", email: "jane@marprojects.com" },
-    { id: "mj", name: "Mike Johnson", email: "mike@marprojects.com" },
-    { id: "sw", name: "Sarah Williams", email: "sarah@marprojects.com" },
-    { id: "tb", name: "Tom Brown", email: "tom@marprojects.com" },
-  ];
+	const form = useForm<createProjectType>({
+		resolver: zodResolver(CreateProjectSchema),
+		defaultValues: {
+			description: "",
+			key: "",
+			name: "",
+			workflowType: "AGILE",
+			workflowSchemeId: "",
+		},
+	});
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+	const onSubmit = (data: createProjectType) => {
+		console.log({ data });
+		mutate(data, {
+			onSuccess: () => {
+				form.reset();
+			},
+		});
+	};
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+	return (
+		<div className="flex flex-1 flex-col w-full h-full">
+			{/* Header */}
 
-  const handleMemberToggle = (memberId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      members: prev.members.includes(memberId)
-        ? prev.members.filter((id) => id !== memberId)
-        : [...prev.members, memberId],
-    }));
-  };
+			{/* Main Content */}
+			<main className="flex-1 overflow-auto px-4 p-6">
+				<div className="mx-auto">
+					<div className="flex items-center gap-2 mb-4">
+						<Link
+							href="/projects"
+							className="flex items-center gap-2  hover:text-black/50 text-base font-[500] text-black"
+						>
+							<ArrowLeft className="h-5 w-5" />
+							<span className="text-sm">Back to Projects</span>
+						</Link>
+					</div>
+					<Form {...form}>
+						<form
+							onSubmit={form.handleSubmit(onSubmit)}
+							className="space-y-6 max-w-6xl mx-auto"
+						>
+							{/* Basic Information Card */}
+							<Card>
+								<CardHeader>
+									<CardTitle>Project Information</CardTitle>
+									<CardDescription>
+										Update this project
+									</CardDescription>
+								</CardHeader>
+								<CardContent className="space-y-4">
+									<FormField
+										control={form.control}
+										name="name"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>
+													{" "}
+													Project Name *
+												</FormLabel>
+												<FormControl>
+													<Input
+														placeholder="Enter project name"
+														className="border-slate-200 dark:border-slate-800"
+														{...field}
+													/>
+												</FormControl>
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
 
-    // Simulate API call
-    console.log("[v0] Submitting new project:", formData);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+									<FormField
+										control={form.control}
+										name="key"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>
+													{" "}
+													Project Key *
+												</FormLabel>
+												<FormControl>
+													<Input
+														placeholder="Enter project Key (useful) for search"
+														className="border-slate-200 dark:border-slate-800"
+														{...field}
+													/>
+												</FormControl>
 
-    // Redirect to projects page
-    window.location.href = "/projects";
-  };
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
 
-  return (
-    <div className="flex flex-1 flex-col w-full h-full">
-      {/* Header */}
+									<FormField
+										control={form.control}
+										name="description"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>
+													{" "}
+													Description *
+												</FormLabel>
+												<FormControl>
+													<Textarea
+														placeholder="Describe your project goals and scope"
+														rows={4}
+														className="border-slate-200 dark:border-slate-800"
+														{...field}
+													/>
+												</FormControl>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto px-4 p-6">
-        <div className="mx-auto">
-          <div className="flex items-center gap-2 mb-4">
-            <Link
-              href="/projects"
-              className="flex items-center gap-2  hover:text-black/50 text-base font-[500] text-black"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span className="text-sm">Back to Projects</span>
-            </Link>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-6 max-w-6xl mx-auto">
-            {/* Basic Information Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Basic Information</CardTitle>
-                <CardDescription>
-                  Provide the foundational details for your project
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Project Name *</label>
-                  <Input
-                    name="name"
-                    placeholder="Enter project name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="border-slate-200 dark:border-slate-800"
-                  />
-                </div>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								</CardContent>
+							</Card>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Description</label>
-                  <Textarea
-                    name="description"
-                    placeholder="Describe your project goals and scope"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={4}
-                    className="border-slate-200 dark:border-slate-800"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Project Settings Card */}
-            <Card>
+							{/* Project Settings Card */}
+							{/* <Card>
               <CardHeader>
                 <CardTitle>Project Settings</CardTitle>
                 <CardDescription>
@@ -231,10 +250,10 @@ export default function EditProjectPage() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
-            {/* Team Members Card */}
-            <Card>
+							{/* Team Members Card */}
+							{/* <Card>
               <CardHeader>
                 <CardTitle>Team Members</CardTitle>
                 <CardDescription>
@@ -275,30 +294,31 @@ export default function EditProjectPage() {
                   ))}
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 justify-end">
-              <Link href="/projects">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-slate-200 dark:border-slate-800 bg-transparent"
-                >
-                  Cancel
-                </Button>
-              </Link>
-              <Button
-                type="submit"
-                disabled={!formData.name || !formData.team || isSubmitting}
-                className="bg-primary hover:bg-primary/90 text-white"
-              >
-                {isSubmitting ? "Creating..." : "Create Project"}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </main>
-    </div>
-  );
+							{/* Action Buttons */}
+							<div className="flex gap-3 justify-end">
+								<Button
+									type="submit"
+									disabled={isPending}
+									isLoading={isPending}
+									className="bg-primary hover:bg-primary/90 text-white"
+								>
+									Update Project
+								</Button>
+							</div>
+						</form>
+					</Form>
+				</div>
+			</main>
+		</div>
+	);
 }
+
+export const CreateProjectSchema = z.object({
+	name: z.string().min(1, "project name is required"),
+	key: z.string().min(1, "project key is required"),
+	description: z.string().min(1, "project description is required"),
+	workflowType: z.enum(["AGILE", "KANBAN", "SCRUM", "WATERFALL"]),
+	workflowSchemeId: z.string().optional(),
+});

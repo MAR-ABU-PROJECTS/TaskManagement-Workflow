@@ -30,6 +30,7 @@ export default function QueryProvider({
 					queries: {
 						// Needed so "context" works in cache callbacks
 						meta: {},
+						refetchOnWindowFocus: false,
 					},
 					mutations: {
 						meta: {},
