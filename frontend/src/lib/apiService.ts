@@ -3,7 +3,7 @@ import { getSession, updateSession } from "@/lib/action";
 import { defaultSession } from "@/lib/session";
 import env from "@/constants/env";
 
-const BASE_URL = env.BASE_URL;
+const BASE_URL = `${env.BASE_URL}/api`;
 // const BASE_URL = "http://localhost:5050";
 
 const axiosInstance = axios.create({
@@ -31,7 +31,7 @@ const refreshAccessToken = async () => {
 	const refreshToken = session?.user?.refreshToken;
 
 	if (!refreshToken) {
-		throw new Error("You need to sign up or login to continue booking");
+		throw new Error("You need to sign up or login to continue");
 	}
 
 	const { data } = await axios.post(

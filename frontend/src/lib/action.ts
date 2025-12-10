@@ -21,15 +21,18 @@ export async function getSessionUser() {
 		sessionOptions
 	);
 
-	return {
-		user: {
-			id: session.user?.id,
-			name: session.user?.name,
-			email: session.user?.email,
-			isLoggedIn: session.user?.isLoggedIn,
-			role: session.user?.role,
-		},
-	};
+	if (session.user) {
+		return {
+			user: {
+				id: session.user?.id,
+				name: session.user?.name,
+				email: session.user?.email,
+				isLoggedIn: session.user?.isLoggedIn,
+				role: session.user?.role,
+			},
+		};
+	}
+	return null;
 }
 
 export async function setSession(data: {

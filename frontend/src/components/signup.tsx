@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/card";
 import Image from "next/image";
 import logo from "../assets/black-logo.png";
-import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,8 +27,8 @@ import { useMutation } from "@tanstack/react-query";
 import { authService } from "@/app/(auth)/service";
 
 export default function SignUpPage() {
-	const router = useRouter();
 	type registerType = z.infer<typeof authSchema>;
+
 	const form = useForm<registerType>({
 		resolver: zodResolver(authSchema),
 		defaultValues: {
@@ -57,10 +56,10 @@ export default function SignUpPage() {
 						/>
 					</div>
 					<CardTitle className="text-center text-2xl">
-						Welcome back
+						Welcome
 					</CardTitle>
 					<CardDescription className="text-center text-base">
-						Sign in to your MAR PM account
+						Create your account
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -109,7 +108,7 @@ export default function SignUpPage() {
 
 							<FormField
 								control={form.control}
-								name="email"
+								name="password"
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>Password</FormLabel>
@@ -125,12 +124,12 @@ export default function SignUpPage() {
 									</FormItem>
 								)}
 							/>
-
+							<div></div>
 							<Button
 								type="submit"
 								isLoading={register.isPending}
 								disabled={register.isPending}
-								className="w-full"
+								className="w-full mt-2!"
 								// onClick={() => router.push("/dashboard")}
 							>
 								Sign Up
@@ -156,6 +155,6 @@ export default function SignUpPage() {
 
 export const authSchema = z.object({
 	email: z.email().min(1),
-	password: z.string().min(8),
-	name: z.string().min(2),
+	password: z.string().min(8, "must be at least eight characters"),
+	name: z.string().min(2, "required"),
 });

@@ -5,7 +5,7 @@ import z from "zod";
 type AuthBody = z.infer<typeof authSchema>;
 
 export const authService = {
-	register: (data: AuthBody) => apiService.post("/api/auth/register", data),
+	register: (data: AuthBody) => apiService.post("/auth/register", data),
 	login: (data: Pick<AuthBody, "email" | "password">) =>
-		apiService.post("/api/auth/login", data),
+		apiService.post("/auth/login", data),
 };

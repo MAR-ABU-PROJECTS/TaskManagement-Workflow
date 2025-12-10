@@ -26,8 +26,11 @@ import {
 } from "@/components/ui/form";
 import { useMutation } from "@tanstack/react-query";
 import { authService } from "@/app/(auth)/service";
+import { setSession } from "@/lib/action";
+import Routes from "@/constants/routes";
 
 export default function LoginPage() {
+	const router = useRouter();
 	type LoginType = z.infer<typeof loginSchema>;
 	const form = useForm<LoginType>({
 		resolver: zodResolver(loginSchema),
@@ -39,10 +42,24 @@ export default function LoginPage() {
 
 	const login = useMutation({
 		mutationFn: (data: LoginType) => authService.login(data),
+		onSuccess: async (res) => {
+			await setSession({
+				email: res.user.email,
+				id: res.user.id,
+				name: res.user.name,
+				token: res.token,
+				refreshToken: "",
+				role: res.user.role,
+			});
+
+			router.push(Routes.dashboard);
+		},
 	});
+
 	const onSubmit = (data: LoginType) => {
 		login.mutate(data);
 	};
+
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-background px-4">
 			<Card className="w-full max-w-md">
