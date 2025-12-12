@@ -131,9 +131,78 @@ router.post("/", hasProjectPermission(Permission.CREATE_ISSUES), (req, res) =>
  * /api/tasks:
  *   get:
  *     summary: Get all tasks (filtered by role and permissions)
+ *     description: |
+ *       Retrieve all tasks accessible to the user based on their role and project permissions.
+ *       Results are filtered by project membership and permissions.
+ *       Supports filtering by status, priority, assignee, sprint, and more.
+ *       Requires BROWSE_PROJECT permission.
  *     tags: [Tasks]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by project
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Filter by status
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: [LOW, MEDIUM, HIGH, CRITICAL]
+ *         description: Filter by priority
+ *       - in: query
+ *         name: assigneeId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by assignee
+ *       - in: query
+ *         name: sprintId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by sprint
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Results per page
+ *     responses:
+ *       200:
+ *         description: Tasks retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 tasks:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Task'
+ *                 total:
+ *                   type: integer
+ *                 page:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
+ *       403:
+ *         description: Insufficient permissions
+ *       500:
+ *         description: Server error
  */
 router.get("/", hasProjectPermission(Permission.BROWSE_PROJECT), (req, res) =>
   TaskController.getAllTasks(req, res)
@@ -143,10 +212,43 @@ router.get("/", hasProjectPermission(Permission.BROWSE_PROJECT), (req, res) =>
  * @swagger
  * /api/tasks/bulk:
  *   post:
- *     summary: Bulk operations on tasks
+ *     summary: Bulk operations on tasks (deprecated - use /api/bulk-operations)
+ *     description: |
+ *       **Deprecated**: Use /api/bulk-operations endpoints instead.
+ *       Perform bulk operations on multiple tasks (delete, update, assign).
+ *       Requires EDIT_ISSUES permission.
  *     tags: [Tasks]
+ *     deprecated: true
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - operation
+ *               - taskIds
+ *             properties:
+ *               operation:
+ *                 type: string
+ *                 enum: [delete, update, assign]
+ *                 example: assign
+ *               taskIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *     responses:
+ *       200:
+ *         description: Bulk operation completed
+ *       400:
+ *         description: Invalid operation or missing taskIds
+ *       403:
+ *         description: Insufficient permissions
+ *       500:
+ *         description: Server error
  */
 router.post(
   "/bulk",
@@ -190,7 +292,34 @@ router.post(
  * /api/tasks/{id}:
  *   get:
  *     summary: Get task by ID
+ *     description: |
+ *       Retrieve detailed information about a specific task.
+ *       Includes all task fields, comments, attachments, time entries, and activity history.
+ *       Requires BROWSE_PROJECT permission.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID or key (e.g., WEB-123)
+ *     responses:
+ *       200:
+ *         description: Task details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Task'
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:id",
@@ -448,9 +577,54 @@ router.post("/:id/reject", canApproveTask, (req, res) =>
  * /api/tasks/{id}/comments:
  *   get:
  *     summary: Get all comments for a task
+ *     description: |
+ *       Retrieve all comments on a task in chronological order.
+ *       Includes author details and timestamps.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Comments retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   content:
+ *                     type: string
+ *                   authorId:
+ *                     type: string
+ *                   author:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
  */
-router.get(":id/comments", (req, res) =>
+router.get("/:id/comments", (req, res) =>
   commentController.getTaskComments(req, res)
 );
 
@@ -518,7 +692,34 @@ router.post("/:id/comments", (req, res) =>
  * /api/tasks/{taskId}/comments/{commentId}:
  *   delete:
  *     summary: Delete a comment
+ *     description: |
+ *       Delete a comment from a task.
+ *       Users can only delete their own comments unless they have admin permissions.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Comment deleted successfully
+ *       403:
+ *         description: Cannot delete others' comments
+ *       404:
+ *         description: Comment not found
+ *       500:
+ *         description: Server error
  */
 router.delete("/:taskId/comments/:commentId", (req, res) =>
   commentController.deleteComment(req, res)
@@ -531,7 +732,47 @@ router.delete("/:taskId/comments/:commentId", (req, res) =>
  * /api/tasks/{taskId}/attachments:
  *   get:
  *     summary: Get all attachments for a task
+ *     description: |
+ *       Retrieve list of all file attachments on a task.
+ *       Includes file metadata (name, size, type, uploader, date).
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Attachments retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   filename:
+ *                     type: string
+ *                   fileSize:
+ *                     type: integer
+ *                   mimeType:
+ *                     type: string
+ *                   uploaderId:
+ *                     type: string
+ *                   uploadedAt:
+ *                     type: string
+ *                     format: date-time
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
  */
 router.get("/:taskId/attachments", authenticate, (req, res) =>
   TaskAttachmentController.getTaskAttachments(req, res)
@@ -608,8 +849,38 @@ router.post(
  * @swagger
  * /api/tasks/{taskId}/attachments/{attachmentId}:
  *   get:
- *     summary: Download attachment
+ *     summary: Download attachment file
+ *     description: |
+ *       Download a file attachment from a task.
+ *       Returns the file with appropriate content-type headers.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: attachmentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: File download
+ *         content:
+ *           application/octet-stream:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Attachment or task not found
+ *       500:
+ *         description: Server error
  */
 router.get("/:taskId/attachments/:attachmentId", authenticate, (req, res) =>
   TaskAttachmentController.downloadAttachment(req, res)
@@ -619,8 +890,35 @@ router.get("/:taskId/attachments/:attachmentId", authenticate, (req, res) =>
  * @swagger
  * /api/tasks/{taskId}/attachments/{attachmentId}:
  *   delete:
- *     summary: Delete attachment
+ *     summary: Delete attachment file
+ *     description: |
+ *       Permanently delete a file attachment from a task.
+ *       Users can only delete their own attachments unless they have admin permissions.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: attachmentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Attachment deleted successfully
+ *       403:
+ *         description: Cannot delete others' attachments
+ *       404:
+ *         description: Attachment not found
+ *       500:
+ *         description: Server error
  */
 router.delete("/:taskId/attachments/:attachmentId", authenticate, (req, res) =>
   TaskAttachmentController.deleteAttachment(req, res)
@@ -633,7 +931,47 @@ router.delete("/:taskId/attachments/:attachmentId", authenticate, (req, res) =>
  * /api/tasks/{id}/dependencies:
  *   get:
  *     summary: Get all dependencies for a task
+ *     description: |
+ *       Retrieve all dependency links for a task (both incoming and outgoing).
+ *       Shows which tasks this task blocks, is blocked by, relates to, or duplicates.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Dependencies retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 outgoing:
+ *                   type: array
+ *                   description: Tasks this task links to
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       targetTask:
+ *                         type: object
+ *                       linkType:
+ *                         type: string
+ *                 incoming:
+ *                   type: array
+ *                   description: Tasks that link to this task
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
  */
 router.get("/:id/dependencies", (req, res) =>
   TaskDependencyController.getTaskDependencies(req, res)
@@ -694,8 +1032,33 @@ router.post("/:id/dependencies", (req, res) =>
  * @swagger
  * /api/tasks/{taskId}/dependencies/{dependencyId}:
  *   delete:
- *     summary: Remove dependency
+ *     summary: Remove dependency link between tasks
+ *     description: |
+ *       Delete a dependency relationship between two tasks.
+ *       This does not delete the tasks themselves, only the link.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: dependencyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Dependency removed successfully
+ *       404:
+ *         description: Dependency not found
+ *       500:
+ *         description: Server error
  */
 router.delete("/:taskId/dependencies/:dependencyId", (req, res) =>
   TaskDependencyController.deleteDependency(req, res)
@@ -708,7 +1071,53 @@ router.delete("/:taskId/dependencies/:dependencyId", (req, res) =>
  * /api/tasks/{taskId}/time-entries:
  *   get:
  *     summary: Get all time entries for a task
+ *     description: |
+ *       Retrieve all work log entries for a task.
+ *       Shows time spent by each team member with descriptions.
+ *       Includes total time spent calculation.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Time entries retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 entries:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       timeSpentMinutes:
+ *                         type: integer
+ *                       description:
+ *                         type: string
+ *                       userId:
+ *                         type: string
+ *                       user:
+ *                         type: object
+ *                       loggedAt:
+ *                         type: string
+ *                         format: date-time
+ *                 totalMinutes:
+ *                   type: integer
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
  */
 router.get("/:taskId/time-entries", (req, res) =>
   TimeTrackingController.getTaskTimeEntries(req, res)
@@ -833,7 +1242,35 @@ router.patch("/:taskId/time-entries/:entryId", (req, res) =>
  * /api/tasks/{taskId}/time-entries/{entryId}:
  *   delete:
  *     summary: Delete time entry
+ *     description: |
+ *       Delete a work log entry from a task.
+ *       Users can only delete their own time entries.
+ *       Updates task's total logged time.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: entryId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Time entry deleted successfully
+ *       403:
+ *         description: Cannot delete others' time entries
+ *       404:
+ *         description: Time entry not found
+ *       500:
+ *         description: Server error
  */
 router.delete("/:taskId/time-entries/:entryId", (req, res) =>
   TimeTrackingController.deleteTimeEntry(req, res)
@@ -846,9 +1283,53 @@ router.delete("/:taskId/time-entries/:entryId", (req, res) =>
  * /api/tasks/{id}/activity:
  *   get:
  *     summary: Get task activity log
+ *     description: |
+ *       Retrieve complete activity/audit log for a task.
+ *       Shows all changes made to the task (status, assignee, priority, etc.) with timestamps and actors.
+ *       Useful for tracking task history and debugging.
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Activity log retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   action:
+ *                     type: string
+ *                     example: STATUS_CHANGED
+ *                   oldValue:
+ *                     type: string
+ *                   newValue:
+ *                     type: string
+ *                   userId:
+ *                     type: string
+ *                   user:
+ *                     type: object
+ *                   timestamp:
+ *                     type: string
+ *                     format: date-time
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
  */
-router.get(":id/activity", (req, res) =>
+router.get("/:id/activity", (req, res) =>
   activityLogController.getTaskLogs(req, res)
 );
 

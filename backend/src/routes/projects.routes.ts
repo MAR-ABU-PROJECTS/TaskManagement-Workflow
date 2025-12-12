@@ -164,8 +164,115 @@ router.post("/", canCreateProject, (req, res) =>
  * @swagger
  * /api/projects:
  *   get:
- *     summary: Get all projects (filtered by user role)
+ *     summary: Get all projects accessible to the user
+ *     description: |
+ *       Retrieves all projects based on user role and permissions:
+ *       - **CEO/SUPER_ADMIN**: See all projects
+ *       - **HOO/HR**: See all projects
+ *       - **ADMIN/STAFF**: See only projects where they are members
+ *       
+ *       Returns project details including creator info, creation/update timestamps.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Projects retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Projects retrieved successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       name:
+ *                         type: string
+ *                       key:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                         nullable: true
+ *                       workflowType:
+ *                         type: string
+ *                         enum: [BASIC, AGILE, BUG_TRACKING, CUSTOM]
+ *                       workflowSchemeId:
+ *                         type: string
+ *                         nullable: true
+ *                       isArchived:
+ *                         type: boolean
+ *                       creatorId:
+ *                         type: string
+ *                         format: uuid
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *                       creator:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                           email:
+ *                             type: string
+ *                 count:
+ *                   type: integer
+ *                   example: 5
+ *             example:
+ *               message: "Projects retrieved successfully"
+ *               data:
+ *                 - id: "550e8400-e29b-41d4-a716-446655440000"
+ *                   name: "Website Redesign"
+ *                   key: "WEB"
+ *                   description: "Complete redesign of company website"
+ *                   workflowType: "AGILE"
+ *                   workflowSchemeId: null
+ *                   isArchived: false
+ *                   creatorId: "660e8400-e29b-41d4-a716-446655440001"
+ *                   createdAt: "2025-12-09T10:30:00.000Z"
+ *                   updatedAt: "2025-12-09T10:30:00.000Z"
+ *                   creator:
+ *                     id: "660e8400-e29b-41d4-a716-446655440001"
+ *                     name: "John Doe"
+ *                     email: "john@example.com"
+ *               count: 1
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *             example:
+ *               message: "Unauthorized"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: string
+ *             example:
+ *               message: "Failed to retrieve projects"
+ *               error: "Database connection error"
  */
 router.get("/", authenticate, (req, res) =>
   ProjectController.getAllProjects(req, res)
@@ -176,7 +283,62 @@ router.get("/", authenticate, (req, res) =>
  * /api/projects/{id}:
  *   get:
  *     summary: Get project by ID
+ *     description: |
+ *       Retrieve detailed information about a specific project.
+ *       Requires BROWSE_PROJECT permission.
+ *       Returns full project details including workflow configuration, members count, and statistics.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Project unique identifier
+ *         example: "550e8400-e29b-41d4-a716-446655440000"
+ *     responses:
+ *       200:
+ *         description: Project details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *                 name:
+ *                   type: string
+ *                 key:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                   nullable: true
+ *                 workflowType:
+ *                   type: string
+ *                   enum: [BASIC, AGILE, BUG_TRACKING, CUSTOM]
+ *                 workflowSchemeId:
+ *                   type: string
+ *                   nullable: true
+ *                 isArchived:
+ *                   type: boolean
+ *                 creatorId:
+ *                   type: string
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *       403:
+ *         description: Insufficient permissions to view this project
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:id",
@@ -239,7 +401,40 @@ router.patch(
  * /api/projects/{id}:
  *   delete:
  *     summary: Archive project
+ *     description: |
+ *       Soft delete a project by marking it as archived.
+ *       Archived projects remain in the database but are hidden from normal views.
+ *       Requires ADMINISTER_PROJECT permission.
+ *       
+ *       **Note**: This does not permanently delete the project or its data.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Project ID to archive
+ *     responses:
+ *       200:
+ *         description: Project archived successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Project archived successfully"
+ *       403:
+ *         description: Insufficient permissions - requires ADMINISTER_PROJECT
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
  */
 router.delete(
   "/:id",
@@ -253,8 +448,61 @@ router.delete(
  * @swagger
  * /api/projects/{id}/members:
  *   get:
- *     summary: Get project members
+ *     summary: Get all project members
+ *     description: |
+ *       Retrieve list of all team members in a project with their roles.
+ *       Returns user details and project-specific role assignments.
+ *       Requires BROWSE_PROJECT permission.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Project ID
+ *     responses:
+ *       200:
+ *         description: Project members retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   projectId:
+ *                     type: string
+ *                   userId:
+ *                     type: string
+ *                   role:
+ *                     type: string
+ *                     enum: [PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER, REPORTER, VIEWER]
+ *                   addedAt:
+ *                     type: string
+ *                     format: date-time
+ *                   user:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:projectId/members",
@@ -378,8 +626,62 @@ router.post(
  * @swagger
  * /api/projects/{id}/members/{userId}:
  *   patch:
- *     summary: Update member role
+ *     summary: Update project member role
+ *     description: |
+ *       Change a team member's role within the project.
+ *       Requires ADMINISTER_PROJECT permission.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Project ID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: User ID to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - projectRole
+ *             properties:
+ *               projectRole:
+ *                 type: string
+ *                 enum: [PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER, REPORTER, VIEWER]
+ *                 description: New role for the member
+ *                 example: PROJECT_LEAD
+ *     responses:
+ *       200:
+ *         description: Member role updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 count:
+ *                   type: integer
+ *       400:
+ *         description: Missing or invalid projectRole
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Member or project not found
+ *       500:
+ *         description: Server error
  */
 router.patch(
   "/:projectId/members/:userId",
@@ -405,8 +707,48 @@ router.patch(
  * @swagger
  * /api/projects/{id}/members/{userId}:
  *   delete:
- *     summary: Remove member from project
+ *     summary: Remove member from project team
+ *     description: |
+ *       Remove a user from the project team.
+ *       The user will lose access to the project.
+ *       Requires ADMINISTER_PROJECT permission.
+ *       
+ *       **Note**: Cannot remove the project creator.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Project ID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: User ID to remove
+ *     responses:
+ *       200:
+ *         description: Member removed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Member removed"
+ *       403:
+ *         description: Insufficient permissions or cannot remove project creator
+ *       404:
+ *         description: Member or project not found
+ *       500:
+ *         description: Server error
  */
 router.delete(
   "/:projectId/members/:userId",
@@ -433,7 +775,65 @@ router.delete(
  * /api/projects/{id}/sprints:
  *   get:
  *     summary: Get all sprints for a project
+ *     description: |
+ *       Retrieve all sprints (past, active, and planned) for a project.
+ *       Sprints are returned in chronological order.
+ *       Includes sprint statistics and completion metrics.
+ *       Requires VIEW_SPRINTS permission.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Project ID
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PLANNED, ACTIVE, COMPLETED]
+ *         description: Filter sprints by status
+ *     responses:
+ *       200:
+ *         description: Sprints retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   goal:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                     enum: [PLANNED, ACTIVE, COMPLETED]
+ *                   startDate:
+ *                     type: string
+ *                     format: date
+ *                   endDate:
+ *                     type: string
+ *                     format: date
+ *                   capacityHours:
+ *                     type: number
+ *                   completedTasksCount:
+ *                     type: integer
+ *                   totalTasksCount:
+ *                     type: integer
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:projectId/sprints",
@@ -516,8 +916,41 @@ router.post(
  * @swagger
  * /api/projects/{projectId}/sprints/{sprintId}:
  *   get:
- *     summary: Get sprint by ID
+ *     summary: Get detailed sprint information
+ *     description: |
+ *       Retrieve full details about a specific sprint including:
+ *       - Sprint metadata (name, goal, dates, capacity)
+ *       - All tasks assigned to the sprint
+ *       - Sprint progress and velocity metrics
+ *       - Burndown chart data
+ *       Requires VIEW_SPRINTS permission.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Project ID
+ *       - in: path
+ *         name: sprintId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Sprint ID
+ *     responses:
+ *       200:
+ *         description: Sprint details retrieved successfully
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Sprint or project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:projectId/sprints/:sprintId",
@@ -529,8 +962,56 @@ router.get(
  * @swagger
  * /api/projects/{projectId}/sprints/{sprintId}:
  *   patch:
- *     summary: Update sprint
+ *     summary: Update sprint details
+ *     description: |
+ *       Modify sprint information such as name, goal, dates, or capacity.
+ *       Cannot update a completed sprint.
+ *       Requires MANAGE_SPRINTS permission.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: sprintId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               goal:
+ *                 type: string
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *               endDate:
+ *                 type: string
+ *                 format: date
+ *               capacityHours:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Sprint updated successfully
+ *       400:
+ *         description: Invalid data or sprint is completed
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Sprint not found
+ *       500:
+ *         description: Server error
  */
 router.patch(
   "/:projectId/sprints/:sprintId",
@@ -649,8 +1130,65 @@ router.post(
  * @swagger
  * /api/projects/{id}/epics:
  *   get:
- *     summary: Get all epics for a project
+ *     summary: Get all project epics
+ *     description: |
+ *       Retrieve all epics for a project with their progress status.
+ *       Epics group related tasks into large features that span multiple sprints.
+ *       Includes completion percentage and child task counts.
+ *       Requires BROWSE_PROJECT permission.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Project ID
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [OPEN, IN_PROGRESS, COMPLETED]
+ *         description: Filter epics by status
+ *     responses:
+ *       200:
+ *         description: Epics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   color:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                   startDate:
+ *                     type: string
+ *                     format: date
+ *                   endDate:
+ *                     type: string
+ *                     format: date
+ *                   completionPercentage:
+ *                     type: number
+ *                   tasksCount:
+ *                     type: integer
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:projectId/epics",
@@ -729,8 +1267,39 @@ router.post(
  * @swagger
  * /api/projects/{projectId}/epics/{epicId}:
  *   get:
- *     summary: Get epic by ID
+ *     summary: Get detailed epic information
+ *     description: |
+ *       Retrieve full details about a specific epic including:
+ *       - Epic metadata and description
+ *       - All child tasks grouped by status
+ *       - Progress metrics and completion timeline
+ *       - Related sprints
+ *       Requires BROWSE_PROJECT permission.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: epicId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Epic details retrieved successfully
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Epic or project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:projectId/epics/:epicId",
@@ -742,8 +1311,58 @@ router.get(
  * @swagger
  * /api/projects/{projectId}/epics/{epicId}:
  *   patch:
- *     summary: Update epic
+ *     summary: Update epic details
+ *     description: |
+ *       Modify epic information such as name, description, dates, color, or status.
+ *       Requires EDIT_ISSUES permission.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: epicId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               color:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [OPEN, IN_PROGRESS, COMPLETED]
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *               endDate:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       200:
+ *         description: Epic updated successfully
+ *       400:
+ *         description: Invalid data
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Epic not found
+ *       500:
+ *         description: Server error
  */
 router.patch(
   "/:projectId/epics/:epicId",
@@ -758,7 +1377,67 @@ router.patch(
  * /api/projects/{id}/backlog:
  *   get:
  *     summary: Get project backlog
+ *     description: |
+ *       Retrieve all unassigned tasks in the project backlog.
+ *       Backlog contains tasks that are not yet assigned to any sprint.
+ *       Tasks are ordered by priority and creation date.
+ *       Requires VIEW_SPRINTS permission.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Project ID
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: [CRITICAL, HIGH, MEDIUM, LOW]
+ *         description: Filter by priority
+ *       - in: query
+ *         name: issueType
+ *         schema:
+ *           type: string
+ *           enum: [TASK, BUG, STORY, EPIC]
+ *         description: Filter by issue type
+ *     responses:
+ *       200:
+ *         description: Backlog retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   title:
+ *                     type: string
+ *                   key:
+ *                     type: string
+ *                   priority:
+ *                     type: string
+ *                   issueType:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                   estimatedHours:
+ *                     type: number
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:projectId/backlog",
@@ -771,7 +1450,57 @@ router.get(
  * /api/projects/{id}/backlog/by-epic:
  *   get:
  *     summary: Get backlog grouped by epic
+ *     description: |
+ *       Retrieve backlog tasks organized by their parent epic.
+ *       Helps visualize feature-based work distribution in the backlog.
+ *       Tasks without an epic are grouped separately.
+ *       Requires VIEW_SPRINTS permission.
  *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Project ID
+ *     responses:
+ *       200:
+ *         description: Backlog grouped by epic retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 epics:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       epic:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                           color:
+ *                             type: string
+ *                       tasks:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                 noEpicTasks:
+ *                   type: array
+ *                   description: Tasks not assigned to any epic
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:projectId/backlog/by-epic",
@@ -786,7 +1515,36 @@ router.get(
  * /api/projects/{projectId}/reports/velocity:
  *   get:
  *     summary: Get team velocity report
+ *     description: |
+ *       Calculate team velocity based on completed story points per sprint.
+ *       Shows historical velocity trends to help with sprint planning.
+ *       Includes average, rolling average, and sprint-by-sprint breakdown.
+ *       Requires BROWSE_PROJECT permission.
  *     tags: [Projects, Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: sprintCount
+ *         schema:
+ *           type: integer
+ *           default: 6
+ *         description: Number of past sprints to analyze
+ *     responses:
+ *       200:
+ *         description: Velocity report generated successfully
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:projectId/reports/velocity",
@@ -799,7 +1557,44 @@ router.get(
  * /api/projects/{projectId}/reports/productivity:
  *   get:
  *     summary: Get team productivity metrics
+ *     description: |
+ *       Analyze team productivity including:
+ *       - Task completion rate
+ *       - Average time per task
+ *       - Member contributions
+ *       - Throughput trends
+ *       Requires BROWSE_PROJECT permission.
  *     tags: [Projects, Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Analysis start date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Analysis end date
+ *     responses:
+ *       200:
+ *         description: Productivity report generated successfully
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:projectId/reports/productivity",
@@ -812,7 +1607,33 @@ router.get(
  * /api/projects/{projectId}/reports/health:
  *   get:
  *     summary: Get project health metrics
+ *     description: |
+ *       Overall project health assessment including:
+ *       - Sprint goal completion rate
+ *       - Overdue tasks percentage
+ *       - Velocity stability
+ *       - Team capacity utilization
+ *       - Risk indicators
+ *       Requires BROWSE_PROJECT permission.
  *     tags: [Projects, Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Project health report generated successfully
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:projectId/reports/health",
@@ -825,7 +1646,42 @@ router.get(
  * /api/projects/{projectId}/reports/cycle-time:
  *   get:
  *     summary: Get cycle time report for tasks
+ *     description: |
+ *       Measure average time tasks spend in each workflow stage.
+ *       Helps identify bottlenecks in the development process.
+ *       Shows lead time and cycle time metrics.
+ *       Requires BROWSE_PROJECT permission.
  *     tags: [Projects, Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: issueType
+ *         schema:
+ *           type: string
+ *           enum: [TASK, BUG, STORY]
+ *         description: Filter by issue type
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           default: 30
+ *         description: Number of past days to analyze
+ *     responses:
+ *       200:
+ *         description: Cycle time report generated successfully
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:projectId/reports/cycle-time",
@@ -838,7 +1694,36 @@ router.get(
  * /api/projects/{projectId}/reports/burnup:
  *   get:
  *     summary: Get burnup chart data for project
+ *     description: |
+ *       Generate burnup chart showing cumulative work completed over time.
+ *       Tracks total scope and completed work to visualize project progress.
+ *       Useful for long-term project tracking and release planning.
+ *       Requires BROWSE_PROJECT permission.
  *     tags: [Projects, Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: versionId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Optional version/release to track
+ *     responses:
+ *       200:
+ *         description: Burnup chart data generated successfully
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
  */
 router.get(
   "/:projectId/reports/burnup",
