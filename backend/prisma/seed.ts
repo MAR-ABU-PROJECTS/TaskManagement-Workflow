@@ -22,7 +22,7 @@ interface SeedConfig {
 
 const CONFIG: SeedConfig = {
   environment: process.env.NODE_ENV || "development",
-  clearExistingData: process.env.CLEAR_EXISTING_DATA !== "false",
+  clearExistingData: process.env.CLEAR_EXISTING_DATA === "true", // Changed: Only clear if explicitly set to true
   superAdminPassword:
     process.env.SUPER_ADMIN_PASSWORD || "SuperAdmin@2025!SecurePass#MAR",
   superAdminEmails: [

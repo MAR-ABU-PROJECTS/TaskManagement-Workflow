@@ -6,7 +6,7 @@
     "watchPatterns": ["backend/**"]
   },
   "deploy": {
-    "startCommand": "cd backend && chmod +x seed-once.sh && ./seed-once.sh && npm start",
+    "startCommand": "cd backend && npx prisma migrate deploy && npm start",
     "healthcheckPath": "/",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
