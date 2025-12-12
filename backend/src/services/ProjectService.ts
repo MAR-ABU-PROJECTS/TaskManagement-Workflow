@@ -4,11 +4,7 @@ import {
   UpdateProjectDTO,
   Project,
 } from "../types/interfaces";
-import {
-  UserRole,
-  WorkflowType,
-  ProjectRole,
-} from "@prisma/client";
+import { UserRole, WorkflowType, ProjectRole } from "@prisma/client";
 
 export class ProjectService {
   /**
@@ -45,10 +41,7 @@ export class ProjectService {
   /**
    * Get all projects with optional filtering
    */
-  async getAllProjects(
-    userId: string,
-    userRole: UserRole
-  ): Promise<Project[]> {
+  async getAllProjects(userId: string, userRole: UserRole): Promise<Project[]> {
     // CEO sees all projects
     if (userRole === UserRole.CEO) {
       return (await prisma.project.findMany({

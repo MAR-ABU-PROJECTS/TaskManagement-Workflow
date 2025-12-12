@@ -564,32 +564,28 @@ router.get(
   requireRoles(UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN),
   async (_req, res) => {
     try {
-      const [
-        totalUsers,
-        activeUsers,
-        usersByRole,
-        recentUsers,
-      ] = await Promise.all([
-        prisma.user.count({ where: { isSuperAdmin: false } }),
-        prisma.user.count({ where: { isActive: true, isSuperAdmin: false } }),
-        prisma.user.groupBy({
-          by: ["role"],
-          where: { isSuperAdmin: false },
-          _count: true,
-        }),
-        prisma.user.findMany({
-          where: { isSuperAdmin: false },
-          take: 10,
-          orderBy: { createdAt: "desc" },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            createdAt: true,
-          },
-        }),
-      ]);
+      const [totalUsers, activeUsers, usersByRole, recentUsers] =
+        await Promise.all([
+          prisma.user.count({ where: { isSuperAdmin: false } }),
+          prisma.user.count({ where: { isActive: true, isSuperAdmin: false } }),
+          prisma.user.groupBy({
+            by: ["role"],
+            where: { isSuperAdmin: false },
+            _count: true,
+          }),
+          prisma.user.findMany({
+            where: { isSuperAdmin: false },
+            take: 10,
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              createdAt: true,
+            },
+          }),
+        ]);
 
       res.json({
         totalUsers,
