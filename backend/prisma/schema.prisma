@@ -192,17 +192,17 @@ enum WorkflowStatus {
 }
 
 model User {
-   id           String      @id @default(uuid())
-   email        String      @unique
-   passwordHash String      @map("password_hash")
+   id           String    @id @default(uuid())
+   email        String    @unique
+   passwordHash String    @map("password_hash")
    name         String
-   role         UserRole    @default(STAFF)
-   isActive     Boolean     @default(true) @map("is_active")
-   isSuperAdmin Boolean     @default(false) @map("is_super_admin") // Immutable flag for 2 Super Admins
-   promotedById String?     @map("promoted_by_id") // Who promoted this user
-   promotedAt   DateTime?   @map("promoted_at") // When they were last promoted
-   createdAt    DateTime    @default(now()) @map("created_at")
-   updatedAt    DateTime    @updatedAt @map("updated_at")
+   role         UserRole  @default(STAFF)
+   isActive     Boolean   @default(true) @map("is_active")
+   isSuperAdmin Boolean   @default(false) @map("is_super_admin") // Immutable flag for 2 Super Admins
+   promotedById String?   @map("promoted_by_id") // Who promoted this user
+   promotedAt   DateTime? @map("promoted_at") // When they were last promoted
+   createdAt    DateTime  @default(now()) @map("created_at")
+   updatedAt    DateTime  @updatedAt @map("updated_at")
 
    // Relations
    createdProjects Project[]         @relation("ProjectCreator")

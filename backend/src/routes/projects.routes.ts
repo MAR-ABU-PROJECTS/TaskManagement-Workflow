@@ -167,7 +167,7 @@ router.post("/", canCreateProject, (req, res) =>
  *     summary: Get all projects (filtered by user role)
  *     tags: [Projects]
  */
-router.get("/", hasProjectPermission(Permission.BROWSE_PROJECT), (req, res) =>
+router.get("/", authenticate, (req, res) =>
   ProjectController.getAllProjects(req, res)
 );
 
