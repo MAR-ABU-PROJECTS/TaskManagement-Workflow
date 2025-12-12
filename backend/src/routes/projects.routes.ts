@@ -170,7 +170,7 @@ router.post("/", canCreateProject, (req, res) =>
  *       - **CEO/SUPER_ADMIN**: See all projects
  *       - **HOO/HR**: See all projects
  *       - **ADMIN/STAFF**: See only projects where they are members
- *       
+ *
  *       Returns project details including creator info, creation/update timestamps.
  *     tags: [Projects]
  *     security:
@@ -405,7 +405,7 @@ router.patch(
  *       Soft delete a project by marking it as archived.
  *       Archived projects remain in the database but are hidden from normal views.
  *       Requires ADMINISTER_PROJECT permission.
- *       
+ *
  *       **Note**: This does not permanently delete the project or its data.
  *     tags: [Projects]
  *     security:
@@ -712,7 +712,7 @@ router.patch(
  *       Remove a user from the project team.
  *       The user will lose access to the project.
  *       Requires ADMINISTER_PROJECT permission.
- *       
+ *
  *       **Note**: Cannot remove the project creator.
  *     tags: [Projects]
  *     security:

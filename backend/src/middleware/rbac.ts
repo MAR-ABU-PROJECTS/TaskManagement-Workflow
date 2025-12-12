@@ -143,7 +143,8 @@ export function hasProjectPermission(permission: Permission) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const projectId = req.params.projectId || req.body.projectId;
+    const projectId =
+      req.params.id || req.params.projectId || req.body.projectId;
 
     if (!projectId) {
       return res.status(400).json({ message: "Project ID required" });
