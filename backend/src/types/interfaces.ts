@@ -102,6 +102,17 @@ export interface CreateTaskDTO {
   dueDate?: Date;
 }
 
+export interface CreatePersonalTaskDTO {
+  title: string;
+  description?: string;
+  priority?: TaskPriority;
+  issueType?: IssueType;
+  labels?: string[];
+  dueDate?: Date;
+  estimatedHours?: number;
+  storyPoints?: number;
+}
+
 export interface UpdateTaskDTO {
   title?: string;
   description?: string;

@@ -1,9 +1,42 @@
 import { Request, Response } from "express";
 import TaskService from "../services/TaskService";
-import { CreateTaskDTO, UpdateTaskDTO } from "../types/interfaces";
+import {
+  CreateTaskDTO,
+  UpdateTaskDTO,
+  CreatePersonalTaskDTO,
+} from "../types/interfaces";
 import { UserRole, TaskStatus } from "../types/enums";
 
 export class TaskController {
+  /**
+   * POST /tasks/personal - Create a personal task
+   */
+  async createPersonalTask(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const data: CreatePersonalTaskDTO = req.body;
+
+      if (!data.title) {
+        return res.status(400).json({ message: "Task title is required" });
+      }
+
+      const task = await TaskService.createPersonalTask(data, req.user.id);
+
+      return res.status(201).json({
+        message: "Personal task created successfully",
+        data: task,
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        message: "Failed to create personal task",
+        error: error.message,
+      });
+    }
+  }
+
   /**
    * POST /tasks - Create a new task
    */
