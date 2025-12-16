@@ -15,7 +15,7 @@ class BulkOperationsController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
@@ -83,7 +83,7 @@ class BulkOperationsController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
@@ -133,7 +133,7 @@ class BulkOperationsController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
@@ -207,7 +207,7 @@ class BulkOperationsController {
       const userRole = req.user?.role;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
@@ -262,7 +262,7 @@ class BulkOperationsController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
@@ -323,7 +323,7 @@ class BulkOperationsController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {

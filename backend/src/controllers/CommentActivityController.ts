@@ -11,7 +11,7 @@ export class CommentController {
   async createComment(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { id: taskId } = req.params;
@@ -52,7 +52,7 @@ export class CommentController {
   async getTaskComments(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { id: taskId } = req.params;
@@ -81,7 +81,7 @@ export class CommentController {
   async deleteComment(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { commentId } = req.params;
@@ -121,7 +121,7 @@ export class ActivityLogController {
   async getTaskLogs(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { id: taskId } = req.params;
@@ -152,7 +152,7 @@ export class NotificationController {
   async getUserNotifications(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const unreadOnly = req.query.unread === "true";
@@ -180,7 +180,7 @@ export class NotificationController {
   async markAsRead(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -211,7 +211,7 @@ export class NotificationController {
   async markAllAsRead(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const count = await NotificationService.markAllAsRead(req.user.id);

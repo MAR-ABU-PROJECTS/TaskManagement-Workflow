@@ -22,7 +22,9 @@ class UserHierarchyController {
       const promoterId = req.user?.id;
 
       if (!promoterId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       // Get promoter details
@@ -127,7 +129,9 @@ class UserHierarchyController {
       const promoterId = req.user?.id;
 
       if (!promoterId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       // Get promoter details
@@ -230,7 +234,9 @@ class UserHierarchyController {
       const promoterId = req.user?.id;
 
       if (!promoterId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const users = await RoleHierarchyService.getPromotableUsers(promoterId);
@@ -258,7 +264,7 @@ class UserHierarchyController {
       });
 
       if (!promoter) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(404).json({ message: "User not found" });
       }
 
       const roles = RoleHierarchyService.getAvailablePromotionRoles(
@@ -287,7 +293,9 @@ class UserHierarchyController {
       const promoterId = req.user?.id;
 
       if (!promoterId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       // Get promoter details
@@ -394,7 +402,7 @@ class UserHierarchyController {
       });
 
       if (!currentUser) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(404).json({ message: "User not found" });
       }
 
       // Build query based on user's role
