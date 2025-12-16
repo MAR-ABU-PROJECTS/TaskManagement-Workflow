@@ -372,6 +372,156 @@ export class TaskController {
       });
     }
   }
+
+  /**
+   * GET /tasks/board/:projectId - Get Kanban board view
+   */
+  async getKanbanBoard(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { projectId } = req.params;
+      if (!projectId) {
+        return res.status(400).json({ message: "Project ID is required" });
+      }
+
+      const board = await TaskService.getKanbanBoard(projectId);
+
+      return res.status(200).json({
+        message: "Board retrieved successfully",
+        data: board,
+      });
+    } catch (error: any) {
+      if (error.message.includes("not found")) {
+        return res.status(404).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to retrieve board",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * POST /tasks/:id/move - Move task to different column/status
+   */
+  async moveTask(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ message: "Task ID is required" });
+      }
+
+      const { status, position } = req.body;
+
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+
+      if (position === undefined || position === null) {
+        return res.status(400).json({ message: "Position is required" });
+      }
+
+      const task = await TaskService.moveTask(
+        id,
+        status as TaskStatus,
+        position,
+        req.user.id,
+        req.user.role as UserRole
+      );
+
+      return res.status(200).json({
+        message: "Task moved successfully",
+        data: task,
+      });
+    } catch (error: any) {
+      if (
+        error.message.includes("Forbidden") ||
+        error.message.includes("Invalid") ||
+        error.message.includes("not found")
+      ) {
+        return res.status(403).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to move task",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * GET /tasks/:id/transitions - Get available workflow transitions for a task
+   */
+  async getAvailableTransitions(
+    req: Request,
+    res: Response
+  ): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ message: "Task ID is required" });
+      }
+
+      const transitions = await TaskService.getAvailableTransitions(
+        id,
+        req.user.id
+      );
+
+      return res.status(200).json({
+        message: "Available transitions retrieved successfully",
+        data: transitions,
+      });
+    } catch (error: any) {
+      if (error.message.includes("not found")) {
+        return res.status(404).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to get available transitions",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * GET /projects/:projectId/workflow - Get workflow configuration for a project
+   */
+  async getProjectWorkflow(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { projectId } = req.params;
+      if (!projectId) {
+        return res.status(400).json({ message: "Project ID is required" });
+      }
+
+      const workflow = await TaskService.getProjectWorkflow(projectId);
+
+      return res.status(200).json({
+        message: "Workflow configuration retrieved successfully",
+        data: workflow,
+      });
+    } catch (error: any) {
+      if (error.message.includes("not found")) {
+        return res.status(404).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to get workflow configuration",
+        error: error.message,
+      });
+    }
+  }
 }
 
 export default new TaskController();

@@ -37,6 +37,12 @@ const BASIC_WORKFLOW: WorkflowTransitionRule[] = [
     to: TaskStatus.COMPLETED,
     requiredRole: ProjectRole.PROJECT_LEAD,
   },
+  {
+    name: "Submit for Review",
+    from: TaskStatus.IN_PROGRESS,
+    to: TaskStatus.REVIEW,
+    description: "Send work for review",
+  },
   { name: "Pause Work", from: TaskStatus.IN_PROGRESS, to: TaskStatus.PAUSED },
   {
     name: "Reject Work",

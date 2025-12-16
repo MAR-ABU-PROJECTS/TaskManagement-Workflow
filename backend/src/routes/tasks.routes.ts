@@ -1420,4 +1420,202 @@ router.get("/:id/activity", (req, res) =>
   activityLogController.getTaskLogs(req, res)
 );
 
+// ==================== KANBAN BOARD ====================
+
+/**
+ * @swagger
+ * /api/tasks/board/{projectId}:
+ *   get:
+ *     summary: Get Kanban board view
+ *     description: |
+ *       Get tasks grouped by status (columns) for Kanban board visualization.
+ *       Columns: To Do (DRAFT, ASSIGNED), In Progress (IN_PROGRESS, PAUSED), Review (REVIEW), Done (COMPLETED, REJECTED)
+ *       Tasks are ordered by position within each column.
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Project ID
+ *     responses:
+ *       200:
+ *         description: Board retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     projectId:
+ *                       type: string
+ *                     projectName:
+ *                       type: string
+ *                     columns:
+ *                       type: object
+ *                       properties:
+ *                         TODO:
+ *                           type: object
+ *                           properties:
+ *                             name:
+ *                               type: string
+ *                               example: To Do
+ *                             statuses:
+ *                               type: array
+ *                               items:
+ *                                 type: string
+ *                             tasks:
+ *                               type: array
+ *                               items:
+ *                                 $ref: '#/components/schemas/Task'
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
+ */
+router.get("/board/:projectId", (req, res) =>
+  TaskController.getKanbanBoard(req, res)
+);
+
+/**
+ * @swagger
+ * /api/tasks/{id}/move:
+ *   post:
+ *     summary: Move task on Kanban board
+ *     description: |
+ *       Move task to a different status/column and update its position.
+ *       Used for drag-and-drop on Kanban boards.
+ *       Validates status transitions and permissions.
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *               - position
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [DRAFT, ASSIGNED, IN_PROGRESS, PAUSED, REVIEW, COMPLETED, REJECTED]
+ *                 description: New task status
+ *                 example: IN_PROGRESS
+ *               position:
+ *                 type: integer
+ *                 description: Position in the new column (0-based)
+ *                 example: 2
+ *     responses:
+ *       200:
+ *         description: Task moved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Task'
+ *       400:
+ *         description: Invalid input
+ *       403:
+ *         description: Forbidden or invalid status transition
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
+ */
+router.post("/:id/move", (req, res) => TaskController.moveTask(req, res));
+
+/**
+ * @swagger
+ * /api/tasks/{id}/transitions:
+ *   get:
+ *     summary: Get available workflow transitions for a task
+ *     description: |
+ *       Retrieves all valid workflow transitions from the current status based on the project's workflow type.
+ *       Takes into account user's project role for permission-based transitions.
+ *       This follows Jira's workflow state machine pattern.
+ *     tags: [Tasks, Workflow]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Available transitions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Available transitions retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     currentStatus:
+ *                       type: string
+ *                       enum: [DRAFT, ASSIGNED, IN_PROGRESS, PAUSED, REVIEW, COMPLETED, REJECTED]
+ *                       example: IN_PROGRESS
+ *                     availableTransitions:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                             example: Ready for Review
+ *                           to:
+ *                             type: string
+ *                             example: REVIEW
+ *                           description:
+ *                             type: string
+ *                             example: Move task to review stage
+ *                           requiredRole:
+ *                             type: string
+ *                             enum: [VIEWER, CONTRIBUTOR, PROJECT_LEAD, PROJECT_ADMIN]
+ *                             example: PROJECT_LEAD
+ *                     workflowType:
+ *                       type: string
+ *                       enum: [BASIC, AGILE, BUG_TRACKING, CUSTOM]
+ *                       example: AGILE
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
+ */
+router.get("/:id/transitions", (req, res) =>
+  TaskController.getAvailableTransitions(req, res)
+);
+
 export default router;

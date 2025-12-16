@@ -47,11 +47,13 @@ The system follows a clear hierarchical structure:
 - **Team Management**: Create and manage development teams with role-based access
 - **Project Management**: Support for Agile, Waterfall, Kanban, and Hybrid methodologies
 - **Task Management**: Comprehensive task tracking with dependencies, subtasks, and custom fields
+- **Jira-Style Workflow System**: State machine-based workflow with validated transitions (BASIC, AGILE, BUG_TRACKING)
 - **Issue Tracking**: Bug tracking and issue management with severity levels
 - **Agile/Scrum**: Sprint management, backlog prioritization, and velocity tracking
-- **Kanban Boards**: Customizable boards with WIP limits and swimlanes
+- **Kanban Boards**: Status-based columns with drag-and-drop and workflow validation
 - **Time Tracking**: Manual and timer-based time logging with reporting
 - **Reporting**: Advanced analytics, dashboards, and data export capabilities
+- **Bulk Operations**: Workflow-validated bulk task transitions with detailed error reporting
 - **Notifications**: Real-time notifications and communication features
 - **Integration**: REST API, webhooks, and external tool integrations
 

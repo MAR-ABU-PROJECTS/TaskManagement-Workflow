@@ -1,8 +1,11 @@
 # Task Management System - Endpoint Usage Guide
 
-**Version:** 1.0.0  
-**Last Updated:** November 28, 2025  
+**Version:** 2.0.0  
+**Last Updated:** December 16, 2025  
 **Base URL:** `http://localhost:4000/api`
+
+> ⚠️ **Important:** All status transitions now use workflow-based validation.
+> See [Workflow System](#17-workflows) for details.
 
 ---
 
@@ -24,9 +27,9 @@
 14. [Reports](#14-reports)
 15. [Search & JQL](#15-search--jql)
 16. [Saved Filters](#16-saved-filters)
-17. [Bulk Operations](#17-bulk-operations)
-18. [Workflows](#18-workflows)
-19. [Permission Schemes](#19-permission-schemes)
+17. [Bulk Operations](#16-bulk-operations)
+18. [Workflows](#17-workflows)
+19. [Permission Schemes](#18-permission-schemes)
 20. [Components & Versions](#20-components--versions)
 21. [Notifications](#21-notifications)
 22. [Admin Dashboards](#22-admin-dashboards)
@@ -1870,17 +1873,37 @@ curl -X POST http://localhost:4000/api/bulk/assign \
 
 ---
 
-### 16.2 Bulk Status Change
+### 16.2 Bulk Status Change (Workflow-Validated)
 
 **Endpoint:** `POST /api/bulk/transition`  
 **Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
-**Description:** Change status of multiple tasks
+**Description:** Change status of multiple tasks with workflow validation
+
+> 🔒 **Workflow Validation:** Each task is validated individually against its project's workflow rules.
+> Tasks that fail validation are returned in the 'failed' array with detailed reasons.
 
 **Request Body:**
 ```json
 {
   "taskIds": ["clh999", "clh888"],
-  "newStatus": "REVIEW"
+  "status": "REVIEW"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "2 of 3 tasks transitioned to REVIEW",
+  "successful": ["clh999", "clh888"],
+  "failed": [
+    {
+      "taskId": "clh777",
+      "reason": "Invalid transition from DRAFT to REVIEW in AGILE workflow"
+    }
+  ],
+  "totalRequested": 3,
+  "totalSuccessful": 2,
+  "totalFailed": 1
 }
 ```
 
@@ -1891,9 +1914,18 @@ curl -X POST http://localhost:4000/api/bulk/transition \
   -H "Content-Type: application/json" \
   -d '{
     "taskIds": ["clh999", "clh888"],
-    "newStatus": "COMPLETED"
+    "status": "IN_PROGRESS"
   }'
 ```
+
+**Valid Status Values:**
+- `DRAFT` - Initial draft state
+- `ASSIGNED` - Task assigned to someone
+- `IN_PROGRESS` - Work in progress
+- `PAUSED` - Work temporarily stopped
+- `REVIEW` - Under review/testing
+- `COMPLETED` - Work finished successfully
+- `REJECTED` - Task rejected/closed
 
 ---
 
@@ -1932,7 +1964,171 @@ curl -X POST http://localhost:4000/api/bulk/update \
 
 ## 17. Workflows
 
-### 17.1 Get Workflows
+> 🎯 **Jira-Style Workflow System:** Tasks follow workflow state machines with validated transitions.
+> Each project has a workflow type (BASIC, AGILE, BUG_TRACKING, CUSTOM) that determines allowed status transitions.
+
+### 17.1 Get Project Workflow
+
+**Endpoint:** `GET /api/projects/:projectId/workflow`  
+**Auth Required:** ✅ Yes  
+**Description:** Get workflow configuration for a project (NEW)
+
+**Response:**
+```json
+{
+  "message": "Workflow configuration retrieved successfully",
+  "data": {
+    "workflowType": "AGILE",
+    "statusCategories": {
+      "TODO": {
+        "name": "To Do",
+        "statuses": ["DRAFT", "ASSIGNED"],
+        "description": "Work that has not started"
+      },
+      "IN_PROGRESS": {
+        "name": "In Progress",
+        "statuses": ["IN_PROGRESS", "PAUSED"],
+        "description": "Work currently being worked on"
+      },
+      "REVIEW": {
+        "name": "Review",
+        "statuses": ["REVIEW"],
+        "description": "Work being reviewed or tested"
+      },
+      "DONE": {
+        "name": "Done",
+        "statuses": ["COMPLETED", "REJECTED"],
+        "description": "Work that is finished"
+      }
+    },
+    "allStatuses": ["DRAFT", "ASSIGNED", "IN_PROGRESS", "PAUSED", "REVIEW", "COMPLETED", "REJECTED"]
+  }
+}
+```
+
+**Example:**
+```bash
+curl http://localhost:4000/api/projects/clh123/workflow \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+### 17.2 Get Available Transitions for Task
+
+**Endpoint:** `GET /api/tasks/:id/transitions`  
+**Auth Required:** ✅ Yes  
+**Description:** Get valid status transitions for a specific task (NEW)
+
+> 💡 **Use Case:** Show only valid actions in UI based on workflow rules and user permissions.
+
+**Response:**
+```json
+{
+  "message": "Available transitions retrieved successfully",
+  "data": {
+    "currentStatus": "IN_PROGRESS",
+    "workflowType": "AGILE",
+    "availableTransitions": [
+      {
+        "name": "Ready for Review",
+        "to": "REVIEW",
+        "description": "Submit work for review"
+      },
+      {
+        "name": "Pause Sprint",
+        "to": "PAUSED"
+      },
+      {
+        "name": "Block",
+        "to": "PAUSED",
+        "description": "Blocked by dependency"
+      }
+    ]
+  }
+}
+```
+
+**Example:**
+```bash
+curl http://localhost:4000/api/tasks/clh999/transitions \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+### 17.3 Transition Task Status
+
+**Endpoint:** `POST /api/tasks/:id/transition`  
+**Auth Required:** ✅ Yes  
+**Description:** Change task status (workflow-validated)
+
+> 🔒 **Validation:** Transitions are validated against project workflow rules.
+
+**Request Body:**
+```json
+{
+  "status": "REVIEW"
+}
+```
+
+**Example:**
+```bash
+curl -X POST http://localhost:4000/api/tasks/clh999/transition \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "REVIEW"}'
+```
+
+---
+
+### 17.4 Move Task on Board
+
+**Endpoint:** `POST /api/tasks/:id/move`  
+**Auth Required:** ✅ Yes  
+**Description:** Move task to different status/position (drag-and-drop)
+
+> 🎯 **Board Operations:** Updates both status and position for Kanban board.
+
+**Request Body:**
+```json
+{
+  "status": "IN_PROGRESS",
+  "position": 0
+}
+```
+
+**Example:**
+```bash
+curl -X POST http://localhost:4000/api/tasks/clh999/move \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "IN_PROGRESS", "position": 0}'
+```
+
+---
+
+### 17.5 Workflow Types
+
+**BASIC Workflow:**
+```
+DRAFT → ASSIGNED → IN_PROGRESS → REVIEW → COMPLETED
+```
+
+**AGILE Workflow:**
+```
+DRAFT → ASSIGNED → IN_PROGRESS → REVIEW → COMPLETED
+(includes backlog management and iterative review)
+```
+
+**BUG_TRACKING Workflow:**
+```
+DRAFT (New) → ASSIGNED (Confirmed) → IN_PROGRESS (Fixing) → REVIEW (Testing) → COMPLETED (Closed)
+```
+
+---
+
+### 17.6 Get Workflow Schemes
 
 **Endpoint:** `GET /api/workflows`  
 **Auth Required:** ✅ Yes  
@@ -1946,7 +2142,7 @@ curl http://localhost:4000/api/workflows \
 
 ---
 
-### 17.2 Create Workflow
+### 17.7 Create Workflow
 
 **Endpoint:** `POST /api/workflows`  
 **Auth Required:** ✅ Yes (ADMIN only)  

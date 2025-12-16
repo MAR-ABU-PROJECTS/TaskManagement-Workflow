@@ -1,10 +1,12 @@
 # Task Management System - Complete API Documentation
 
 **Version:** 2.0.0  
-**Last Updated:** December 8, 2025  
+**Last Updated:** December 16, 2025  
 **Base URL:** `https://taskmanagement-workflow-production.up.railway.app`  
-**Total Endpoints:** 73 (consolidated from 165)  
+**Total Endpoints:** 75+ (includes new workflow endpoints)  
 **Documentation Coverage:** 100%
+
+> ⚡ **NEW:** Jira-style workflow system with validated transitions. See [Workflow Endpoints](#workflow-endpoints) section.
 
 ---
 
@@ -14,8 +16,9 @@
 2. [Quick Start](#quick-start)
 3. [Authentication](#authentication)
 4. [RBAC System](#rbac-system)
-5. [API Endpoints](#api-endpoints)
-6. [Error Handling](#error-handling)
+5. [Workflow System](#workflow-system)
+6. [API Endpoints](#api-endpoints)
+7. [Error Handling](#error-handling)
 
 ---
 
@@ -25,8 +28,9 @@ This is a comprehensive **Jira-like Task Management System** with advanced featu
 
 - ✅ **Dual RBAC System**: Global user roles (CEO, HOO, HR, ADMIN, STAFF) + Project-level roles (PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER, REPORTER, VIEWER)
 - ✅ **Granular Permissions**: 32+ fine-grained permissions following Jira's permission model
-- ✅ **Agile Workflows**: Sprints, Epics, Backlogs, Kanban/Scrum boards
-- ✅ **Advanced Features**: JQL-like search, Saved Filters, Bulk Operations, Time Tracking
+- ✅ **Workflow State Machine**: Jira-style workflow with validated transitions (BASIC, AGILE, BUG_TRACKING, CUSTOM)
+- ✅ **Agile Workflows**: Sprints, Epics, Backlogs, Status-based Kanban boards
+- ✅ **Advanced Features**: JQL-like search, Saved Filters, Workflow-validated Bulk Operations, Time Tracking
 - ✅ **Team Collaboration**: Comments, Mentions, Attachments, Activity Logs
 - ✅ **Reporting**: Burndown/Burnup charts, Velocity reports, Team productivity metrics
 - ✅ **Email Notifications**: Resend integration for promotion, demotion, task assignment, etc.
@@ -196,6 +200,70 @@ The system uses **32 granular permissions** organized into categories:
 - `VIEW_SPRINTS` - View sprint details
 - `MANAGE_EPICS` - Create, edit, delete epics
 - `VIEW_EPICS` - View epic details
+- `TRANSITION_ISSUES` - Change task status (workflow-validated)
+
+---
+
+## Workflow System
+
+> 🎯 **Jira-Style Architecture:** Tasks follow workflow state machines. Status is the source of truth; columns are calculated views.
+
+### Workflow Types
+
+Each project has a `workflowType` that determines valid status transitions:
+
+| Type | Description | Transitions |
+|------|-------------|-------------|
+| **BASIC** | Simple linear workflow | DRAFT → ASSIGNED → IN_PROGRESS → REVIEW → COMPLETED |
+| **AGILE** | Scrum/Kanban with review | DRAFT → ASSIGNED → IN_PROGRESS → REVIEW → COMPLETED (iterative) |
+| **BUG_TRACKING** | Bug lifecycle | NEW → CONFIRMED → FIXING → TESTING → CLOSED |
+| **CUSTOM** | Database-defined rules | Custom transitions per project |
+
+### Status Categories
+
+Statuses map to board columns for visualization:
+
+| Category | Statuses | Description |
+|----------|----------|-------------|
+| **TODO** | DRAFT, ASSIGNED | Work not started |
+| **IN_PROGRESS** | IN_PROGRESS, PAUSED | Work being done |
+| **REVIEW** | REVIEW | Under review/testing |
+| **DONE** | COMPLETED, REJECTED | Finished |
+
+### Transition Validation
+
+All status changes are validated:
+
+1. **Get project's workflow type** (BASIC, AGILE, etc.)
+2. **Check user's project role** (for role-based transitions)
+3. **Validate transition** using `isTransitionAllowed()`
+4. **Update or reject** with detailed error message
+
+**Example Valid Transition (AGILE workflow):**
+```
+Current: IN_PROGRESS
+Allowed: [REVIEW, PAUSED]
+Blocked: [COMPLETED] - Must go through REVIEW first
+```
+
+### Workflow Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/projects/:id/workflow` | Get project workflow config |
+| GET | `/api/tasks/:id/transitions` | Get available transitions for task |
+| POST | `/api/tasks/:id/transition` | Change task status (validated) |
+| POST | `/api/tasks/:id/move` | Move task on board (status + position) |
+| GET | `/api/tasks/board/:projectId` | Get Kanban board with workflow info |
+
+**Key Features:**
+- ✅ Role-based transition filtering
+- ✅ Workflow-specific validation rules
+- ✅ Bulk operations with validation
+- ✅ Detailed error messages for invalid transitions
+- ✅ Activity logging for all transitions
+
+**See:** [WORKFLOW_ARCHITECTURE.md](./WORKFLOW_ARCHITECTURE.md) for complete workflow documentation.
 
 ---
 
@@ -277,21 +345,30 @@ The system uses **32 granular permissions** organized into categories:
 ### 5. Tasks/Issues (`/api/tasks`)
 
 | Method | Endpoint | Description | Permissions | Roles |
-| POST | `/tasks/:id/reject` | Reject task | - | CEO, HOO, HR |
-
-**Notes:**
-
-- Users can edit own issues with `EDIT_OWN_ISSUES`
-- Status transitions follow workflow rules
-- Approval/rejection requires global roles (CEO/HOO/HR)
+|--------|----------|-------------|-------------|-------|
+| POST | `/tasks/personal` | Create personal task | Authenticated | All |
+| POST | `/tasks` | Create project task | `CREATE_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER, REPORTER |
+| GET | `/tasks` | List all tasks | Authenticated | All (filtered by role) |
+| GET | `/tasks/:id` | Get task by ID | `BROWSE_PROJECT` | All project members |
+| PUT | `/tasks/:id` | Update task | `EDIT_OWN_ISSUES` or `EDIT_ALL_ISSUES` | Varies by ownership |
+| DELETE | `/tasks/:id` | Delete task | `DELETE_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
+| PATCH | `/tasks/:id/status` | Change task status (legacy) | Authenticated | Task creator/assignee |
+| **POST** | **`/tasks/:id/transition`** | **Workflow-validated status change** | `TRANSITION_ISSUES` | Workflow-based |
+| **GET** | **`/tasks/:id/transitions`** | **Get available transitions** | Authenticated | Task creator/assignee |
 | POST | `/tasks/:id/assign` | Assign task to user | `ASSIGN_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
 | POST | `/tasks/:id/approve` | Approve task | - | CEO, HOO, HR |
 | POST | `/tasks/:id/reject` | Reject task | - | CEO, HOO, HR |
+| **GET** | **`/tasks/board/:projectId`** | **Get Kanban board view** | Authenticated | All project members |
+| **POST** | **`/tasks/:id/move`** | **Move task on board** | Authenticated | Task creator/assignee/admins |
 
 **Notes:**
-- Users can edit own issues with `EDIT_OWN_ISSUES`
-- Status transitions follow workflow rules
+- ⚠️ **Use `/tasks/:id/transition` instead of `/tasks/:id/status`** - validates against workflow rules
+- Status transitions follow project workflow type (BASIC, AGILE, BUG_TRACKING)
+- `/tasks/:id/transitions` returns only valid next statuses based on workflow + role
 - Approval/rejection requires global roles (CEO/HOO/HR)
+- **Personal tasks use BASIC workflow by default**
+- **Kanban board groups tasks by status categories (TODO, IN_PROGRESS, REVIEW, DONE)**
+- **All tasks are auto-positioned for board ordering**
 
 | GET | `/:id/logs` | Get activity logs | `BROWSE_PROJECT` | All project members |
 
@@ -662,38 +739,67 @@ created >= 2025-01-01 ORDER BY priority DESC
 | Method | Endpoint | Description | Permissions | Roles |
 |--------|----------|-------------|-------------|-------|
 | POST | `/bulk/assign` | Bulk assign tasks | `ASSIGN_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
-| POST | `/bulk/transition` | Bulk status change | `TRANSITION_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
+| **POST** | **`/bulk/transition`** | **Bulk status change (workflow-validated)** | `TRANSITION_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
 | POST | `/bulk/update` | Bulk update fields | `EDIT_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
 | POST | `/bulk/delete` | Bulk delete tasks | `DELETE_ISSUES` | PROJECT_ADMIN |
 | POST | `/projects/:projectId/workflow` | Assign workflow to project | `ADMINISTER_PROJECT` | PROJECT_ADMIN |
 
-**Default Workflow Statuses:**
+**Workflow-Validated Bulk Transitions:**
 
-- TODO → IN_PROGRESS → DONE
-- Custom workflows can define additional statuses
+✅ **Each task validated individually** against its project workflow
+✅ **Returns detailed results** with successful and failed tasks
+✅ **Partial success handling** - some tasks may succeed while others fail
+
+**Response Format:**
+```json
+{
+  "successful": [
+    { "id": 1, "title": "Task 1", "oldStatus": "IN_PROGRESS", "newStatus": "REVIEW" }
+  ],
+  "failed": [
+    { "taskId": 2, "reason": "Invalid transition: Cannot move from IN_PROGRESS to COMPLETED in AGILE workflow (must go through REVIEW)" }
+  ]
+}
+```
+
+**Notes:**
+- All status changes follow project workflow rules (BASIC, AGILE, BUG_TRACKING)
+- Failed transitions return specific error messages with workflow context
+- Personal tasks use BASIC workflow by default
 
 ---
 
-### 17. Workflows (`/api/workflows`)
+### 17. Workflows (`/api/projects/:projectId`)
 
 | Method | Endpoint | Description | Permissions | Roles |
 |--------|----------|-------------|-------------|-------|
-| GET | `/workflows` | Get all workflow schemes | Authenticated | All |
-| GET | `/workflows/:id` | Get workflow by ID | Authenticated | All |
-| POST | `/workflows` | Create workflow scheme | - | ADMIN |
-| PUT | `/workflows/:id` | Update workflow | - | ADMIN |
-| DELETE | `/workflows/:id` | Delete workflow | - | ADMIN |
-| GET | `/workflows/:id/transitions` | Get transitions | Authenticated | All |
-| POST | `/workflows/:id/transitions` | Add transition | - | ADMIN |
-| PUT | `/workflows/:id/statuses` | Update statuses | - | ADMIN |
-| GET | `/projects/:projectId/workflow` | Get project workflow | `BROWSE_PROJECT` | Project members |
-| POST | `/permission-schemes/default/create` | Create default scheme | - | ADMIN |
+| GET | `/projects/:projectId/workflow` | Get project workflow config | `BROWSE_PROJECT` | Project members |
+| POST | `/projects/:projectId/workflow` | Update project workflow type | `ADMINISTER_PROJECT` | PROJECT_ADMIN |
+
+**Request Body (POST):**
+```json
+{
+  "workflowType": "AGILE"  // BASIC, AGILE, BUG_TRACKING, CUSTOM
+}
+```
+
+**Response Example:**
+```json
+{
+  "workflowType": "AGILE",
+  "availableStatuses": ["DRAFT", "ASSIGNED", "IN_PROGRESS", "PAUSED", "REVIEW", "COMPLETED", "REJECTED"],
+  "transitions": [
+    { "from": "DRAFT", "to": "ASSIGNED", "roles": ["PROJECT_ADMIN", "PROJECT_LEAD"] },
+    { "from": "ASSIGNED", "to": "IN_PROGRESS", "roles": ["PROJECT_ADMIN", "PROJECT_LEAD", "DEVELOPER"] }
+  ]
+}
+```
 
 **Notes:**
-
-- Permission schemes define who can do what in projects
-- Each project assigned one permission scheme
-- Default scheme includes standard Jira-like permissions
+- Each project has one workflow type that governs all tasks
+- Changing workflow type affects all future task transitions
+- Existing task statuses remain unchanged
+- See **Workflow System** section above for transition rules
 ---
 
 ### 18. Permission Schemes (`/api/permission-schemes`)
@@ -1098,6 +1204,492 @@ curl -X POST http://localhost:3000/api/tasks \
 2. Set Authorization type to "Bearer Token"
 3. Use `{{token}}` variable for authentication
 4. Create environment with base URL and token
+
+---
+
+---
+
+## Kanban Board Usage Guide (Jira-Style Workflow)
+
+### Overview
+
+The Kanban board follows **Jira's workflow architecture** where:
+- **Status is the source of truth** (DRAFT, ASSIGNED, IN_PROGRESS, etc.)
+- **Columns are visual mappings** of status categories
+- **Workflow transitions** are validated by state machine rules
+- **Drag-and-drop** triggers state transitions (not arbitrary column moves)
+
+This is NOT a simple "Todo/In Progress/Done" system - it's a sophisticated workflow state machine.
+
+### Workflow Types
+
+Each project has a workflow type that determines allowed status transitions:
+
+| Workflow Type | Description | Use Case |
+|--------------|-------------|----------|
+| **BASIC** | Simple linear workflow | Small projects, simple task tracking |
+| **AGILE** | Scrum/Kanban with backlog and review | Software development, agile teams |
+| **BUG_TRACKING** | Bug lifecycle management | QA teams, bug reports |
+| **CUSTOM** | Database-defined workflow | Enterprise projects with custom needs |
+
+### Status Categories (Column Mapping)
+
+Tasks are grouped into columns based on their **status category**:
+
+| Column | Task Statuses | Description |
+|--------|---------------|-------------|
+| **To Do** | DRAFT, ASSIGNED | Work that has not started |
+| **In Progress** | IN_PROGRESS, PAUSED | Work that is currently being worked on |
+| **Review** | REVIEW | Work that is being reviewed or tested |
+| **Done** | COMPLETED, REJECTED | Work that is finished |
+
+**Key Concept:** The column is NOT stored - it's calculated from the task's status. When you "move" a task, you're actually transitioning its workflow state.
+
+### 1. Get Kanban Board
+
+**Endpoint:** `GET /api/tasks/board/:projectId`
+
+**Request:**
+```bash
+curl -X GET "http://localhost:4000/api/tasks/board/project-uuid-123" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "message": "Board retrieved successfully",
+  "data": {
+    "projectId": "project-uuid-123",
+    "projectName": "My Project",
+    "projectKey": "PROJ",
+    "workflowType": "AGILE",
+    "columns": {
+      "TODO": {
+        "name": "To Do",
+        "description": "Work that has not started",
+        "statuses": ["DRAFT", "ASSIGNED"],
+        "tasks": [
+          {
+            "id": "task-1",
+            "title": "Setup database",
+            "status": "DRAFT",
+            "priority": "HIGH",
+            "position": 0,
+            "assignee": {
+              "id": "user-1",
+              "name": "John Doe",
+              "email": "john@example.com"
+            },
+            "_count": {
+              "comments": 3,
+              "subTasks": 0
+            }
+          },
+          {
+            "id": "task-2",
+            "title": "Design UI",
+            "status": "ASSIGNED",
+            "priority": "MEDIUM",
+            "position": 1,
+            "assignee": { /* ... */ }
+          }
+        ]
+      },
+      "IN_PROGRESS": {
+        "name": "In Progress",
+        "statuses": ["IN_PROGRESS", "PAUSED"],
+        "tasks": [ /* tasks currently being worked on */ ]
+      },
+      "REVIEW": {
+        "name": "Review",
+        "statuses": ["REVIEW"],
+        "tasks": [ /* tasks in review */ ]
+      },
+      "DONE": {
+        "name": "Done",
+        "statuses": ["COMPLETED", "REJECTED"],
+        "tasks": [ /* completed or rejected tasks */ ]
+      }
+    }
+  }
+}
+```
+
+### 2. Create Task (Auto-positioned)
+
+When you create a task, it's automatically positioned at the end of the "To Do" column.
+
+**Endpoint:** `POST /api/tasks`
+
+**Request:**
+```bash
+curl -X POST "http://localhost:4000/api/tasks" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectId": "project-uuid-123",
+    "title": "Implement login feature",
+    "description": "Add user authentication with JWT",
+    "issueType": "TASK",
+    "priority": "HIGH",
+    "assigneeId": "user-uuid-456"
+  }'
+```
+
+**Response:**
+```json
+{
+  "message": "Task created successfully",
+  "data": {
+    "id": "task-new-uuid",
+    "title": "Implement login feature",
+    "status": "DRAFT",
+    "position": 2,  // Auto-calculated position in To Do column
+    "projectId": "project-uuid-123",
+    "priority": "HIGH",
+    "createdAt": "2025-12-16T10:30:00Z"
+  }
+}
+```
+
+### 3. Move Task (Drag & Drop)
+
+Move a task to a different column by updating its status and position.
+
+**Endpoint:** `POST /api/tasks/:id/move`
+
+**Scenario 1: Move from "To Do" to "In Progress"**
+```bash
+curl -X POST "http://localhost:4000/api/tasks/task-1/move" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "IN_PROGRESS",
+    "position": 0
+  }'
+```
+
+**Scenario 2: Reorder within same column**
+```bash
+# Move task from position 2 to position 0 in "To Do"
+curl -X POST "http://localhost:4000/api/tasks/task-3/move" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "DRAFT",
+    "position": 0
+  }'
+```
+
+**Scenario 3: Move to "Done"**
+```bash
+curl -X POST "http://localhost:4000/api/tasks/task-1/move" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "COMPLETED",
+    "position": 0
+  }'
+```
+
+**Response:**
+```json
+{
+  "message": "Task moved successfully",
+  "data": {
+    "id": "task-1",
+    "title": "Setup database",
+    "status": "IN_PROGRESS",
+    "position": 0,
+    "updatedAt": "2025-12-16T10:35:00Z"
+  }
+}
+```
+
+### 4. Frontend Integration Example
+
+**React/Vue/Angular Implementation:**
+
+```javascript
+// 1. Fetch board data
+async function loadKanbanBoard(projectId) {
+  const response = await fetch(`/api/tasks/board/${projectId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  const data = await response.json();
+  return data.data; // { projectId, projectName, columns }
+}
+
+// 2. Handle drag and drop
+async function handleTaskDrop(taskId, newStatus, newPosition) {
+  const response = await fetch(`/api/tasks/${taskId}/move`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      status: newStatus,
+      position: newPosition
+    })
+  });
+  
+  if (response.ok) {
+    // Refresh board or update local state
+    await loadKanbanBoard(projectId);
+  }
+}
+
+// 3. Render columns
+function renderBoard(boardData) {
+  return (
+    <div className="kanban-board">
+      {Object.entries(boardData.columns).map(([key, column]) => (
+        <div key={key} className="kanban-column">
+          <h3>{column.name}</h3>
+          <div className="tasks">
+            {column.tasks.map(task => (
+              <TaskCard 
+                key={task.id}
+                task={task}
+                onDrop={(newStatus, newPosition) => 
+                  handleTaskDrop(task.id, newStatus, newPosition)
+                }
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### 5. Status Transition Rules
+
+Tasks can only move to allowed statuses. Invalid transitions are rejected.
+
+**Allowed Transitions:**
+```
+DRAFT        → ASSIGNED, IN_PROGRESS
+ASSIGNED     → IN_PROGRESS, REJECTED
+IN_PROGRESS  → PAUSED, REVIEW, COMPLETED
+PAUSED       → IN_PROGRESS, REJECTED
+REVIEW       → COMPLETED, IN_PROGRESS, REJECTED
+COMPLETED    → (terminal - no transitions)
+REJECTED     → DRAFT, ASSIGNED
+```
+
+**Example Error:**
+```bash
+# Try to move DRAFT directly to COMPLETED (not allowed)
+POST /api/tasks/task-1/move
+{
+  "status": "COMPLETED",
+  "position": 0
+}
+
+# Response: 403 Forbidden
+{
+  "message": "Invalid status transition from DRAFT to COMPLETED"
+}
+```
+
+### 6. Personal Tasks on Board
+
+Personal tasks (created via `/api/tasks/personal`) are NOT shown on project boards since they have no `projectId`. They can be viewed only through:
+- `GET /api/tasks` (filtered to show user's personal tasks)
+- Personal dashboard/view (if implemented in frontend)
+
+### 7. Best Practices
+
+✅ **Refresh board after operations** - Always reload board data after creating/moving tasks  
+✅ **Validate transitions** - Check allowed transitions before allowing drag-and-drop  
+✅ **Use position wisely** - Position 0 is top of column, higher numbers go down  
+✅ **Handle errors gracefully** - Show user-friendly messages for invalid moves  
+✅ **Real-time updates** - Consider WebSocket for multi-user board updates  
+✅ **Optimistic UI** - Update UI immediately, rollback on error  
+
+### 8. Common Use Cases
+
+**Use Case 1: Start Working on a Task**
+```bash
+# User picks up a task from "To Do"
+POST /api/tasks/task-123/move
+{ "status": "IN_PROGRESS", "position": 0 }
+```
+
+**Use Case 2: Pause Work Temporarily**
+```bash
+# Task is paused but stays in "In Progress" column
+POST /api/tasks/task-123/move
+{ "status": "PAUSED", "position": 1 }
+```
+
+**Use Case 3: Submit for Review**
+```bash
+# Move completed work to review
+POST /api/tasks/task-123/move
+{ "status": "REVIEW", "position": 0 }
+```
+
+**Use Case 4: Mark as Complete**
+```bash
+# After review approval, mark done
+POST /api/tasks/task-123/move
+{ "status": "COMPLETED", "position": 0 }
+```
+
+### 9. Get Available Workflow Transitions
+
+**NEW:** Get valid status transitions for a task based on workflow rules.
+
+**Endpoint:** `GET /api/tasks/:id/transitions`
+
+**Request:**
+```bash
+curl -X GET "http://localhost:4000/api/tasks/task-123/transitions" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "message": "Available transitions retrieved successfully",
+  "data": {
+    "currentStatus": "IN_PROGRESS",
+    "workflowType": "AGILE",
+    "availableTransitions": [
+      {
+        "name": "Ready for Review",
+        "to": "REVIEW",
+        "description": "Submit work for review"
+      },
+      {
+        "name": "Pause Sprint",
+        "to": "PAUSED",
+        "description": "Temporarily pause work"
+      },
+      {
+        "name": "Block",
+        "to": "PAUSED",
+        "description": "Blocked by dependency"
+      }
+    ]
+  }
+}
+```
+
+**Usage in Frontend:**
+```javascript
+// Fetch available transitions when showing task details
+const { data } = await api.get(`/tasks/${taskId}/transitions`);
+
+// Show only valid transitions in dropdown/context menu
+data.availableTransitions.forEach(transition => {
+  addMenuOption(transition.name, () => {
+    moveTask(taskId, transition.to);
+  });
+});
+```
+
+### 10. Get Project Workflow Configuration
+
+**NEW:** Get workflow type and status categories for a project.
+
+**Endpoint:** `GET /api/projects/:projectId/workflow`
+
+**Request:**
+```bash
+curl -X GET "http://localhost:4000/api/projects/project-123/workflow" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "message": "Workflow configuration retrieved successfully",
+  "data": {
+    "workflowType": "AGILE",
+    "statusCategories": {
+      "TODO": {
+        "name": "To Do",
+        "statuses": ["DRAFT", "ASSIGNED"],
+        "description": "Work that has not started"
+      },
+      "IN_PROGRESS": {
+        "name": "In Progress",
+        "statuses": ["IN_PROGRESS", "PAUSED"],
+        "description": "Work that is currently being worked on"
+      },
+      "REVIEW": {
+        "name": "Review",
+        "statuses": ["REVIEW"],
+        "description": "Work that is being reviewed or tested"
+      },
+      "DONE": {
+        "name": "Done",
+        "statuses": ["COMPLETED", "REJECTED"],
+        "description": "Work that is finished"
+      }
+    },
+    "allStatuses": [
+      "DRAFT", "ASSIGNED", "IN_PROGRESS", "PAUSED", 
+      "REVIEW", "COMPLETED", "REJECTED"
+    ]
+  }
+}
+```
+
+**Usage in Frontend:**
+```javascript
+// Initialize board with project workflow
+const { data } = await api.get(`/projects/${projectId}/workflow`);
+
+// Create board columns from status categories
+Object.entries(data.statusCategories).forEach(([key, category]) => {
+  createColumn({
+    id: key,
+    name: category.name,
+    description: category.description,
+    acceptedStatuses: category.statuses
+  });
+});
+
+// Validate drag-and-drop operations
+function canDropTask(task, targetColumn) {
+  const category = data.statusCategories[targetColumn.id];
+  return category.statuses.includes(task.status);
+}
+```
+
+### 11. Workflow Transition Rules by Type
+
+**BASIC Workflow:**
+```
+DRAFT → ASSIGNED → IN_PROGRESS → COMPLETED
+             ↓          ↓
+         REJECTED   PAUSED
+```
+
+**AGILE Workflow:**
+```
+DRAFT → ASSIGNED → IN_PROGRESS → REVIEW → COMPLETED
+  ↓        ↓           ↓            ↓
+REJECTED  DRAFT      PAUSED      IN_PROGRESS
+```
+
+**BUG_TRACKING Workflow:**
+```
+DRAFT → ASSIGNED → IN_PROGRESS → REVIEW → COMPLETED
+  ↓        ↓           ↓            ↓
+REJECTED REJECTED   REJECTED   IN_PROGRESS
+```
+
+For complete workflow transition rules, see [WORKFLOW_ARCHITECTURE.md](./WORKFLOW_ARCHITECTURE.md).
 
 ---
 

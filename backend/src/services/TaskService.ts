@@ -3,13 +3,44 @@ import { CreateTaskDTO, UpdateTaskDTO, Task } from "../types/interfaces";
 import {
   UserRole,
   TaskStatus,
-  ALLOWED_STATUS_TRANSITIONS,
   ActivityAction,
   IssueType,
 } from "../types/enums";
+import { ProjectRole, WorkflowType } from "@prisma/client";
+import {
+  isTransitionAllowed,
+  getAvailableTransitions as getWorkflowTransitions,
+} from "../config/workflows";
 import NotificationService from "./NotificationService";
 import ActivityLogService from "./ActivityLogService";
 import emailService from "./EmailService";
+
+/**
+ * Status Categories - Maps TaskStatus to Board Columns (Jira-style)
+ * This is the "status category" concept from Jira
+ */
+const STATUS_CATEGORIES = {
+  TODO: {
+    name: "To Do",
+    statuses: [TaskStatus.DRAFT, TaskStatus.ASSIGNED],
+    description: "Work that has not started",
+  },
+  IN_PROGRESS: {
+    name: "In Progress",
+    statuses: [TaskStatus.IN_PROGRESS, TaskStatus.PAUSED],
+    description: "Work that is currently being worked on",
+  },
+  REVIEW: {
+    name: "Review",
+    statuses: [TaskStatus.REVIEW],
+    description: "Work that is being reviewed or tested",
+  },
+  DONE: {
+    name: "Done",
+    statuses: [TaskStatus.COMPLETED, TaskStatus.REJECTED],
+    description: "Work that is finished",
+  },
+};
 
 export class TaskService {
   /**
@@ -57,6 +88,12 @@ export class TaskService {
       creatorRole
     );
 
+    // Calculate position for new task (place at end of status column)
+    const position = await this.getNextPositionForStatus(
+      data.projectId || null,
+      TaskStatus.DRAFT
+    );
+
     const task = await prisma.task.create({
       data: {
         projectId: data.projectId || null,
@@ -72,6 +109,7 @@ export class TaskService {
         approvedById: autoApprove ? creatorId : null,
         labels: data.labels || [],
         dueDate: data.dueDate || null,
+        position,
       },
     });
 
@@ -132,6 +170,12 @@ export class TaskService {
     // - No approval required
     // - Private to the creator
 
+    // Calculate position for personal task
+    const position = await this.getNextPositionForStatus(
+      null,
+      TaskStatus.DRAFT
+    );
+
     const task = await prisma.task.create({
       data: {
         projectId: null, // Personal tasks have no project
@@ -148,6 +192,7 @@ export class TaskService {
         dueDate: data.dueDate || null,
         estimatedHours: data.estimatedHours || null,
         storyPoints: data.storyPoints || null,
+        position,
       },
       include: {
         creator: {
@@ -425,7 +470,8 @@ export class TaskService {
   }
 
   /**
-   * Change task status
+   * Change task status (workflow-aware)
+   * Note: This method only changes status, not position. For board moves, use moveTask()
    */
   async changeStatus(
     id: string,
@@ -433,19 +479,15 @@ export class TaskService {
     userId: string,
     userRole: UserRole
   ): Promise<Task | null> {
-    const task = await prisma.task.findUnique({ where: { id } });
+    const task = await prisma.task.findUnique({
+      where: { id },
+      include: {
+        project: true,
+      },
+    });
 
     if (!task) {
       return null;
-    }
-
-    // Validate status transition
-    const allowedTransitions =
-      ALLOWED_STATUS_TRANSITIONS[task.status as TaskStatus];
-    if (!allowedTransitions.includes(newStatus)) {
-      throw new Error(
-        `Invalid status transition from ${task.status} to ${newStatus}`
-      );
     }
 
     // Check permission
@@ -457,6 +499,36 @@ export class TaskService {
     if (!canChange) {
       throw new Error(
         "Forbidden: You do not have permission to change this task status"
+      );
+    }
+
+    // Get user's project role for workflow validation
+    let projectRole: ProjectRole | undefined;
+    if (task.project) {
+      const membership = await prisma.projectMember.findFirst({
+        where: {
+          projectId: task.projectId!,
+          userId,
+        },
+      });
+      projectRole = membership?.role;
+    }
+
+    // Validate status transition using workflow configuration (Jira-style)
+    // Personal tasks (no project) use BASIC workflow
+    const workflowType = task.project
+      ? task.project.workflowType
+      : WorkflowType.BASIC;
+    const isAllowed = isTransitionAllowed(
+      workflowType,
+      task.status as TaskStatus,
+      newStatus,
+      projectRole
+    );
+
+    if (!isAllowed) {
+      throw new Error(
+        `Invalid status transition from ${task.status} to ${newStatus} in ${workflowType} workflow`
       );
     }
 
@@ -820,6 +892,416 @@ export class TaskService {
     });
 
     return tasks as Task[];
+  }
+
+  /**
+   * Get next position for a task in a specific status column
+   */
+  private async getNextPositionForStatus(
+    projectId: string | null,
+    status: TaskStatus
+  ): Promise<number> {
+    const lastTask = await prisma.task.findFirst({
+      where: {
+        projectId,
+        status,
+      },
+      orderBy: { position: "desc" },
+      select: { position: true },
+    });
+
+    return lastTask ? lastTask.position + 1 : 0;
+  }
+
+  /**
+   * Get Kanban board view - tasks grouped by status categories (Jira-style)
+   * Status is source of truth, columns are visual mappings
+   */
+  async getKanbanBoard(projectId: string): Promise<any> {
+    // Check project access
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    // Get all tasks for the project
+    const tasks = await prisma.task.findMany({
+      where: { projectId },
+      orderBy: { position: "asc" },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        _count: {
+          select: {
+            comments: true,
+            subTasks: true,
+          },
+        },
+      },
+    });
+
+    // Group tasks by status categories (Jira-style: status → column mapping)
+    const columns = Object.entries(STATUS_CATEGORIES).reduce(
+      (acc, [key, category]) => {
+        acc[key] = {
+          name: category.name,
+          description: category.description,
+          statuses: category.statuses,
+          tasks: tasks.filter((t) =>
+            category.statuses.includes(t.status as TaskStatus)
+          ),
+        };
+        return acc;
+      },
+      {} as any
+    );
+
+    return {
+      projectId,
+      projectName: project.name,
+      projectKey: project.key,
+      workflowType: project.workflowType,
+      columns,
+      statusCategories: STATUS_CATEGORIES,
+    };
+  }
+
+  /**
+   * Move task to different status/column and update position (Jira-style workflow)
+   * Validates transitions based on project's workflow configuration
+   */
+  async moveTask(
+    taskId: string,
+    newStatus: TaskStatus,
+    newPosition: number,
+    userId: string,
+    userRole: UserRole
+  ): Promise<Task> {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        project: true,
+      },
+    });
+
+    if (!task) {
+      throw new Error("Task not found");
+    }
+
+    // Check permission
+    const canMove =
+      task.creatorId === userId ||
+      task.assigneeId === userId ||
+      [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
+        userRole
+      );
+
+    if (!canMove) {
+      throw new Error(
+        "Forbidden: You do not have permission to move this task"
+      );
+    }
+
+    // Get user's project role for workflow validation
+    let projectRole: ProjectRole | undefined;
+    if (task.project) {
+      const membership = await prisma.projectMember.findFirst({
+        where: {
+          projectId: task.projectId!,
+          userId,
+        },
+      });
+      projectRole = membership?.role;
+    }
+
+    // Validate status transition using workflow configuration (Jira-style)
+    // Personal tasks (no project) use BASIC workflow
+    const workflowType = task.project
+      ? task.project.workflowType
+      : WorkflowType.BASIC;
+    const isAllowed = isTransitionAllowed(
+      workflowType,
+      task.status as TaskStatus,
+      newStatus,
+      projectRole
+    );
+
+    if (!isAllowed) {
+      throw new Error(
+        `Invalid status transition from ${task.status} to ${newStatus} in ${workflowType} workflow`
+      );
+    }
+
+    // Update task status and position
+    const updated = await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        status: newStatus,
+        position: newPosition,
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Log activity
+    await ActivityLogService.logActivity({
+      taskId,
+      userId,
+      action: ActivityAction.STATUS_UPDATE,
+      previousStatus: task.status as TaskStatus,
+      newStatus,
+      metadata: { position: newPosition },
+    });
+
+    // Notify relevant users
+    await NotificationService.notifyStatusChanged(
+      taskId,
+      task.status as TaskStatus,
+      newStatus
+    );
+
+    return updated as Task;
+  }
+
+  /**
+   * Get available workflow transitions for a task (Jira-style)
+   * Returns list of statuses the task can transition to based on workflow rules
+   */
+  async getAvailableTransitions(
+    taskId: string,
+    userId: string
+  ): Promise<{
+    currentStatus: TaskStatus;
+    availableTransitions: Array<{
+      name: string;
+      to: TaskStatus;
+      description?: string;
+      requiredRole?: ProjectRole;
+    }>;
+    workflowType: WorkflowType;
+  }> {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        project: true,
+      },
+    });
+
+    if (!task) {
+      throw new Error("Task not found");
+    }
+
+    // Get user's project role
+    let projectRole: ProjectRole | undefined;
+    if (task.project) {
+      const membership = await prisma.projectMember.findFirst({
+        where: {
+          projectId: task.projectId!,
+          userId,
+        },
+      });
+      projectRole = membership?.role;
+    }
+
+    // Personal tasks (no project) use BASIC workflow
+    const workflowType = task.project
+      ? task.project.workflowType
+      : WorkflowType.BASIC;
+
+    // Get available transitions (already filtered by user's project role)
+    // Only transitions the user has permission to perform are returned
+    const transitions = getWorkflowTransitions(
+      workflowType,
+      task.status as TaskStatus,
+      projectRole
+    );
+
+    // Convert WorkflowTransitionRule to expected format
+    const formattedTransitions = transitions.map((t) => ({
+      name: t.name,
+      to: t.to as TaskStatus,
+      description: t.description,
+      requiredRole: t.requiredRole,
+    }));
+
+    return {
+      currentStatus: task.status as TaskStatus,
+      availableTransitions: formattedTransitions,
+      workflowType,
+    };
+  }
+
+  /**
+   * Get workflow information for a project
+   */
+  async getProjectWorkflow(projectId: string): Promise<{
+    workflowType: WorkflowType;
+    statusCategories: typeof STATUS_CATEGORIES;
+    allStatuses: TaskStatus[];
+  }> {
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    return {
+      workflowType: project.workflowType,
+      statusCategories: STATUS_CATEGORIES,
+      allStatuses: Object.values(TaskStatus),
+    };
+  }
+
+  /**
+   * Bulk transition tasks with workflow validation
+   * Validates each task individually against workflow rules
+   */
+  async bulkTransitionTasks(
+    taskIds: string[],
+    newStatus: TaskStatus,
+    userId: string,
+    userRole: UserRole
+  ): Promise<{
+    successful: string[];
+    failed: Array<{ taskId: string; reason: string }>;
+  }> {
+    const successful: string[] = [];
+    const failed: Array<{ taskId: string; reason: string }> = [];
+
+    for (const taskId of taskIds) {
+      try {
+        // Get task with project info
+        const task = await prisma.task.findUnique({
+          where: { id: taskId },
+          include: { project: true },
+        });
+
+        if (!task) {
+          failed.push({ taskId, reason: "Task not found" });
+          continue;
+        }
+
+        // Check permission
+        const canChange =
+          task.creatorId === userId ||
+          task.assigneeId === userId ||
+          [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
+            userRole
+          );
+
+        if (!canChange) {
+          failed.push({
+            taskId,
+            reason: "Insufficient permissions",
+          });
+          continue;
+        }
+
+        // Get user's project role
+        let projectRole: ProjectRole | undefined;
+        if (task.project) {
+          const membership = await prisma.projectMember.findFirst({
+            where: {
+              projectId: task.projectId!,
+              userId,
+            },
+          });
+          projectRole = membership?.role;
+        }
+
+        // Validate workflow transition
+        const workflowType = task.project
+          ? task.project.workflowType
+          : WorkflowType.BASIC;
+        const isAllowed = isTransitionAllowed(
+          workflowType,
+          task.status as TaskStatus,
+          newStatus,
+          projectRole
+        );
+
+        if (!isAllowed) {
+          failed.push({
+            taskId,
+            reason: `Invalid transition from ${task.status} to ${newStatus} in ${workflowType} workflow`,
+          });
+          continue;
+        }
+
+        // Update task status
+        await prisma.task.update({
+          where: { id: taskId },
+          data: { status: newStatus },
+        });
+
+        // Log activity
+        await ActivityLogService.logActivity({
+          taskId,
+          userId,
+          action: ActivityAction.STATUS_UPDATE,
+          previousStatus: task.status as TaskStatus,
+          newStatus,
+          metadata: { bulkOperation: true },
+        });
+
+        // Notify relevant users
+        await NotificationService.notifyStatusChanged(
+          taskId,
+          task.status as TaskStatus,
+          newStatus
+        );
+
+        successful.push(taskId);
+      } catch (error: any) {
+        failed.push({
+          taskId,
+          reason: error.message || "Unknown error",
+        });
+      }
+    }
+
+    return { successful, failed };
   }
 }
 

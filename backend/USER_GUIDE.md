@@ -38,9 +38,10 @@ A **Jira-like Task Management System** designed for organizations to manage proj
 
 #### 🎯 Core Functionality
 - **Task Management**: Create, assign, track, and manage tasks with multiple priority levels
-- **Project Management**: Organize work into projects with team members and roles
+- **Workflow System**: Jira-style state machine with validated transitions (BASIC, AGILE, BUG_TRACKING)
+- **Project Management**: Organize work into projects with team members and workflow types
 - **Sprint Planning**: Agile workflows with sprint management, burndown charts, velocity tracking
-- **Kanban Boards**: Visual workflow management with drag-and-drop
+- **Kanban Boards**: Status-based visual workflow with drag-and-drop and validation
 - **Epic Management**: Group related tasks into large features
 
 #### 👥 Team Collaboration
@@ -672,6 +673,76 @@ Each project can have custom permission schemes:
 - Press `Shift + C` to clone current task
 - Use templates for recurring task types
 
+### Task Workflow & Status
+
+> 🎯 **Jira-Style Workflow:** Tasks follow workflow state machines. Status transitions are validated based on project's workflow type.
+
+#### Workflow Types
+
+**BASIC Workflow (Linear)**
+```
+DRAFT → ASSIGNED → IN_PROGRESS → REVIEW → COMPLETED
+```
+Best for: Simple projects with straightforward processes
+
+**AGILE Workflow (Iterative)**
+```
+DRAFT → ASSIGNED → IN_PROGRESS → REVIEW → COMPLETED
+(with backlog management and iterative feedback)
+```
+Best for: Agile/Scrum teams with sprints
+
+**BUG_TRACKING Workflow (Testing Focus)**
+```
+DRAFT (New) → ASSIGNED (Confirmed) → IN_PROGRESS (Fixing) → REVIEW (Testing) → COMPLETED (Closed)
+```
+Best for: Bug tracking and QA processes
+
+#### Status Meanings
+
+| Status | Description | Who Can Move Here |
+|--------|-------------|-----------------|
+| **DRAFT** | Initial idea, not yet ready | Task creator |
+| **ASSIGNED** | Ready to work, assigned to someone | Project leads |
+| **IN_PROGRESS** | Work actively happening | Assignee |
+| **PAUSED** | Temporarily blocked/on hold | Assignee |
+| **REVIEW** | Submitted for review/testing | Assignee |
+| **COMPLETED** | Successfully finished | Project lead (after review) |
+| **REJECTED** | Closed without completion | Project lead |
+
+#### Changing Task Status
+
+**Option 1: Transition Button**
+1. Open task details
+2. Click current status badge
+3. See only valid transitions for current state
+4. Select new status
+5. System validates against workflow rules
+
+**Option 2: Drag on Board**
+1. Open Kanban board
+2. Drag task to different column
+3. Task status updates automatically
+4. Workflow validation ensures valid moves
+
+**Option 3: Quick Actions**
+- "Start Progress" (ASSIGNED → IN_PROGRESS)
+- "Submit for Review" (IN_PROGRESS → REVIEW)
+- "Approve & Complete" (REVIEW → COMPLETED)
+- "Request Changes" (REVIEW → IN_PROGRESS)
+
+#### Available Transitions
+
+The system shows only transitions you can perform:
+- Based on current status
+- Based on project workflow type
+- Based on your role permissions
+
+**Example (AGILE workflow, task in IN_PROGRESS):**
+- ✅ "Ready for Review" → REVIEW
+- ✅ "Pause Sprint" → PAUSED
+- ❌ "Complete" → Cannot skip review stage
+
 ### Task Details Page
 
 When you open a task, you see:
@@ -680,7 +751,7 @@ When you open a task, you see:
 - Task key (e.g., WEB-123)
 - Task type icon
 - Summary/title
-- Status badge
+- Status badge with workflow transitions
 - Priority indicator
 
 **Left Panel:**
