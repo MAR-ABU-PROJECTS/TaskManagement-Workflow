@@ -69,7 +69,11 @@ router.post(
  * @swagger
  * /api/bulk/transition:
  *   post:
- *     summary: Bulk transition tasks to new status
+ *     summary: Bulk transition tasks to new status (with workflow validation)
+ *     description: |
+ *       Transitions multiple tasks to a new status. Each task is validated individually
+ *       against its project's workflow rules. Tasks that fail validation are returned
+ *       in the 'failed' array with reasons.
  *     tags: [Bulk Operations]
  *     security:
  *       - bearerAuth: []
@@ -87,12 +91,57 @@ router.post(
  *                 type: array
  *                 items:
  *                   type: string
+ *                 description: Array of task IDs to transition
+ *                 example: ["task-uuid-1", "task-uuid-2"]
  *               status:
  *                 type: string
- *                 enum: [TODO, IN_PROGRESS, IN_REVIEW, DONE, CANCELLED]
+ *                 enum: [DRAFT, ASSIGNED, IN_PROGRESS, PAUSED, REVIEW, COMPLETED, REJECTED]
+ *                 description: Target status for all tasks
+ *                 example: IN_PROGRESS
  *     responses:
  *       200:
- *         description: Tasks transitioned successfully
+ *         description: Bulk transition completed (may include partial failures)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "3 of 5 tasks transitioned to IN_PROGRESS"
+ *                 successful:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   description: Task IDs that were successfully transitioned
+ *                   example: ["task-1", "task-2", "task-3"]
+ *                 failed:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       taskId:
+ *                         type: string
+ *                       reason:
+ *                         type: string
+ *                   description: Tasks that failed with reasons
+ *                   example: [
+ *                     { "taskId": "task-4", "reason": "Invalid transition from DRAFT to COMPLETED in AGILE workflow" },
+ *                     { "taskId": "task-5", "reason": "Insufficient permissions" }
+ *                   ]
+ *                 totalRequested:
+ *                   type: integer
+ *                   example: 5
+ *                 totalSuccessful:
+ *                   type: integer
+ *                   example: 3
+ *                 totalFailed:
+ *                   type: integer
+ *                   example: 2
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
  */
 router.post(
   "/transition",

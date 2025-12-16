@@ -144,6 +144,9 @@ export enum DependencyType {
 }
 
 // Status Transition Map
+// ⚠️ DEPRECATED: Use workflow-based transitions from config/workflows.ts instead
+// This hardcoded map is kept for backward compatibility only
+// @deprecated Use isTransitionAllowed() and getAvailableTransitions() from workflows.ts
 export const ALLOWED_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   [TaskStatus.DRAFT]: [TaskStatus.ASSIGNED],
   [TaskStatus.ASSIGNED]: [TaskStatus.IN_PROGRESS, TaskStatus.REJECTED],

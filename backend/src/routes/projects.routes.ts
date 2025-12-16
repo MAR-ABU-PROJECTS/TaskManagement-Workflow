@@ -1731,4 +1731,124 @@ router.get(
   ReportController.getBurnupData
 );
 
+/**
+ * @swagger
+ * /api/projects/{projectId}/workflow:
+ *   get:
+ *     summary: Get workflow configuration for a project
+ *     description: |
+ *       Retrieves the workflow configuration for a project, including workflow type,
+ *       status categories, and all available statuses. This is essential for understanding
+ *       the project's workflow state machine and board column mappings (Jira-style).
+ *     tags: [Projects, Workflow]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Project ID
+ *     responses:
+ *       200:
+ *         description: Workflow configuration retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Workflow configuration retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     workflowType:
+ *                       type: string
+ *                       enum: [BASIC, AGILE, BUG_TRACKING, CUSTOM]
+ *                       example: AGILE
+ *                     statusCategories:
+ *                       type: object
+ *                       description: Mapping of status categories to task statuses (for board columns)
+ *                       properties:
+ *                         TODO:
+ *                           type: object
+ *                           properties:
+ *                             name:
+ *                               type: string
+ *                               example: To Do
+ *                             statuses:
+ *                               type: array
+ *                               items:
+ *                                 type: string
+ *                               example: [DRAFT, ASSIGNED]
+ *                             description:
+ *                               type: string
+ *                               example: Work that has not started
+ *                         IN_PROGRESS:
+ *                           type: object
+ *                           properties:
+ *                             name:
+ *                               type: string
+ *                               example: In Progress
+ *                             statuses:
+ *                               type: array
+ *                               items:
+ *                                 type: string
+ *                               example: [IN_PROGRESS, PAUSED]
+ *                             description:
+ *                               type: string
+ *                               example: Work that is currently being worked on
+ *                         REVIEW:
+ *                           type: object
+ *                           properties:
+ *                             name:
+ *                               type: string
+ *                               example: Review
+ *                             statuses:
+ *                               type: array
+ *                               items:
+ *                                 type: string
+ *                               example: [REVIEW]
+ *                             description:
+ *                               type: string
+ *                               example: Work that is being reviewed or tested
+ *                         DONE:
+ *                           type: object
+ *                           properties:
+ *                             name:
+ *                               type: string
+ *                               example: Done
+ *                             statuses:
+ *                               type: array
+ *                               items:
+ *                                 type: string
+ *                               example: [COMPLETED, REJECTED]
+ *                             description:
+ *                               type: string
+ *                               example: Work that is finished
+ *                     allStatuses:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       example: [DRAFT, ASSIGNED, IN_PROGRESS, PAUSED, REVIEW, COMPLETED, REJECTED]
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error
+ */
+router.get(
+  "/:projectId/workflow",
+  hasProjectPermission(Permission.BROWSE_PROJECT),
+  (req, res) => {
+    // Import TaskController here to avoid circular dependency
+    const TaskController = require("../controllers/TaskController").default;
+    return TaskController.getProjectWorkflow(req, res);
+  }
+);
+
 export default router;
