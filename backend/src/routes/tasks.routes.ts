@@ -27,6 +27,93 @@ const upload = multer({
 // All routes require authentication
 router.use(authenticate);
 
+// ==================== PERSONAL TASKS ====================
+
+/**
+ * @swagger
+ * /api/tasks/personal:
+ *   post:
+ *     summary: Create a personal task
+ *     description: |
+ *       Create a personal task that is not associated with any project.
+ *       Personal tasks are private and only visible to the creator.
+ *       No special permissions required - any authenticated user can create personal tasks.
+ *       Task is automatically assigned to the creator.
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 maxLength: 255
+ *                 description: Task title
+ *                 example: Buy groceries
+ *               description:
+ *                 type: string
+ *                 description: Detailed task description
+ *                 example: Need to buy milk, eggs, and bread
+ *               priority:
+ *                 type: string
+ *                 enum: [LOW, MEDIUM, HIGH]
+ *                 default: MEDIUM
+ *                 example: MEDIUM
+ *               issueType:
+ *                 type: string
+ *                 enum: [TASK, BUG, STORY]
+ *                 default: TASK
+ *                 example: TASK
+ *               labels:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Task labels/tags
+ *                 example: ["personal", "shopping"]
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Task deadline
+ *               estimatedHours:
+ *                 type: number
+ *                 description: Estimated hours to complete
+ *                 example: 2
+ *               storyPoints:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 100
+ *                 description: Story points estimate
+ *                 example: 3
+ *     responses:
+ *       201:
+ *         description: Personal task created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Personal task created successfully
+ *                 data:
+ *                   $ref: '#/components/schemas/Task'
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post("/personal", (req, res) =>
+  TaskController.createPersonalTask(req, res)
+);
+
 // ==================== TASK CRUD ====================
 
 /**

@@ -62,7 +62,7 @@ export class TaskService {
         projectId: data.projectId || null,
         title: data.title,
         description: data.description || null,
-        priority: data.priority || "MEDIUM",
+        priority: (data.priority as any) || "MEDIUM",
         issueType: data.issueType || IssueType.TASK,
         status: TaskStatus.DRAFT,
         creatorId,
@@ -98,6 +98,86 @@ export class TaskService {
     }
 
     // AUTOMATION: Creator auto-added as watcher
+    await prisma.task.update({
+      where: { id: task.id },
+      data: {
+        watchers: {
+          connect: { id: creatorId },
+        },
+      },
+    });
+
+    return task as any;
+  }
+
+  /**
+   * Create a personal task (no project required)
+   */
+  async createPersonalTask(
+    data: {
+      title: string;
+      description?: string;
+      priority?: string;
+      issueType?: IssueType;
+      labels?: string[];
+      dueDate?: Date;
+      estimatedHours?: number;
+      storyPoints?: number;
+    },
+    creatorId: string
+  ): Promise<Task> {
+    // Personal tasks:
+    // - No project required
+    // - Auto-assigned to creator
+    // - No approval required
+    // - Private to the creator
+
+    const task = await prisma.task.create({
+      data: {
+        projectId: null, // Personal tasks have no project
+        title: data.title,
+        description: data.description || null,
+        priority: (data.priority as any) || "MEDIUM",
+        issueType: data.issueType || IssueType.TASK,
+        status: TaskStatus.DRAFT,
+        creatorId,
+        assigneeId: creatorId, // Auto-assign to creator
+        requiresApproval: false, // Personal tasks don't need approval
+        approvedById: creatorId, // Auto-approved
+        labels: data.labels || [],
+        dueDate: data.dueDate || null,
+        estimatedHours: data.estimatedHours || null,
+        storyPoints: data.storyPoints || null,
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    // Log activity
+    await ActivityLogService.logActivity({
+      taskId: task.id,
+      userId: creatorId,
+      action: ActivityAction.CREATE,
+      metadata: { taskType: "personal", taskData: data },
+    });
+
+    // Creator auto-added as watcher
     await prisma.task
       .update({
         where: { id: task.id },
@@ -123,6 +203,7 @@ export class TaskService {
       status?: TaskStatus;
       assigneeId?: string;
       creatorId?: string;
+      includePersonal?: boolean;
     }
   ): Promise<Task[]> {
     const where: any = {};
@@ -133,19 +214,36 @@ export class TaskService {
     if (filters?.assigneeId) where.assigneeId = filters.assigneeId;
     if (filters?.creatorId) where.creatorId = filters.creatorId;
 
+    // Personal tasks filtering: users can only see their own personal tasks
+    // Personal tasks are identified by projectId being null
+    const personalTaskFilter = {
+      projectId: null,
+      creatorId: userId, // Only show personal tasks created by this user
+    };
+
     // Role-based filtering
     if (userRole === UserRole.STAFF) {
       // Staff only see their own tasks or tasks assigned to them
-      where.OR = [{ creatorId: userId }, { assigneeId: userId }];
+      where.OR = [
+        { creatorId: userId, projectId: { not: null } }, // Project tasks created by them
+        { assigneeId: userId, projectId: { not: null } }, // Project tasks assigned to them
+        personalTaskFilter, // Their personal tasks
+      ];
     } else if (userRole === UserRole.ADMIN) {
       // Admin sees tasks they created or are assigned to
       where.OR = [
-        { creatorId: userId },
-        { assigneeId: userId },
-        { creator: { role: UserRole.STAFF } }, // Tasks created by staff they manage
+        { creatorId: userId, projectId: { not: null } },
+        { assigneeId: userId, projectId: { not: null } },
+        { creator: { role: UserRole.STAFF }, projectId: { not: null } }, // Tasks created by staff they manage
+        personalTaskFilter, // Their personal tasks
+      ];
+    } else {
+      // CEO, HOO, HR see all project tasks + their own personal tasks
+      where.OR = [
+        { projectId: { not: null } }, // All project tasks
+        personalTaskFilter, // Their personal tasks
       ];
     }
-    // CEO, HOO, HR see all tasks (no additional filter)
 
     const tasks = await prisma.task.findMany({
       where,
