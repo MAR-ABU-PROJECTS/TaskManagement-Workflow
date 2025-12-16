@@ -1,0 +1,40 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { projectService } from "../lib/service";
+import { createProjectType } from "@/components/new-project";
+import { projectKeys } from "./keys";
+import { editProjectType } from "@/components/EditProjects";
+
+export const useCreateProject = () => {
+	return useMutation({
+		mutationFn: (project: createProjectType) =>
+			projectService.createProject(project),
+	});
+};
+
+export const useDeleteProject = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (projectId: string) =>
+			projectService.deleteProject(projectId),
+
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: projectKeys.all });
+		},
+	});
+};
+
+export const useUpdateProject = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			project,
+			id,
+		}: {
+			project: editProjectType;
+			id: string;
+		}) => projectService.updateProject(id, project),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: projectKeys.all });
+		},
+	});
+};

@@ -45,7 +45,9 @@ export const UserActionDropdown = ({
 	};
 
 	const filterRoles = promotableRoles.filter((role) => role !== user.role);
+	
 	const qc = useQueryClient();
+
 	const deleteUserMutation = useMutation({
 		mutationFn: (userid: string) => userService.deleteUser(userid),
 		onSuccess: () => {

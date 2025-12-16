@@ -16,14 +16,14 @@ export const PromotionRules: Record<Role, Role[]> = {
 	[Role.STAFF]: [],
 };
 
-export const CanBePromotedBy = {
-	[Role.SUPER_ADMIN]: [],
-	[Role.CEO]: [Role.SUPER_ADMIN],
-	[Role.HR]: [Role.CEO],
-	[Role.HOO]: [Role.CEO],
-	[Role.ADMIN]: [Role.HR, Role.HOO, Role.CEO],
-	[Role.STAFF]: [Role.ADMIN, Role.HR, Role.HOO, Role.CEO, Role.SUPER_ADMIN],
-} as const;
+// export const CanBePromotedBy = {
+// 	[Role.SUPER_ADMIN]: [],
+// 	[Role.CEO]: [Role.SUPER_ADMIN],
+// 	[Role.HR]: [Role.CEO],
+// 	[Role.HOO]: [Role.CEO],
+// 	[Role.ADMIN]: [Role.HR, Role.HOO, Role.CEO],
+// 	[Role.STAFF]: [Role.ADMIN, Role.HR, Role.HOO, Role.CEO, Role.SUPER_ADMIN],
+// } as const;
 
 export function canPromote(currentUserRole: Role, targetRole: Role) {
 	return PromotionRules[currentUserRole].includes(targetRole);

@@ -14,15 +14,6 @@ export default function QueryProvider({
 }: {
 	children: React.ReactNode;
 }) {
-	type success = {
-		success: boolean;
-		data?: unknown;
-		message?: string;
-	};
-
-	function isSuccessResponse(data: unknown): data is success {
-		return typeof data === "object" && data !== null && "success" in data;
-	}
 	const [queryClient] = useState(
 		() =>
 			new QueryClient({
@@ -38,15 +29,32 @@ export default function QueryProvider({
 				},
 				queryCache: new QueryCache({
 					onSuccess: (data, query) => {
-						if (query.meta?.disableGlobalSuccess) return;
+						if (
+							query.meta?.disableGlobalSuccess ||
+							query.meta?.skipToast
+						)
+							return;
+						
+							
 						let message = "Operation successful";
-						if (isSuccessResponse(data)) {
-							message = data.message ?? message;
+						if (
+							data &&
+							typeof data === "object" &&
+							"message" in data
+						) {
+							message =
+								(data as { message?: string }).message ??
+								message;
 						}
 						toast.success(message);
 					},
 					onError: (error, query) => {
 						if (query.meta?.disableGlobalError) return;
+						if (
+							query.state.status === "success" &&
+							query.state.fetchStatus === "fetching"
+						)
+							return;
 						let message = "Something went wrong";
 						if (isAxiosError(error)) {
 							message = error.response?.data?.message;
@@ -60,9 +68,17 @@ export default function QueryProvider({
 					onSuccess: (data, _variables, _context, mutation) => {
 						if (mutation.options.meta?.disableGlobalSuccess) return;
 						let message = "Operation successful";
-						if (isSuccessResponse(data)) {
-							message = data.message ?? message;
+
+						if (
+							data &&
+							typeof data === "object" &&
+							"message" in data
+						) {
+							message =
+								(data as { message?: string }).message ??
+								message;
 						}
+
 						toast.success(message);
 					},
 					onError: (error, _variables, _context, mutation) => {

@@ -1,32 +1,9 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { apiService } from "@/lib/apiService";
-import {
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@radix-ui/react-dropdown-menu";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
-import { isAxiosError } from "axios";
-import { Eye, Loader2, MoreHorizontal, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { DataTableSkeleton } from "@/components/ui/data-table-skeleton";
 import { QueryStateHandler } from "@/components/QueryStateHandler";
-import {
-	AlertDialog,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import Link from "next/link";
 import { useGetUsers } from "@/app/(dashboard)/user-management/hooks/useGetUsers";
 import { User } from "@/app/(dashboard)/user-management/lib/types";
 import { RoleBadge } from "./ui/role-badge";
@@ -41,26 +18,6 @@ const UsersManagement = () => {
 		pageIndex: 0,
 		pageSize: 10,
 	});
-	const [open, setOpen] = useState(false);
-	const queryClient = useQueryClient();
-
-	const [selectedUser, setSelectedUser] = useState({
-		id: "",
-		name: "",
-		email: "",
-	});
-
-	const handldeTrashMenuClick = (id: string, name: string, email: string) => {
-		setSelectedUser({
-			id,
-			name,
-			email,
-		});
-		setOpen(true);
-	};
-
-	const { data } = useGetUsers();
-	console.log({ data });
 
 	const columns: ColumnDef<User>[] = [
 		{

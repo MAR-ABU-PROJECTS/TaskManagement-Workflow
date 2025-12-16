@@ -24,27 +24,13 @@ import {
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCreateProject } from "@/app/(dashboard)/projects/hooks/useCreateProject";
+import { Spinner } from "./ui/spinner";
+import { useCreateProject } from "@/app/(dashboard)/projects/lib/mutations";
 
 export type createProjectType = z.infer<typeof CreateProjectSchema>;
 
 export default function NewProjectPage() {
 	const { mutate, isPending } = useCreateProject();
-
-	const teams = [
-		{ id: "design", name: "Design Team" },
-		{ id: "engineering", name: "Engineering" },
-		{ id: "marketing", name: "Marketing" },
-		{ id: "product", name: "Product" },
-	];
-
-	const teamMembers = [
-		{ id: "jd", name: "John Doe", email: "john@marprojects.com" },
-		{ id: "js", name: "Jane Smith", email: "jane@marprojects.com" },
-		{ id: "mj", name: "Mike Johnson", email: "mike@marprojects.com" },
-		{ id: "sw", name: "Sarah Williams", email: "sarah@marprojects.com" },
-		{ id: "tb", name: "Tom Brown", email: "tom@marprojects.com" },
-	];
 
 	const form = useForm<createProjectType>({
 		resolver: zodResolver(CreateProjectSchema),
@@ -58,7 +44,6 @@ export default function NewProjectPage() {
 	});
 
 	const onSubmit = (data: createProjectType) => {
-		console.log({ data });
 		mutate(data, {
 			onSuccess: () => {
 				form.reset();
@@ -166,145 +151,16 @@ export default function NewProjectPage() {
 								</CardContent>
 							</Card>
 
-							{/* Project Settings Card */}
-							{/* <Card>
-              <CardHeader>
-                <CardTitle>Project Settings</CardTitle>
-                <CardDescription>
-                  Configure project details and workflow
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Team *</label>
-                    <Select
-                      value={formData.team}
-                      onValueChange={(value) =>
-                        handleSelectChange("team", value)
-                      }
-                    >
-                      <SelectTrigger className="border-slate-200 dark:border-slate-800">
-                        <SelectValue placeholder="Select a team" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {teams.map((team) => (
-                          <SelectItem key={team.id} value={team.id}>
-                            {team.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Status *</label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) =>
-                        handleSelectChange("status", value)
-                      }
-                    >
-                      <SelectTrigger className="border-slate-200 dark:border-slate-800">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Planning">Planning</SelectItem>
-                        <SelectItem value="In Progress">In Progress</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Due Date</label>
-                    <div className="relative">
-                      <Input
-                        type="date"
-                        name="dueDate"
-                        value={formData.dueDate}
-                        onChange={handleInputChange}
-                        className="border-slate-200 dark:border-slate-800 w-full"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Visibility *</label>
-                    <Select
-                      value={formData.visibility}
-                      onValueChange={(value) =>
-                        handleSelectChange("visibility", value)
-                      }
-                    >
-                      <SelectTrigger className="border-slate-200 dark:border-slate-800">
-                        <SelectValue placeholder="Select visibility" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="public">Public</SelectItem>
-                        <SelectItem value="team-only">Team Only</SelectItem>
-                        <SelectItem value="private">Private</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card> */}
-
-							{/* Team Members Card */}
-							{/* <Card>
-              <CardHeader>
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>
-                  Select team members to add to this project
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {teamMembers.map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors"
-                      onClick={() => handleMemberToggle(member.id)}
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary text-white text-xs">
-                            {member.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-medium">{member.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {member.email}
-                          </p>
-                        </div>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={formData.members.includes(member.id)}
-                        onChange={() => handleMemberToggle(member.id)}
-                        className="h-4 w-4 rounded border-slate-200"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card> */}
-
 							{/* Action Buttons */}
 							<div className="flex gap-3 justify-end">
 								<Button
 									type="submit"
 									disabled={isPending}
-									isLoading={isPending}
 									className="bg-primary hover:bg-primary/90 text-white"
 								>
+									{isPending && (
+										<Spinner className="mr-1.5" />
+									)}
 									Create Project
 								</Button>
 							</div>
