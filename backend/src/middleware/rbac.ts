@@ -13,7 +13,9 @@ import PermissionService from "../services/PermissionService";
 export function requireRoles(...roles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res
+        .status(403)
+        .json({ message: "Forbidden: Authentication required" });
     }
 
     const userRole = req.user.role as UserRole;
@@ -36,7 +38,9 @@ export function requireRoles(...roles: UserRole[]) {
 export function requireMinRole(minRole: UserRole) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res
+        .status(403)
+        .json({ message: "Forbidden: Authentication required" });
     }
 
     const userRole = req.user.role as UserRole;
@@ -65,7 +69,9 @@ export function canCreateProject(
   next: NextFunction
 ) {
   if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res
+      .status(403)
+      .json({ message: "Forbidden: Authentication required" });
   }
 
   const userRole = req.user.role as UserRole;
@@ -95,7 +101,9 @@ export function canApproveTask(
   next: NextFunction
 ) {
   if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res
+      .status(403)
+      .json({ message: "Forbidden: Authentication required" });
   }
 
   const userRole = req.user.role as UserRole;
@@ -140,7 +148,9 @@ export const isAdminOrHigher = requireMinRole(UserRole.ADMIN);
 export function hasProjectPermission(permission: Permission) {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res
+        .status(403)
+        .json({ message: "Forbidden: Authentication required" });
     }
 
     const projectId =
@@ -179,7 +189,9 @@ export async function canEditIssue(
   next: NextFunction
 ) {
   if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res
+      .status(403)
+      .json({ message: "Forbidden: Authentication required" });
   }
 
   const taskId = req.params.id || req.params.taskId;
@@ -212,7 +224,9 @@ export async function canDeleteIssue(
   next: NextFunction
 ) {
   if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res
+      .status(403)
+      .json({ message: "Forbidden: Authentication required" });
   }
 
   const taskId = req.params.id || req.params.taskId;
@@ -245,7 +259,9 @@ export async function canDeleteIssue(
 export function requireProjectRole(minRole: ProjectRole) {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res
+        .status(403)
+        .json({ message: "Forbidden: Authentication required" });
     }
 
     const projectId = req.params.projectId || req.body.projectId;
@@ -283,7 +299,9 @@ export async function isProjectMember(
   next: NextFunction
 ) {
   if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res
+      .status(403)
+      .json({ message: "Forbidden: Authentication required" });
   }
 
   const projectId = req.params.projectId || req.body.projectId;

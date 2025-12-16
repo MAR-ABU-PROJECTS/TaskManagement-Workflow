@@ -10,7 +10,7 @@ export class ProjectController {
   async createProject(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const data: CreateProjectDTO = req.body;
@@ -39,7 +39,7 @@ export class ProjectController {
   async getAllProjects(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const projects = await ProjectService.getAllProjects(
@@ -66,7 +66,7 @@ export class ProjectController {
   async getProjectById(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -104,7 +104,7 @@ export class ProjectController {
   async updateProject(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -146,7 +146,7 @@ export class ProjectController {
   async archiveProject(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;

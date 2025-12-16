@@ -12,7 +12,7 @@ class SavedFilterController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       if (!name || !jql) {
@@ -51,7 +51,7 @@ class SavedFilterController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const filters = await SavedFilterService.getUserFilters(userId);
@@ -71,7 +71,7 @@ class SavedFilterController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       if (!id) {
@@ -102,7 +102,7 @@ class SavedFilterController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       if (!id) {
@@ -148,7 +148,7 @@ class SavedFilterController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       if (!id) {
@@ -178,7 +178,7 @@ class SavedFilterController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       if (!id) {
@@ -209,7 +209,7 @@ class SavedFilterController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       if (!id) {

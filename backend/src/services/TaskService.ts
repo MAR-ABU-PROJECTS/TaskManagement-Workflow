@@ -637,7 +637,17 @@ export class TaskService {
         },
         creator: {
           select: {
+            id: true,
             name: true,
+            email: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
           },
         },
       },
