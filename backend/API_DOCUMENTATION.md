@@ -90,7 +90,7 @@ All API endpoints (except `/api/auth/login` and `/api/auth/register`) require au
 | POST | `/api/auth/register` | Register new user | ❌ |
 | POST | `/api/auth/login` | Login and get JWT token | ❌ |
 | GET | `/api/auth/me` | Get current user profile | ✅ |
-| POST | `/api/auth/logout` | Logout (invalidate token) | ✅ |
+| POST | `/api/auth/logout` | Logout and log action to audit trail | ✅ |
 | POST | `/api/auth/refresh` | Refresh access token | ✅ |
 
 **Token Expiry:**
@@ -276,7 +276,7 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 | POST | `/auth/register?interface=STAFF` | Register new user | Public | - |
 | POST | `/auth/login?interface=STAFF` | Login | Public | - |
 | GET | `/auth/me` | Get current user | Authenticated | All |
-| POST | `/auth/logout` | Logout | Authenticated | All |
+| POST | `/auth/logout` | Logout and log to audit trail | Authenticated | All |
 
 **Notes:**
 - `interface` query parameter is required for register/login
@@ -351,9 +351,9 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 | GET | `/tasks` | List all tasks | Authenticated | All (filtered by role) |
 | GET | `/tasks/:id` | Get task by ID | `BROWSE_PROJECT` | All project members |
 | PUT | `/tasks/:id` | Update task | `EDIT_OWN_ISSUES` or `EDIT_ALL_ISSUES` | Varies by ownership |
-| DELETE | `/tasks/:id` | Delete task | `DELETE_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
+| DELETE | `/tasks/:id` | Delete task (with permission checks) | `DELETE_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD, Creator (personal), Global admins |
 | PATCH | `/tasks/:id/status` | Change task status (legacy) | Authenticated | Task creator/assignee |
-| **POST** | **`/tasks/:id/transition`** | **Workflow-validated status change** | `TRANSITION_ISSUES` | Workflow-based |
+| **POST** | **`/tasks/:id/transition`** | **Workflow-validated status change (comment optional)** | `TRANSITION_ISSUES` | Workflow-based |
 | **GET** | **`/tasks/:id/transitions`** | **Get available transitions** | Authenticated | Task creator/assignee |
 | POST | `/tasks/:id/assign` | Assign task to user | `ASSIGN_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
 | POST | `/tasks/:id/approve` | Approve task | - | CEO, HOO, HR |
@@ -363,9 +363,11 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 
 **Notes:**
 - ⚠️ **Use `/tasks/:id/transition` instead of `/tasks/:id/status`** - validates against workflow rules
+- **Comment parameter is optional** for `/tasks/:id/transition` endpoint
 - Status transitions follow project workflow type (BASIC, AGILE, BUG_TRACKING)
 - `/tasks/:id/transitions` returns only valid next statuses based on workflow + role
 - Approval/rejection requires global roles (CEO/HOO/HR)
+- **Task deletion permissions:** PROJECT_ADMIN/PROJECT_LEAD for project tasks, task creator for personal tasks, global admins (CEO/HOO/HR/SUPER_ADMIN) for all tasks
 - **Personal tasks use BASIC workflow by default**
 - **Kanban board groups tasks by status categories (TODO, IN_PROGRESS, REVIEW, DONE)**
 - **All tasks are auto-positioned for board ordering**

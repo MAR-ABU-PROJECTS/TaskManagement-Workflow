@@ -430,4 +430,53 @@ router.post("/refresh", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     description: |
+ *       Logout the current user. This invalidates the current session.
+ *       Client should remove stored tokens after calling this endpoint.
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully logged out
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully
+ *       500:
+ *         description: Server error during logout
+ */
+router.post("/logout", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    // Log logout in audit log
+    if (userId) {
+      AuditLogService.logAuth({
+        userId: userId,
+        action: "LOGOUT",
+        success: true,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get("user-agent"),
+      }).catch((err) => console.error("Failed to log audit:", err));
+    }
+
+    return res.json({ message: "Logged out successfully" });
+  } catch (error: any) {
+    console.error("Logout error:", error);
+    return res
+      .status(500)
+      .json({ message: "Logout failed", error: error.message });
+  }
+});
+
 export default router;

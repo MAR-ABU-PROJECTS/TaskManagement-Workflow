@@ -1313,6 +1313,73 @@ export class TaskService {
 
     return { successful, failed };
   }
+
+  /**
+   * Delete a task
+   */
+  async deleteTask(
+    id: string,
+    userId: string,
+    userRole: UserRole
+  ): Promise<boolean> {
+    const task = await prisma.task.findUnique({
+      where: { id },
+      include: {
+        project: {
+          include: {
+            members: true,
+          },
+        },
+      },
+    });
+
+    if (!task) {
+      return false;
+    }
+
+    // Check permissions
+    // Only PROJECT_ADMIN, PROJECT_LEAD can delete tasks
+    // Or CEO/HOO/HR can delete any task
+    const isGlobalAdmin = [UserRole.CEO, UserRole.HOO, UserRole.HR].includes(
+      userRole
+    );
+
+    let canDelete = isGlobalAdmin;
+
+    // Check project permissions
+    if (task.projectId && !isGlobalAdmin) {
+      const member = task.project?.members.find((m) => m.userId === userId);
+      if (member && ["PROJECT_ADMIN", "PROJECT_LEAD"].includes(member.role)) {
+        canDelete = true;
+      }
+    }
+
+    // Personal tasks can be deleted by creator
+    if (!task.projectId && task.creatorId === userId) {
+      canDelete = true;
+    }
+
+    if (!canDelete) {
+      throw new Error(
+        "Forbidden: You do not have permission to delete this task"
+      );
+    }
+
+    // Delete task and related data
+    await prisma.task.delete({
+      where: { id },
+    });
+
+    // Log deletion
+    await ActivityLogService.logActivity({
+      taskId: id,
+      userId,
+      action: ActivityAction.DELETE,
+      metadata: { taskTitle: task.title },
+    });
+
+    return true;
+  }
 }
 
 export default new TaskService();

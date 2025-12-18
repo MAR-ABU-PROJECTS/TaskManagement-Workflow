@@ -195,13 +195,25 @@ curl http://localhost:4000/api/auth/me \
 
 **Endpoint:** `POST /api/auth/logout`  
 **Auth Required:** ✅ Yes  
-**Description:** Invalidate current session
+**Description:** Logout and log action to audit trail
 
 **Example:**
 ```bash
 curl -X POST http://localhost:4000/api/auth/logout \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
+
+**Response:**
+```json
+{
+  "message": "Logged out successfully"
+}
+```
+
+**Notes:**
+- Logs logout action to audit trail with user information
+- Client should clear stored tokens after successful logout
+- Access token is invalidated (if token blacklisting is enabled)
 
 ---
 
@@ -917,14 +929,31 @@ curl -X PUT http://localhost:4000/api/tasks/clh999 \
 ### 4.5 Delete Task
 
 **Endpoint:** `DELETE /api/tasks/:id`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
-**Description:** Delete a task
+**Auth Required:** ✅ Yes  
+**Description:** Delete a task (with permission checks)
+
+**Permission Rules:**
+- **PROJECT_ADMIN / PROJECT_LEAD**: Can delete any task in their project
+- **Task Creator**: Can delete their own personal tasks
+- **Global Admins (CEO/HOO/HR/SUPER_ADMIN)**: Can delete any task
 
 **Example:**
 ```bash
 curl -X DELETE http://localhost:4000/api/tasks/clh999 \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
+
+**Response:**
+```json
+{
+  "message": "Task deleted successfully"
+}
+```
+
+**Notes:**
+- Logs deletion to activity log
+- Deletes all associated comments, attachments, and activity logs
+- Cannot be undone - ensure confirmation before deletion
 
 ---
 
@@ -2068,16 +2097,28 @@ curl http://localhost:4000/api/tasks/clh999/transitions \
 **Request Body:**
 ```json
 {
-  "status": "REVIEW"
+  "status": "REVIEW",
+  "comment": "Ready for code review" // Optional
 }
 ```
 
+**Fields:**
+- `status` (required): Target status (e.g., REVIEW, COMPLETED)
+- `comment` (optional): Additional context for the transition
+
 **Example:**
 ```bash
+# Without comment
 curl -X POST http://localhost:4000/api/tasks/clh999/transition \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"status": "REVIEW"}'
+
+# With comment
+curl -X POST http://localhost:4000/api/tasks/clh999/transition \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "REVIEW", "comment": "Completed all unit tests"}'
 ```
 
 ---
