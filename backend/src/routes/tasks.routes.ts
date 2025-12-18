@@ -5,6 +5,7 @@ import {
   canApproveTask,
   hasProjectPermission,
   canEditIssue,
+  canDeleteIssue,
 } from "../middleware/rbac";
 import { Permission } from "../types/enums";
 import TaskController from "../controllers/TaskController";
@@ -472,6 +473,37 @@ router.patch("/:id", canEditIssue, (req, res) =>
   TaskController.updateTask(req, res)
 );
 
+/**
+ * @swagger
+ * /api/tasks/{id}:
+ *   delete:
+ *     summary: Delete task
+ *     description: Permanently delete a task. Requires DELETE_ISSUES permission. Only PROJECT_ADMIN and PROJECT_LEAD can delete tasks.
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Task deleted successfully
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
+ */
+router.delete("/:id", canDeleteIssue, (req, res) =>
+  TaskController.deleteTask(req, res)
+);
+
 // ==================== TASK ACTIONS ====================
 
 /**
@@ -550,11 +582,11 @@ router.post(
  *             properties:
  *               status:
  *                 type: string
- *                 enum: [TO_DO, IN_PROGRESS, IN_REVIEW, DONE, BLOCKED, ON_HOLD]
- *                 description: Target status
+ *                 enum: [DRAFT, ASSIGNED, IN_PROGRESS, PAUSED, REVIEW, COMPLETED, REJECTED]
+ *                 description: Target status (workflow-validated)
  *               comment:
  *                 type: string
- *                 description: Optional transition comment
+ *                 description: Optional transition comment (not required)
  *     responses:
  *       200:
  *         description: Task status updated successfully

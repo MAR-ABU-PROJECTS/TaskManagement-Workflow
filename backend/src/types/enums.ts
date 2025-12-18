@@ -41,6 +41,7 @@ export enum ActivityAction {
   REJECT = "REJECT",
   STATUS_UPDATE = "STATUS_UPDATE",
   COMMENT = "COMMENT",
+  DELETE = "DELETE",
 }
 
 // Notification Types

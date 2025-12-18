@@ -48,6 +48,7 @@ enum ActivityAction {
    REJECT
    STATUS_UPDATE
    COMMENT
+   DELETE
 }
 
 enum AuditAction {

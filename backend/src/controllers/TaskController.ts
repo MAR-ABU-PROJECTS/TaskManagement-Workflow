@@ -548,6 +548,46 @@ export class TaskController {
       });
     }
   }
+
+  /**
+   * DELETE /tasks/:id - Delete task
+   */
+  async deleteTask(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ message: "Task ID is required" });
+      }
+
+      const deleted = await TaskService.deleteTask(
+        id,
+        req.user.id,
+        req.user.role as UserRole
+      );
+
+      if (!deleted) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      return res.status(200).json({
+        message: "Task deleted successfully",
+      });
+    } catch (error: any) {
+      if (error.message.includes("Forbidden")) {
+        return res.status(403).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to delete task",
+        error: error.message,
+      });
+    }
+  }
 }
 
 export default new TaskController();

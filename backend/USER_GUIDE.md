@@ -114,6 +114,16 @@ A **Jira-like Task Management System** designed for organizations to manage proj
    - **Refresh Token** (valid 7 days)
 4. Store tokens securely
 
+### Logout
+
+1. Click your profile icon in the top right
+2. Select "Logout" from the dropdown
+3. Your session will be terminated and logged to the audit trail
+4. Tokens are cleared from your browser
+5. You'll be redirected to the login page
+
+**API Endpoint:** `POST /api/auth/logout`
+
 ### Your Dashboard
 
 After login, your dashboard shows:
@@ -731,6 +741,8 @@ Best for: Bug tracking and QA processes
 - "Approve & Complete" (REVIEW → COMPLETED)
 - "Request Changes" (REVIEW → IN_PROGRESS)
 
+**Note:** Adding a comment when changing status is **optional**. You can transition tasks without providing a comment, though adding context is recommended for team communication.
+
 #### Available Transitions
 
 The system shows only transitions you can perform:
@@ -801,8 +813,14 @@ When you open a task, you see:
 - Log work
 - Link
 - Clone
-- Delete
+- **Delete** (with permission checks)
 - Watch/Unwatch
+
+**Delete Permissions:**
+- PROJECT_ADMIN/PROJECT_LEAD can delete any project task
+- Task creator can delete their own personal tasks
+- Global admins (CEO/HOO/HR/SUPER_ADMIN) can delete any task
+- Deletion is permanent and cannot be undone
 
 ### Task Statuses
 
