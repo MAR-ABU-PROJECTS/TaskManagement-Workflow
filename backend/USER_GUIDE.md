@@ -1,17 +1,48 @@
 # Task Management System - Complete User Documentation
 
-**Version:** 2.1.0  
+**Version:** 2.2.0  
 **Last Updated:** December 21, 2025  
 **Production URL:** https://taskmanagement-workflow-production.up.railway.app  
 **Documentation Type:** Complete System Guide
 
-> 🆕 **Version 2.1.0 Updates:** ADMIN role now has full operational permissions. SUPER_ADMIN is audit-only.
+> 🆕 **Version 2.2.0 Updates:** Hierarchical visibility implemented. HOO/HR cannot view CEO projects/tasks. Personal tasks are private.
 
 ---
 
-## What's New in v2.1.0 (December 21, 2025)
+## What's New
 
-### Permission System Enhancements
+### v2.2.0 (December 21, 2025) - Hierarchical Visibility
+
+**Viewing Hierarchy Implemented:**
+
+| Role | Can View |
+|------|----------|
+| SUPER_ADMIN | ✅ Everything (all projects, all tasks, all personal tasks) - audit |
+| CEO | ✅ All projects, all project tasks<br>❌ Cannot see personal tasks |
+| HOO/HR | ✅ ADMIN + STAFF projects/tasks only<br>❌ Cannot see CEO's unless added as member/assignee<br>❌ Cannot see personal tasks |
+| ADMIN/STAFF | ✅ Only their projects (member/creator)<br>✅ Only their tasks (assigned/creator)<br>❌ Cannot see others' personal tasks |
+
+**Personal Task Privacy:**
+- 🔒 Personal tasks (no project) only visible to creator + SUPER_ADMIN
+- ❌ CEO/HOO/HR/ADMIN cannot view personal tasks of others
+
+**Rationale:** Clear authority flow, privacy protection, audit transparency.
+
+---
+
+### v2.1.1 (December 21, 2025) - Update Permission Restrictions
+
+**Creator-Only Update Policy:**
+- ❌ Only project creators can update project details (PUT `/projects/:id`)
+- ❌ Only task creators can update task details (PUT `/tasks/:id`)
+- ✅ ADMIN retains all other operational permissions
+- ✅ ADMIN can still delete, approve, reject, assign, and manage members
+
+**Rationale:** Protects creator intent and ownership while maintaining ADMIN's ability to manage workflows and operations.
+
+---
+
+### v2.1.0 (December 21, 2025) - ADMIN Role Enhancement
 
 **ADMIN Role - Full Operational Access:**
 - ✅ Create, update, and delete projects
@@ -29,10 +60,10 @@
 - ❌ Cannot be assigned to tasks
 - ✅ Retains user management capabilities (promote/demote)
 
-**Why This Change?**
-- Improved consistency across permission checks
-- ADMIN can now fully manage their areas of responsibility
-- Clear separation between operational roles and audit roles
+**Why These Changes?**
+- Clear separation between operational roles and audit roles (SUPER_ADMIN)
+- Creator ownership protection for project and task updates
+- ADMIN retains full management capabilities for all other operations
 - Better alignment with organizational hierarchies
 
 ---
@@ -2511,7 +2542,7 @@ curl -X GET https://taskmanagement-workflow-production.up.railway.app/api/users/
 - GET `/projects` - List projects
 - POST `/projects` - Create project
 - GET `/projects/:id` - Get project
-- PATCH `/projects/:id` - Update project
+- PATCH `/projects/:id` - Update project **(creator only)**
 - DELETE `/projects/:id` - Archive project
 - GET `/projects/:id/members` - Get team
 - POST `/projects/:id/members` - Add member
@@ -2521,7 +2552,7 @@ curl -X GET https://taskmanagement-workflow-production.up.railway.app/api/users/
 - GET `/tasks` - List tasks
 - POST `/tasks` - Create task
 - GET `/tasks/:id` - Get task
-- PATCH `/tasks/:id` - Update task
+- PATCH `/tasks/:id` - Update task **(creator only)**
 - DELETE `/tasks/:id` - Delete task
 - POST `/tasks/:id/comments` - Add comment
 - GET `/tasks/:id/comments` - Get comments

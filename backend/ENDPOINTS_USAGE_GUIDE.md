@@ -1,13 +1,13 @@
 # Task Management System - Endpoint Usage Guide
 
-**Version:** 2.1.0  
+**Version:** 2.2.0  
 **Last Updated:** December 21, 2025  
 **Base URL:** `http://localhost:4000/api`
 
-> ⚠️ **Important:** ADMIN role now has full operational permissions (create/update/delete projects, manage members, approve/reject tasks).
-> ⚠️ **Important:** SUPER_ADMIN is audit-only (read access for auditing purposes, no operational write access).
-> ⚠️ **Important:** All status transitions now use workflow-based validation.
-> See [Workflow System](#17-workflows) for details.
+> ⚠️ **Version 2.2.0:** Hierarchical visibility implemented - HOO/HR cannot view CEO projects/tasks unless added as members.
+> ⚠️ **Personal tasks** are now private (only creator + SUPER_ADMIN can view).
+> ⚠️ **Project/task updates** are creator-only (v2.1.1).
+> See [Hierarchical Visibility](#permissions-quick-reference) for details.
 
 ---
 
@@ -60,14 +60,14 @@
 
 **Affected Endpoints:**
 - `POST /api/projects` - Now includes ADMIN
-- `PUT /api/projects/:id` - Now includes ADMIN  
+- `PUT /api/projects/:id` - **Creator only** (v2.1.1 update)
 - `DELETE /api/projects/:id` - Now includes ADMIN
 - `POST /api/projects/:id/members` - Now includes ADMIN
 - `PATCH /api/projects/:id/members/:userId` - Now includes ADMIN
 - `DELETE /api/projects/:id/members/:userId` - Now includes ADMIN
 - `POST /api/tasks/:id/approve` - Now includes ADMIN
 - `POST /api/tasks/:id/reject` - Now includes ADMIN
-- `PUT /api/tasks/:id` - Now includes ADMIN
+- `PUT /api/tasks/:id` - **Creator only** (v2.1.1 update)
 - `POST /api/tasks/:id/transition` - Now includes ADMIN
 - `POST /api/tasks/:id/assign` - Now includes ADMIN
 - `DELETE /api/tasks/:id/assign/:userId` - Now includes ADMIN
@@ -82,22 +82,31 @@
 | Operation | Allowed Roles |
 |-----------|--------------|
 | **Create Project** | CEO, HOO, HR, ADMIN |
-| **Update Project** | PROJECT_ADMIN, project creator, CEO, HOO, HR, ADMIN |
+| **Update Project** | **Project creator only** |
 | **Delete Project** | Project creator, CEO, HOO, HR, ADMIN |
 | **Add Project Member** | PROJECT_ADMIN, project creator, CEO, HOO, HR, ADMIN |
 | **Update Member Role** | PROJECT_ADMIN, project creator, CEO, HOO, HR, ADMIN |
 | **Remove Project Member** | PROJECT_ADMIN, project creator, CEO, HOO, HR, ADMIN |
 | **Create Task** | All authenticated users |
-| **Update Task** | Task creator, assignees, CEO, HOO, HR, ADMIN |
+| **Update Task** | **Task creator only** |
 | **Delete Task** | PROJECT_ADMIN, PROJECT_LEAD (project tasks), task creator (personal tasks), CEO/HOO/HR/ADMIN (if project member) |
 | **Assign Task** | Task creator, CEO, HOO, HR, ADMIN |
 | **Unassign Task** | Task creator, assignees, PROJECT_ADMIN, CEO, HOO, HR, ADMIN |
 | **Change Task Status** | Task creator, assignees, CEO, HOO, HR, ADMIN |
 | **Approve Task** | CEO, HOO, HR, ADMIN |
 | **Reject Task** | CEO, HOO, HR, ADMIN |
-| **View All Tasks** | CEO, HOO, HR (management oversight) |
-| **View All Projects** | CEO, HOO, HR, SUPER_ADMIN (audit) |
-| **Manage Users** | CEO, HOO, HR, SUPER_ADMIN |
+
+### 👁️ Hierarchical Visibility (v2.2.0)
+
+| Role | Can View |
+|------|----------|
+| **SUPER_ADMIN** | ✅ Everything (all projects, all tasks, **all personal tasks**) - audit purposes |
+| **CEO** | ✅ All projects, all project tasks<br>❌ Cannot see personal tasks |
+| **HOO/HR** | ✅ ADMIN + STAFF projects/tasks only<br>❌ Cannot see CEO's projects/tasks unless explicitly added as member/assignee<br>❌ Cannot see personal tasks |
+| **ADMIN** | ✅ Only projects they're members of<br>✅ Only tasks they created or are assigned to<br>❌ Cannot see personal tasks of others |
+| **STAFF** | ✅ Only projects they're members of<br>✅ Only tasks they created or are assigned to<br>❌ Cannot see personal tasks of others |
+
+**🔒 Personal Tasks (no project):** Only visible to creator + SUPER_ADMIN (audit)
 
 ---
 
@@ -663,8 +672,8 @@ curl http://localhost:4000/api/projects/clh789 \
 ### 2.4 Update Project
 
 **Endpoint:** `PUT /api/projects/:id`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN, project creator, or management: CEO/HOO/HR/ADMIN)  
-**Description:** Update project details
+**Auth Required:** ✅ Yes (Project creator only)  
+**Description:** Update project details. Only the project creator can update the project.
 
 **Request Body:**
 ```json
@@ -963,8 +972,8 @@ curl http://localhost:4000/api/tasks/clh999 \
 ### 4.4 Update Task
 
 **Endpoint:** `PUT /api/tasks/:id`  
-**Auth Required:** ✅ Yes  
-**Description:** Update task details
+**Auth Required:** ✅ Yes (Task creator only)  
+**Description:** Update task details. Only the task creator can update the task.
 
 **Request Body:**
 ```json

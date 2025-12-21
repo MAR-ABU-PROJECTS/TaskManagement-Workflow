@@ -1,13 +1,14 @@
 # Task Management System - Complete API Documentation
 
-**Version:** 2.1.0  
+**Version:** 2.2.0  
 **Last Updated:** December 21, 2025  
 **Base URL:** `https://taskmanagement-workflow-production.up.railway.app`  
 **Total Endpoints:** 75+ (includes new workflow endpoints)  
 **Documentation Coverage:** 100%
 
-> ⚡ **NEW:** Permission system updated - ADMIN now has full operational access. SUPER_ADMIN is audit-only.
-> ⚡ **NEW:** Jira-style workflow system with validated transitions. See [Workflow Endpoints](#workflow-endpoints) section.
+> ⚡ **v2.2.0:** Hierarchical visibility model - HOO/HR cannot view CEO projects/tasks. Personal tasks are private.
+> ⚡ **v2.1.1:** Update permissions restricted to creators only.
+> ⚡ **v2.1.0:** ADMIN has full operational access. SUPER_ADMIN is audit-only.
 
 ---
 
@@ -26,6 +27,32 @@
 
 ## Changelog
 
+### Version 2.2.0 - December 21, 2025
+
+**🔍 Hierarchical Visibility Implemented:**
+- SUPER_ADMIN: Views everything (all projects/tasks/personal tasks) - audit
+- CEO: Views all projects and project tasks (no personal tasks)
+- HOO/HR: View only ADMIN + STAFF projects/tasks (not CEO's unless added as member/assignee)
+- ADMIN/STAFF: View only projects they're members of, tasks they're assigned/created
+- Personal tasks: Only creator + SUPER_ADMIN can view
+
+**Affected Endpoints:**
+- `GET /api/projects` - Hierarchically filtered by role
+- `GET /api/projects/:id` - Hierarchical visibility checks
+- `GET /api/tasks` - Hierarchically filtered with personal task privacy
+- `GET /api/tasks/:id` - Hierarchical visibility checks
+
+---
+
+### Version 2.1.1 - December 21, 2025
+
+**🔒 Update Permissions Restricted:**
+- Only project creators can update projects (PUT `/projects/:id`)
+- Only task creators can update tasks (PUT `/tasks/:id`)
+- ADMIN/management retain delete, approve, reject, assign permissions
+
+---
+
 ### Version 2.1.0 - December 21, 2025
 
 **Permission System Enhancements:**
@@ -35,8 +62,9 @@
 - ADMIN can add, update, and remove project members
 - ADMIN can approve and reject tasks
 - ADMIN can assign and unassign tasks
-- ADMIN can change task status and update tasks
+- ADMIN can change task status (**but only creator can update task details**)
 - ADMIN can delete tasks (in projects they're members of)
+- **Note:** Project and task updates (PUT operations) are restricted to creators only
 
 ✅ **SUPER_ADMIN Role - Audit-Only Access**
 - SUPER_ADMIN now has read-only access for auditing purposes
@@ -383,7 +411,7 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 | POST | `/tasks` | Create project task | `CREATE_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER, REPORTER |
 | GET | `/tasks` | List all tasks | Authenticated | All (filtered by role) |
 | GET | `/tasks/:id` | Get task by ID | `BROWSE_PROJECT` | All project members |
-| PUT | `/tasks/:id` | Update task | `EDIT_OWN_ISSUES` or `EDIT_ALL_ISSUES` | Varies by ownership |
+| PUT | `/tasks/:id` | Update task | `EDIT_OWN_ISSUES` only | **Task creator only** |
 | DELETE | `/tasks/:id` | Delete task (with permission checks) | `DELETE_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD, Creator (personal), Global admins |
 | PATCH | `/tasks/:id/status` | Change task status (legacy) | Authenticated | Task creator/assignee |
 | **POST** | **`/tasks/:id/transition`** | **Workflow-validated status change (comment optional)** | `TRANSITION_ISSUES` | Workflow-based |
