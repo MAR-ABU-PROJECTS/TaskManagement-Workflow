@@ -30,23 +30,26 @@ export const startDeadlineReminderChecker = () => {
           },
         },
         include: {
-          assignee: true,
+          assignees: { include: { user: true } },
           creator: true,
         },
       });
 
       for (const task of upcomingTasks) {
-        // Notify assignee
-        if (task.assigneeId) {
+        // Notify all assignees
+        for (const assignment of task.assignees) {
           await NotificationService.notifyTaskAssigned(
             task.id,
-            task.assigneeId,
+            assignment.userId,
             task.creatorId
           );
         }
 
-        // Notify creator
-        if (task.creatorId && task.creatorId !== task.assigneeId) {
+        // Notify creator if not already notified as assignee
+        const creatorIsAssignee = task.assignees.some(
+          (a) => a.userId === task.creatorId
+        );
+        if (task.creatorId && !creatorIsAssignee) {
           await NotificationService.notifyTaskAssigned(
             task.id,
             task.creatorId,

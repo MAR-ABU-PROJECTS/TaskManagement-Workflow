@@ -162,10 +162,13 @@ router.post("/personal", (req, res) =>
  *                 enum: [LOW, MEDIUM, HIGH, CRITICAL]
  *                 default: MEDIUM
  *                 example: HIGH
- *               assigneeId:
- *                 type: string
- *                 format: uuid
- *                 description: User ID to assign task to
+ *               assigneeIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *                 description: Array of user IDs to assign task to (supports multiple assignees)
+ *                 example: ["user-id-1", "user-id-2"]
  *               sprintId:
  *                 type: string
  *                 format: uuid
@@ -550,6 +553,57 @@ router.post(
   "/:id/assign",
   hasProjectPermission(Permission.ASSIGN_ISSUES),
   (req, res) => TaskController.assignTask(req, res)
+);
+
+/**
+ * @swagger
+ * /api/tasks/{id}/assign/{userId}:
+ *   delete:
+ *     summary: Unassign user from task
+ *     description: |
+ *       Remove a user from task assignees.
+ *       If all assignees are removed, task reverts to DRAFT status.
+ *       Requires ASSIGN_ISSUES permission.
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: User ID to unassign
+ *     responses:
+ *       200:
+ *         description: User unassigned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User unassigned from task"
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Task not found or user not assigned
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  "/:id/assign/:userId",
+  hasProjectPermission(Permission.ASSIGN_ISSUES),
+  (req, res) => TaskController.unassignTask(req, res)
 );
 
 /**

@@ -70,7 +70,7 @@ export class NotificationService {
       where: { id: taskId },
       include: {
         creator: true,
-        assignee: true,
+        assignees: { include: { user: true } },
         project: { select: { name: true } },
       },
     });
@@ -79,7 +79,9 @@ export class NotificationService {
 
     const usersToNotify = new Set<string>();
     if (task.creatorId) usersToNotify.add(task.creatorId);
-    if (task.assigneeId) usersToNotify.add(task.assigneeId);
+    for (const assignment of task.assignees) {
+      usersToNotify.add(assignment.userId);
+    }
 
     const payload = {
       taskId: task.id,
@@ -111,7 +113,7 @@ export class NotificationService {
       where: { id: taskId },
       include: {
         creator: true,
-        assignee: true,
+        assignees: { include: { user: true } },
         watchers: true,
       },
     });
@@ -127,8 +129,10 @@ export class NotificationService {
     if (task.creatorId && task.creatorId !== commenterId) {
       usersToNotify.add(task.creatorId);
     }
-    if (task.assigneeId && task.assigneeId !== commenterId) {
-      usersToNotify.add(task.assigneeId);
+    for (const assignment of task.assignees) {
+      if (assignment.userId !== commenterId) {
+        usersToNotify.add(assignment.userId);
+      }
     }
 
     // Check for mentions in the message (@username)
@@ -205,7 +209,7 @@ export class NotificationService {
       where: { id: taskId },
       include: {
         creator: true,
-        assignee: true,
+        assignees: { include: { user: true } },
         approvedBy: { select: { name: true } },
       },
     });
@@ -214,7 +218,9 @@ export class NotificationService {
 
     const usersToNotify = new Set<string>();
     if (task.creatorId) usersToNotify.add(task.creatorId);
-    if (task.assigneeId) usersToNotify.add(task.assigneeId);
+    for (const assignment of task.assignees) {
+      usersToNotify.add(assignment.userId);
+    }
 
     const payload = {
       taskId: task.id,
@@ -236,7 +242,7 @@ export class NotificationService {
       where: { id: taskId },
       include: {
         creator: true,
-        assignee: true,
+        assignees: { include: { user: true } },
       },
     });
 
@@ -244,7 +250,9 @@ export class NotificationService {
 
     const usersToNotify = new Set<string>();
     if (task.creatorId) usersToNotify.add(task.creatorId);
-    if (task.assigneeId) usersToNotify.add(task.assigneeId);
+    for (const assignment of task.assignees) {
+      usersToNotify.add(assignment.userId);
+    }
 
     const payload = {
       taskId: task.id,

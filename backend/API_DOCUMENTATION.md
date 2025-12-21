@@ -1,11 +1,12 @@
 # Task Management System - Complete API Documentation
 
-**Version:** 2.0.0  
-**Last Updated:** December 16, 2025  
+**Version:** 2.1.0  
+**Last Updated:** December 21, 2025  
 **Base URL:** `https://taskmanagement-workflow-production.up.railway.app`  
 **Total Endpoints:** 75+ (includes new workflow endpoints)  
 **Documentation Coverage:** 100%
 
+> ⚡ **NEW:** Permission system updated - ADMIN now has full operational access. SUPER_ADMIN is audit-only.
 > ⚡ **NEW:** Jira-style workflow system with validated transitions. See [Workflow Endpoints](#workflow-endpoints) section.
 
 ---
@@ -19,6 +20,38 @@
 5. [Workflow System](#workflow-system)
 6. [API Endpoints](#api-endpoints)
 7. [Error Handling](#error-handling)
+8. [Changelog](#changelog)
+
+---
+
+## Changelog
+
+### Version 2.1.0 - December 21, 2025
+
+**Permission System Enhancements:**
+
+✅ **ADMIN Role - Full Operational Access**
+- ADMIN can now create, update, and archive/delete projects
+- ADMIN can add, update, and remove project members
+- ADMIN can approve and reject tasks
+- ADMIN can assign and unassign tasks
+- ADMIN can change task status and update tasks
+- ADMIN can delete tasks (in projects they're members of)
+
+✅ **SUPER_ADMIN Role - Audit-Only Access**
+- SUPER_ADMIN now has read-only access for auditing purposes
+- Cannot perform operational write operations (create, update, delete)
+- Can view all projects and tasks for audit oversight
+- Cannot be assigned to tasks (operational work)
+- Maintains user role management capabilities
+
+✅ **Consistency Improvements**
+- All project operations (create/update/delete/member management) now consistently allow: PROJECT_ADMIN, project creator, or management (CEO/HOO/HR/ADMIN)
+- All task operations now consistently respect management hierarchy
+- Privacy boundaries enforced: Management can only delete tasks in projects they're members of
+- STAFF tasks require approval from ADMIN or higher
+
+**Total Fixes:** 16 logical inconsistencies resolved across permission checks
 
 ---
 
@@ -110,7 +143,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 | Role | Hierarchy Level | Description |
 |------|----------------|-------------|
-| **SUPER_ADMIN** | 100 | System Administrator - Outside organization, controls everything (2 permanent accounts) |
+| **SUPER_ADMIN** | 100 | Audit Administrator - Outside organization, read-only access for auditing (2 permanent accounts) |
 | **CEO** | 80 | Chief Executive Officer - Top of organization hierarchy |
 | **HOO** | 60 | Head of Operations - Operations department oversight |
 | **HR** | 60 | Human Resources - HR department management |
@@ -357,7 +390,7 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 | **GET** | **`/tasks/:id/transitions`** | **Get available transitions** | Authenticated | Task creator/assignee |
 | POST | `/tasks/:id/assign` | Assign task to user | `ASSIGN_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
 | POST | `/tasks/:id/approve` | Approve task | - | CEO, HOO, HR |
-| POST | `/tasks/:id/reject` | Reject task | - | CEO, HOO, HR |
+| POST | `/tasks/:id/reject` | Reject task | - | CEO, HOO, HR, ADMIN |
 | **GET** | **`/tasks/board/:projectId`** | **Get Kanban board view** | Authenticated | All project members |
 | **POST** | **`/tasks/:id/move`** | **Move task on board** | Authenticated | Task creator/assignee/admins |
 
@@ -366,8 +399,8 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 - **Comment parameter is optional** for `/tasks/:id/transition` endpoint
 - Status transitions follow project workflow type (BASIC, AGILE, BUG_TRACKING)
 - `/tasks/:id/transitions` returns only valid next statuses based on workflow + role
-- Approval/rejection requires global roles (CEO/HOO/HR)
-- **Task deletion permissions:** PROJECT_ADMIN/PROJECT_LEAD for project tasks, task creator for personal tasks, global admins (CEO/HOO/HR/SUPER_ADMIN) for all tasks
+- Approval/rejection requires management roles (CEO/HOO/HR/ADMIN)
+- **Task deletion permissions:** PROJECT_ADMIN/PROJECT_LEAD for project tasks, task creator for personal tasks, management (CEO/HOO/HR/ADMIN) for tasks in projects they're members of
 - **Personal tasks use BASIC workflow by default**
 - **Kanban board groups tasks by status categories (TODO, IN_PROGRESS, REVIEW, DONE)**
 - **All tasks are auto-positioned for board ordering**

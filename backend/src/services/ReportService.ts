@@ -1,4 +1,5 @@
 import prisma from "../db/prisma";
+import { TaskStatus } from "@prisma/client";
 
 class ReportService {
   /**
@@ -78,41 +79,47 @@ class ReportService {
     const tasks = await prisma.task.findMany({
       where,
       include: {
-        assignee: {
-          select: {
-            id: true,
-            name: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
     });
 
-    // Group by assignee
-    const userMetrics = tasks.reduce((acc: any, task) => {
-      if (!task.assignee) return acc;
+    // Group by assignee - for each task, count for all assignees
+    const userMetrics: any = {};
+    for (const task of tasks) {
+      for (const assignment of task.assignees) {
+        const userId = assignment.userId;
+        if (!userMetrics[userId]) {
+          userMetrics[userId] = {
+            userId,
+            userName: assignment.user.name,
+            totalTasks: 0,
+            completedTasks: 0,
+            totalStoryPoints: 0,
+            completedStoryPoints: 0,
+          };
+        }
 
-      const userId = task.assignee.id;
-      if (!acc[userId]) {
-        acc[userId] = {
-          userId,
-          userName: task.assignee.name,
-          totalTasks: 0,
-          completedTasks: 0,
-          totalStoryPoints: 0,
-          completedStoryPoints: 0,
-        };
+        userMetrics[userId].totalTasks++;
+        if (task.status === TaskStatus.COMPLETED) {
+          userMetrics[userId].completedTasks++;
+        }
+        if (task.storyPoints) {
+          userMetrics[userId].totalStoryPoints += task.storyPoints;
+          if (task.status === TaskStatus.COMPLETED) {
+            userMetrics[userId].completedStoryPoints += task.storyPoints;
+          }
+        }
       }
-
-      acc[userId].totalTasks++;
-      acc[userId].totalStoryPoints += task.storyPoints || 0;
-
-      if (task.status === "COMPLETED") {
-        acc[userId].completedTasks++;
-        acc[userId].completedStoryPoints += task.storyPoints || 0;
-      }
-
-      return acc;
-    }, {});
+    }
 
     return {
       projectId,
@@ -139,7 +146,7 @@ class ReportService {
       include: {
         tasks: {
           include: {
-            assignee: true,
+            assignees: { include: { user: true } },
           },
         },
         sprints: {

@@ -67,6 +67,30 @@ router.use(authenticate);
  *                 format: uuid
  *                 description: Custom workflow scheme ID (only used when workflowType=CUSTOM)
  *                 example: 550e8400-e29b-41d4-a716-446655440000
+ *               members:
+ *                 type: array
+ *                 description: Array of project members to add during creation (creator automatically becomes PROJECT_ADMIN)
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - userId
+ *                     - role
+ *                   properties:
+ *                     userId:
+ *                       type: string
+ *                       format: uuid
+ *                       description: User ID of the member to add
+ *                       example: 550e8400-e29b-41d4-a716-446655440001
+ *                     role:
+ *                       type: string
+ *                       enum: [PROJECT_LEAD, PROJECT_ADMIN, DEVELOPER, TESTER, VIEWER]
+ *                       description: Role to assign to the member
+ *                       example: DEVELOPER
+ *                 example:
+ *                   - userId: "user-id-1"
+ *                     role: "PROJECT_LEAD"
+ *                   - userId: "user-id-2"
+ *                     role: "DEVELOPER"
  *     responses:
  *       201:
  *         description: Project created successfully
@@ -591,35 +615,7 @@ router.get(
 router.post(
   "/:projectId/members",
   hasProjectPermission(Permission.ADMINISTER_PROJECT),
-  async (req, res) => {
-    try {
-      const { projectId } = req.params;
-      const { userId, projectRole } = req.body;
-
-      if (!userId || !projectRole) {
-        return res
-          .status(400)
-          .json({ message: "userId and projectRole are required" });
-      }
-
-      const member = await prisma.projectMember.create({
-        data: {
-          project: { connect: { id: projectId } },
-          user: { connect: { id: userId } },
-          addedBy: { connect: { id: req.user!.id } },
-          role: projectRole,
-        },
-        include: {
-          user: {
-            select: { id: true, name: true, email: true },
-          },
-        },
-      });
-      return res.status(201).json({ message: "Member added", member });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
-    }
-  }
+  (req, res) => ProjectController.addMember(req, res)
 );
 
 /**
@@ -686,21 +682,7 @@ router.post(
 router.patch(
   "/:projectId/members/:userId",
   hasProjectPermission(Permission.ADMINISTER_PROJECT),
-  async (req, res) => {
-    try {
-      const { projectId, userId } = req.params;
-      const { projectRole } = req.body;
-
-      const member = await prisma.projectMember.updateMany({
-        where: { projectId, userId },
-        data: { role: projectRole },
-      });
-
-      return res.json({ message: "Member role updated", count: member.count });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
-    }
-  }
+  (req, res) => ProjectController.updateMemberRole(req, res)
 );
 
 /**
@@ -753,19 +735,7 @@ router.patch(
 router.delete(
   "/:projectId/members/:userId",
   hasProjectPermission(Permission.ADMINISTER_PROJECT),
-  async (req, res) => {
-    try {
-      const { projectId, userId } = req.params;
-
-      await prisma.projectMember.deleteMany({
-        where: { projectId, userId },
-      });
-
-      return res.json({ message: "Member removed" });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
-    }
-  }
+  (req, res) => ProjectController.removeMember(req, res)
 );
 
 // ==================== SPRINTS ====================

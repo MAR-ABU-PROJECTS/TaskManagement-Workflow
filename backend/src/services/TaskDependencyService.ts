@@ -110,6 +110,7 @@ export class TaskDependencyService {
             id: true,
             title: true,
             status: true,
+            assignees: { select: { userId: true } },
           },
         },
         blockingTask: {
@@ -122,16 +123,16 @@ export class TaskDependencyService {
       },
     });
 
-    // Notify users about the dependency
-    if (dependentTask.assigneeId) {
+    // Notify all assignees about the dependency
+    for (const assignment of dependency.dependentTask.assignees) {
       await NotificationService.createNotification(
-        dependentTask.assigneeId,
+        assignment.userId,
         "DEPENDENCY_ADDED" as any,
         {
-          taskId: dependentTask.id,
-          taskTitle: dependentTask.title,
-          blockingTaskTitle: blockingTask.title,
-          message: `Task "${dependentTask.title}" now depends on "${blockingTask.title}"`,
+          taskId: dependency.dependentTask.id,
+          taskTitle: dependency.dependentTask.title,
+          blockingTaskTitle: dependency.blockingTask.title,
+          message: `Task "${dependency.dependentTask.title}" now depends on "${dependency.blockingTask.title}"`,
         }
       );
     }

@@ -329,7 +329,7 @@ export class RoleHierarchyService {
     const tasks = await prisma.task.findMany({
       where: {
         OR: [
-          { assigneeId: userId },
+          { assignees: { some: { userId } } },
           { creatorId: userId },
           { approvedById: userId },
         ],
@@ -351,11 +351,17 @@ export class RoleHierarchyService {
     fromUserId: string,
     toUserId: string
   ): Promise<{ reassignedCount: number }> {
-    // Reassign assigned tasks
-    const assignedUpdate = await prisma.task.updateMany({
-      where: { assigneeId: fromUserId },
-      data: { assigneeId: toUserId },
+    // Reassign assigned tasks - update TaskAssignee junction table
+    const assignees = await prisma.taskAssignee.findMany({
+      where: { userId: fromUserId },
     });
+
+    for (const assignee of assignees) {
+      await prisma.taskAssignee.update({
+        where: { id: assignee.id },
+        data: { userId: toUserId },
+      });
+    }
 
     // Reassign created tasks
     const createdUpdate = await prisma.task.updateMany({
@@ -371,7 +377,7 @@ export class RoleHierarchyService {
 
     return {
       reassignedCount:
-        assignedUpdate.count + createdUpdate.count + approvedUpdate.count,
+        assignees.length + createdUpdate.count + approvedUpdate.count,
     };
   }
 }
