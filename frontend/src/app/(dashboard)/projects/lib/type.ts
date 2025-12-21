@@ -37,23 +37,18 @@ export interface Task {
 export interface KanbanColumnProps {
 	id: string;
 	title: string;
-	color: string;
-	tasks: Task[];
+	// color: string;
+	tasks: BoardTask[];
 	onAddTask: () => void;
 	onEditTask: (taskId: number) => void;
 	onChangeStatus: (taskId: number) => void;
 	onAssignTask: (taskId: number) => void;
 	onDeleteTask: (taskId: number) => void;
+	projectId: string;
 }
 
 export interface TaskCardProps {
-	id: number;
-	title: string;
-	description?: string;
-	priority: string;
-	assignee: string;
-	comments: number;
-	attachments: number;
+	task: BoardTask;
 	onEdit: (taskId: number) => void;
 	onChangeStatus: (taskId: number) => void;
 	onAssign: (taskId: number) => void;
@@ -62,15 +57,95 @@ export interface TaskCardProps {
 export interface Column {
 	id: string;
 	title: string;
-	color: string;
+	tasks: BoardTask[];
 }
 
 export interface KanbanBoardProps {
 	columns: Column[];
-	tasks: Task[];
+	tasks: BoardTask[];
 	onAddTask: (columnId: string) => void;
 	onEditTask: (taskId: number) => void;
 	onChangeStatus: (taskId: number) => void;
 	onAssignTask: (taskId: number) => void;
 	onDeleteTask: (taskId: number) => void;
+	projectId: string;
 }
+
+export type BoardTask = {
+	id: string;
+	projectId: string;
+	title: string;
+	description: string;
+	priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+	issueType: "TASK" | "BUG" | "STORY";
+	status: string;
+
+	position: number;
+
+	assigneeId: string | null;
+	reporterId: string | null;
+	creatorId: string;
+
+	requiresApproval: boolean;
+	approvedById: string | null;
+	rejectionReason: string | null;
+
+	labels: string[];
+
+	dueDate: string | null;
+	estimatedHours: number | null;
+	loggedHours: number;
+	storyPoints: number | null;
+
+	epicId: string | null;
+	sprintId: string | null;
+	parentTaskId: string | null;
+	boardColumnId: string | null;
+
+	createdAt: string;
+	updatedAt: string;
+
+	creator: {
+		id: string;
+		name: string;
+		email: string;
+		role: string;
+	};
+
+	assignee: {
+		id: string;
+		name: string;
+		email: string;
+		role: string;
+	} | null;
+
+	_count: {
+		comments: number;
+		subTasks: number;
+	};
+};
+
+export type BoardColumn = {
+	name: string;
+	description: string;
+	statuses: string[];
+	tasks: BoardTask[];
+};
+
+export type KanbanColumn = {
+	name: string;
+	description: string;
+	statuses: string[];
+	tasks: BoardTask[];
+};
+
+export type KanbanColumnsMap = Record<string, KanbanColumn>;
+
+export type KanbanBoard = {
+	projectId: string;
+	projectKey: string;
+	projectName: string;
+	workflowType: "AGILE" | "KANBAN";
+	columns: KanbanColumnsMap;
+	statusCategories: Record<string, unknown>;
+};

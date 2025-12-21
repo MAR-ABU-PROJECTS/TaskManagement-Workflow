@@ -1,21 +1,52 @@
+// lib/session/session-context.tsx
 "use client";
 
-import { SessionData } from "@/lib/session";
 import { createContext, useContext, useState } from "react";
+// import { fetchSession } from "./actions";
 
-const SessionContext = createContext<SessionData | null>(null);
+type SessionUser = {
+	id?: string;
+	name?: string;
+	email?: string;
+	role?: string;
+	isLoggedIn?: boolean;
+};
+
+type SessionContextType = {
+	user: SessionUser | null;
+	// loading: boolean;
+	// refresh: () => Promise<void>;
+};
+
+const SessionContext = createContext<SessionContextType | null>(null);
 
 export function SessionProvider({
 	children,
 	initialUser,
 }: {
 	children: React.ReactNode;
-	initialUser: SessionData | null;
+	initialUser?: SessionUser | null;
 }) {
-	const [user] = useState(initialUser);
+	const [user] = useState<SessionUser | null>(
+		initialUser ?? null
+	);
+	// const [loading, setLoading] = useState(!initialUser);
+
+	// const refresh = async () => {
+	// 	setLoading(true);
+	// 	const session = await fetchSession();
+	// 	setUser(session?.user ?? null);
+	// 	setLoading(false);
+	// };
+
+	// useEffect(() => {
+	// 	if (!initialUser) {
+	// 		refresh();
+	// 	}
+	// }, []);
 
 	return (
-		<SessionContext.Provider value={{user: user }}>
+		<SessionContext.Provider value={{ user }}>
 			{children}
 		</SessionContext.Provider>
 	);
@@ -23,6 +54,8 @@ export function SessionProvider({
 
 export function useSession() {
 	const ctx = useContext(SessionContext);
-	if (!ctx) throw new Error("useSession must be used inside SessionProvider");
+	if (!ctx) {
+		throw new Error("useSession must be used within SessionProvider");
+	}
 	return ctx;
 }

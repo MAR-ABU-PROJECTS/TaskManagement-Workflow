@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import {
 	Card,
 	CardContent,
@@ -23,26 +23,27 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getPriorityColor } from "../lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { TaskCardProps } from "../lib/type";
+import { BoardTask, TaskCardProps } from "../lib/type";
 import Link from "next/link";
+import { DeleteTaskModal } from "./delete-task-modal";
+import { AssignTaskModal } from "./assign-task-modal";
+import { EditTaskModal } from "./edit-task-modal";
+import { ChangeStatusModal } from "./change-status-modal";
 
 const TaskCard = ({
-	id,
-	title,
-	description,
-	priority,
-	assignee,
-	comments,
-	attachments,
+	task,
 	onEdit,
 	onChangeStatus,
-	onAssign,
-	onDelete,
-}: TaskCardProps) => {
+	projectId,
+}: TaskCardProps & BoardTask) => {
+	const [openModal, setOpenModal] = useState<
+		"edit" | "status" | "assign" | "delete" | "add" | null
+	>(null);
+
 	return (
 		<div>
 			<Card
-				key={id}
+				key={task.id}
 				className="cursor-pointer hover:border-primary/50 transition-colors"
 			>
 				<CardHeader className="p-4">
@@ -51,11 +52,11 @@ const TaskCard = ({
 							<GripVertical className="mt-0.5 h-4 w-4 text-muted-foreground" />
 							<div className="flex-1">
 								<CardTitle className="text-sm font-medium leading-tight">
-									{title}
+									{task.title}
 								</CardTitle>
-								{description && (
-									<CardDescription className="mt-1 text-xs">
-										{description}
+								{task.description && (
+									<CardDescription className="mt-1 text-xs line-clamp-3 text-wrap break-all">
+										{task.description}
 									</CardDescription>
 								)}
 							</div>
@@ -71,22 +72,26 @@ const TaskCard = ({
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end">
-								<DropdownMenuItem onClick={() => onEdit(id)}>
+								<DropdownMenuItem
+									onClick={() => setOpenModal("edit")}
+								>
 									Edit Task
 								</DropdownMenuItem>
 
 								<DropdownMenuItem
-									onClick={() => onChangeStatus(id)}
+									onClick={() => setOpenModal("status")}
 								>
 									Change Status
 								</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => onAssign(id)}>
+								<DropdownMenuItem
+									onClick={() => setOpenModal("assign")}
+								>
 									Assign to
 								</DropdownMenuItem>
 
 								<DropdownMenuItem>
 									<button
-										onClick={() => onDelete(id)}
+										onClick={() => setOpenModal("delete")}
 										className="w-full text-left h-full outline-none focus:outline-none"
 									>
 										Delete
@@ -101,32 +106,64 @@ const TaskCard = ({
 						<div className="flex items-center gap-2">
 							<Badge
 								variant="outline"
-								className={`text-xs ${getPriorityColor(priority)}`}
+								className={`text-[11px]! ${getPriorityColor(task.priority)} capitalize`}
 							>
-								{priority}
+								{task.priority.toLowerCase()}
 							</Badge>
-							<Avatar className="h-5 w-5">
-								<AvatarFallback className="text-xs">
-									{assignee}
-								</AvatarFallback>
-							</Avatar>
+							{task.assignee && (
+								<Avatar className="h-5 w-5 flex justify-center items-center">
+									<AvatarFallback className="text-[14px] uppercase">
+										{task.assignee?.name?.[0]}
+									</AvatarFallback>
+								</Avatar>
+							)}
 						</div>
-						<Link href={`/tasks/${id}`}>
+						<Link href={`/tasks/${task.id}`}>
 							<div className="flex items-center gap-2 text-xs text-muted-foreground">
 								<div className="flex items-center gap-1">
 									<MessageSquare className="h-3 w-3" />
-									<span>{comments}</span>
+									{/* <span>{comment}</span> */}
 								</div>
 
 								<div className="flex items-center gap-1">
 									<Paperclip className="h-3 w-3" />
-									<span>{attachments}</span>
+									{/* <span>{task.}</span> */}
 								</div>
 							</div>
 						</Link>
 					</div>
 				</CardContent>
 			</Card>
+
+			<DeleteTaskModal
+				isOpen={openModal === "delete"}
+				onClose={() => setOpenModal(null)}
+				title={task.title}
+				id={task.id}
+			/>
+
+			<AssignTaskModal
+				isOpen={openModal === "assign"}
+				onClose={() => setOpenModal(null)}
+				task={task}
+				onAssign={() => {}}
+				projectId={projectId}
+			/>
+
+			<EditTaskModal
+				projectId={projectId}
+				isOpen={openModal === "edit"}
+				onClose={() => setOpenModal(null)}
+				task={task}
+			/>
+
+			<ChangeStatusModal
+				isOpen={openModal === "status"}
+				onClose={() => setOpenModal(null)}
+				task={task}
+				projectId={projectId}
+				// onStatusChange={handleStatusChange}
+			/>
 		</div>
 	);
 };

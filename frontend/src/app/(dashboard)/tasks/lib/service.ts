@@ -1,0 +1,31 @@
+import { apiService } from "@/lib/apiService";
+import { createTaskPSchemaType } from "../../projects/components/add-task-modal";
+
+export const TaskService = {
+	createProjectTask: (data: createTaskPSchemaType) =>
+		apiService.post("/tasks", data),
+	getProjectTasks: (projectId: string) =>
+		apiService.get(`/tasks/board/${projectId}`),
+	assignProjectTasks: ({
+		taskId,
+		assigneeId,
+	}: {
+		taskId: string;
+		assigneeId: string;
+	}) => apiService.post(`/tasks/${taskId}/assign`, { assigneeId }),
+	editProjectTask: ({
+		taskId,
+		data,
+	}: {
+		data: createTaskPSchemaType;
+		taskId: string;
+	}) => apiService.patch(`/tasks/${taskId}`, data),
+
+	transitionTask: ({ taskId, status }: { status: string; taskId: string }) =>
+		apiService.post(`/tasks/${taskId}/transition`, { status }),
+
+	// getProjectById: (id: string) => apiService.get(`/projects/${id}`),
+	// updateProject: (id: string, data: editProjectType) =>
+	//   apiService.patch(`/projects/${id}`, data),
+	// deleteProject: (id: string) => apiService.delete(`/projects/${id}`),
+};

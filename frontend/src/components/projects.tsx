@@ -7,6 +7,7 @@ import { QueryStateHandler } from "./QueryStateHandler";
 import { useGetProjects } from "@/app/(dashboard)/projects/lib/queries";
 
 export default function ProjectsPage() {
+
 	return (
 		<div className="flex flex-1 flex-col">
 			{/* Main Content */}

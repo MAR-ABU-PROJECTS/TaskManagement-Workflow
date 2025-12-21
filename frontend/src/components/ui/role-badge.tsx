@@ -10,6 +10,7 @@ interface RoleBadgeProps {
 
 export const RoleBadge = ({ role }: RoleBadgeProps) => {
 	const getBadgeVariants = () => {
+		if (!role) return "";
 		switch (role) {
 			case Role.SUPER_ADMIN:
 				return "bg-red-100 text-red-800";
@@ -30,7 +31,7 @@ export const RoleBadge = ({ role }: RoleBadgeProps) => {
 
 	return (
 		<Badge className={cn(`${getBadgeVariants}, hover:bg-none`)}>
-			{role.replace("_", " ")}
+			{role && role.replace("_", " ")}
 		</Badge>
 	);
 };

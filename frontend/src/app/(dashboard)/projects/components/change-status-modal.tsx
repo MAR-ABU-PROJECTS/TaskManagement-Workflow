@@ -7,29 +7,41 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Task } from "../lib/type";
+import { BoardTask, KanbanBoard } from "../lib/type";
+import { useGetProjectTasks } from "../../tasks/lib/queries";
+import { useState } from "react";
+import { useTransitionTask } from "../../tasks/lib/mutation";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
 
 interface ChangeStatusModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	task: Task;
-	onStatusChange: (taskId: number, newStatus: string) => void;
+	task: BoardTask;
+	projectId: string;
+	// onStatusChange: (taskId: number, newStatus: string) => void;
 }
-
-const statuses = [
-	{ id: "backlog", title: "Backlog", color: "bg-gray-500" },
-	{ id: "todo", title: "To Do", color: "bg-blue-500" },
-	{ id: "in-progress", title: "In Progress", color: "bg-yellow-500" },
-	{ id: "review", title: "Review", color: "bg-purple-500" },
-	{ id: "done", title: "Done", color: "bg-green-500" },
-];
 
 export function ChangeStatusModal({
 	isOpen,
 	onClose,
 	task,
-	onStatusChange,
+	projectId,
+	// onStatusChange,
 }: ChangeStatusModalProps) {
+	const projects = useGetProjectTasks(projectId);
+
+	const data = projects.data.data as KanbanBoard;
+
+	const columns = Object.entries(data.columns).map(([key, column]) => ({
+		id: key,
+		title: column.name,
+	}));
+
+	const [selectedStatus, setSelectedStatus] = useState('');
+
+	const statusMutation = useTransitionTask(projectId);
+
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent>
@@ -40,26 +52,54 @@ export function ChangeStatusModal({
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid grid-cols-2 gap-2">
-					{statuses.map((status) => (
+					{columns.map((status) => (
 						<Button
 							key={status.id}
 							variant={
-								task?.status === status.id
+								selectedStatus === status.id
 									? "default"
 									: "outline"
 							}
 							onClick={() => {
-								onStatusChange(task?.id, status.id);
-								onClose();
+								setSelectedStatus(status.id);
 							}}
 							className="w-full"
 						>
-							<span
-								className={`inline-block h-2 w-2 rounded-full ${status.color} mr-2`}
-							/>
 							{status.title}
 						</Button>
 					))}
+				</div>
+
+				<div className="flex justify-end mt-4">
+					<Button
+						type="button"
+						variant="outline"
+						onClick={onClose}
+						disabled={statusMutation.isPending}
+						className="border-slate-200 dark:border-slate-800 bg-transparent"
+					>
+						Cancel
+					</Button>
+					<Button
+						type="submit"
+						disabled={statusMutation.isPending}
+						className="bg-primary hover:bg-primary/90 text-white"
+						onClick={() => {
+							if (!selectedStatus) {
+								return toast.error("select status first");
+							}
+
+							statusMutation.mutate({
+								taskId: task.id,
+								status: selectedStatus,
+							});
+						}}
+					>
+						{statusMutation.isPending && (
+							<Spinner className="mr-1.5" />
+						)}
+						Update Status
+					</Button>
 				</div>
 			</DialogContent>
 		</Dialog>

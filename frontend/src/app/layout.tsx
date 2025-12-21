@@ -20,13 +20,13 @@ export default async function RootLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	const session  = await getSessionUser()
+	const session = await getSessionUser();
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body className={`${roboto.className} antialiased`}>
-				
+				<SessionProvider initialUser={session?.user ?? null}>
 					<AppProviders>{children}</AppProviders>
-			
+				</SessionProvider>
 			</body>
 		</html>
 	);

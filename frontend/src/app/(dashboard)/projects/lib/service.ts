@@ -7,7 +7,18 @@ export const projectService = {
 		apiService.post("/projects", data),
 	getProjects: () => apiService.get("/projects"),
 	getProjectById: (id: string) => apiService.get(`/projects/${id}`),
+
 	updateProject: (id: string, data: editProjectType) =>
 		apiService.patch(`/projects/${id}`, data),
 	deleteProject: (id: string) => apiService.delete(`/projects/${id}`),
+
+	getProjectMembers: (id: string) =>
+		apiService.get(`/projects/${id}/members`),
+	deleteProjectMember: ({
+		projectId,
+		userId,
+	}: {
+		projectId: string;
+		userId: string;
+	}) => apiService.delete(`/projects/${projectId}/members/${userId}`),
 };

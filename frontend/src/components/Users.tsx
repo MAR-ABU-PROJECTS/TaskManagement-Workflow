@@ -4,11 +4,11 @@ import { useState } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { DataTableSkeleton } from "@/components/ui/data-table-skeleton";
 import { QueryStateHandler } from "@/components/QueryStateHandler";
-import { useGetUsers } from "@/app/(dashboard)/user-management/hooks/useGetUsers";
 import { User } from "@/app/(dashboard)/user-management/lib/types";
 import { RoleBadge } from "./ui/role-badge";
 import { UserActionDropdown } from "@/app/(dashboard)/user-management/component/UserActionDropDown";
 import { Role } from "@/lib/rolespermissions";
+import { useGetUsers } from "@/app/(dashboard)/user-management/lib/queries";
 // import dayjs from "dayjs";
 // import advancedFormat from "dayjs/plugin/advancedFormat";
 // dayjs.extend(advancedFormat);
@@ -69,7 +69,7 @@ const UsersManagement = () => {
 						}
 						render={(res) => {
 							const data = res.users ?? [];
-							const pages = res.data?.pagination?.pages ?? 0;
+							// const pages = res.data?.pagination?.pages ?? 0;
 
 							return (
 								<DataTable
@@ -77,7 +77,7 @@ const UsersManagement = () => {
 									data={data}
 									pagination={pagination}
 									setPagination={setPagination}
-									pageCount={pages}
+									pageCount={0}
 								/>
 							);
 						}}

@@ -10,7 +10,6 @@ export const useGetProjects = () => {
 	});
 };
 
-
 export const useGetProjectsById = (id: string) => {
 	const qc = useQueryClient();
 	return useQuery<{ data: ProjectType }>({
@@ -29,5 +28,12 @@ export const useGetProjectsById = (id: string) => {
 				data: project,
 			};
 		},
+	});
+};
+
+export const useGetProjectsMembers = (id: string) => {
+	return useQuery({
+		queryKey: projectKeys.projectMembers({ projectId: id }),
+		queryFn: () => projectService.getProjectMembers(id),
 	});
 };

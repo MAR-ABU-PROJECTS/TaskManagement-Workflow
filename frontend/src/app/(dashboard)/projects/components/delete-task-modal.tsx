@@ -8,20 +8,22 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Task } from "../lib/type";
+import { BoardTask } from "../lib/type";
 
 interface DeleteTaskModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	task: Task;
-	onConfirm: (taskId: number) => void;
+	title: string;
+	id: string;
+	// onConfirm: (taskId: number) => void;
 }
 
 export function DeleteTaskModal({
 	isOpen,
 	onClose,
-	task,
-	onConfirm,
+	title,
+	id,
+	// onConfirm,
 }: DeleteTaskModalProps) {
 	return (
 		<AlertDialog open={isOpen} onOpenChange={onClose}>
@@ -29,7 +31,7 @@ export function DeleteTaskModal({
 				<AlertDialogHeader>
 					<AlertDialogTitle>Delete Task</AlertDialogTitle>
 					<AlertDialogDescription>
-						Are you sure you want to delete &quot;{task?.title}
+						Are you sure you want to delete &quot;{title}
 						&quot;? This saction cannot be undone.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
@@ -37,7 +39,7 @@ export function DeleteTaskModal({
 					<AlertDialogCancel>Cancel</AlertDialogCancel>
 					<AlertDialogAction
 						onClick={() => {
-							onConfirm(task?.id);
+							// onConfirm(id);
 							onClose();
 						}}
 						className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
