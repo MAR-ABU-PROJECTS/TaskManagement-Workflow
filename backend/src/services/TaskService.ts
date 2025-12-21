@@ -314,27 +314,46 @@ export class TaskService {
     }
     if (filters?.creatorId) where.creatorId = filters.creatorId;
 
-    // Visibility rules:
-    // - CEO, HOO, HR see all tasks (management oversight)
-    // - ADMIN sees: their tasks + staff-created tasks + tasks assigned to them
-    // - STAFF sees: only their created tasks + tasks assigned to them
-    // Note: SUPER_ADMIN has audit-only access via separate audit endpoints
-    const isManagement = [UserRole.CEO, UserRole.HOO, UserRole.HR].includes(
-      userRole
-    );
+    // Hierarchical visibility rules:
+    // - SUPER_ADMIN: sees everything (all projects + all personal tasks) - audit
+    // - CEO: sees all project tasks (management oversight), but NO personal tasks
+    // - HOO/HR: see ADMIN + STAFF tasks only, but NO CEO tasks and NO personal tasks
+    // - ADMIN/STAFF: see only tasks they created or are assigned to, NO personal tasks of others
+    // - Personal tasks (projectId = null): ONLY visible to creator + SUPER_ADMIN
 
-    if (!isManagement) {
-      if (userRole === UserRole.ADMIN) {
-        // ADMIN sees: their tasks + staff tasks + tasks assigned to them
-        where.OR = [
-          { creatorId: userId },
-          { assignees: { some: { userId } } },
-          { creator: { role: UserRole.STAFF } },
-        ];
-      } else {
-        // STAFF sees only: their created tasks + tasks assigned to them
-        where.OR = [{ creatorId: userId }, { assignees: { some: { userId } } }];
-      }
+    if (userRole === UserRole.SUPER_ADMIN) {
+      // SUPER_ADMIN sees everything including all personal tasks (audit)
+      // No additional filtering needed
+    } else if (userRole === UserRole.CEO) {
+      // CEO sees all project tasks, but NO personal tasks
+      where.projectId = { not: null };
+    } else if (userRole === UserRole.HOO || userRole === UserRole.HR) {
+      // HOO/HR see only ADMIN and STAFF tasks (not CEO tasks, not personal tasks)
+      where.AND = [
+        { projectId: { not: null } }, // Exclude personal tasks
+        {
+          creator: {
+            role: {
+              in: [UserRole.ADMIN, UserRole.STAFF],
+            },
+          },
+        },
+      ];
+    } else {
+      // ADMIN and STAFF see only their created tasks + tasks assigned to them
+      // NO personal tasks from other users
+      where.AND = [
+        {
+          OR: [{ creatorId: userId }, { assignees: { some: { userId } } }],
+        },
+        // Explicitly exclude personal tasks they didn't create
+        {
+          OR: [
+            { projectId: { not: null } }, // Project tasks they're involved in
+            { AND: [{ projectId: null }, { creatorId: userId }] }, // Only their own personal tasks
+          ],
+        },
+      ];
     }
 
     const tasks = await prisma.task.findMany({
@@ -464,7 +483,7 @@ export class TaskService {
     id: string,
     data: UpdateTaskDTO,
     userId: string,
-    userRole: UserRole
+    _userRole: UserRole
   ): Promise<Task | null> {
     const task = await prisma.task.findUnique({
       where: { id },
@@ -477,20 +496,15 @@ export class TaskService {
       return null;
     }
 
-    // Check permission
-    const isAssignee = task.assignees.some((a) => a.userId === userId);
-    const canUpdate =
-      task.creatorId === userId ||
-      isAssignee ||
-      [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
-        userRole
-      );
+    // Check permission: only creator can update task
+    const isCreator = task.creatorId === userId;
 
-    if (!canUpdate) {
-      throw new Error(
-        "Forbidden: You do not have permission to update this task"
-      );
+    if (!isCreator) {
+      throw new Error("Forbidden: Only the task creator can update this task");
     }
+
+    // Check if user is assignee for auto-transition logic
+    const isAssignee = task.assignees.some((a) => a.userId === userId);
 
     const updated = await prisma.task.update({
       where: { id },
@@ -1068,30 +1082,37 @@ export class TaskService {
     userId: string,
     userRole: UserRole
   ): boolean {
-    // CEO, HOO, HR, SUPER_ADMIN see all tasks
-    if (
-      [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.SUPER_ADMIN].includes(
-        userRole
-      )
-    ) {
+    // Personal task privacy: Only creator + SUPER_ADMIN can see
+    if (!task.projectId) {
+      return task.creatorId === userId || userRole === UserRole.SUPER_ADMIN;
+    }
+
+    // SUPER_ADMIN sees all tasks (audit)
+    if (userRole === UserRole.SUPER_ADMIN) {
       return true;
     }
 
-    // Creator has access
+    // CEO sees all project tasks (no personal tasks)
+    if (userRole === UserRole.CEO) {
+      return true;
+    }
+
+    // HOO/HR can see ADMIN and STAFF tasks only (not CEO tasks)
+    if (userRole === UserRole.HOO || userRole === UserRole.HR) {
+      const creatorRole = task.creator?.role;
+      return creatorRole === UserRole.ADMIN || creatorRole === UserRole.STAFF;
+    }
+
+    // Creator has access to their own tasks
     if (task.creatorId === userId) {
       return true;
     }
 
-    // Check if user is in assignees array
+    // Check if user is assigned to the task
     if (
       task.assignees &&
       task.assignees.some((a: any) => a.userId === userId)
     ) {
-      return true;
-    }
-
-    // Admin sees tasks created by staff
-    if (userRole === UserRole.ADMIN && task.creator?.role === UserRole.STAFF) {
       return true;
     }
 

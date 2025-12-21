@@ -101,9 +101,24 @@ export class ProjectService {
       })) as any;
     }
 
-    // HOO and HR see all projects
+    // HOO and HR see only ADMIN and STAFF projects (not CEO projects)
+    // Unless they are explicitly added as members to CEO projects
     if (userRole === UserRole.HOO || userRole === UserRole.HR) {
       return (await prisma.project.findMany({
+        where: {
+          OR: [
+            // Projects created by ADMIN or STAFF
+            {
+              creator: {
+                role: {
+                  in: [UserRole.ADMIN, UserRole.STAFF],
+                },
+              },
+            },
+            // Projects where they are explicitly added as members
+            { members: { some: { userId } } },
+          ],
+        },
         orderBy: { createdAt: "desc" },
         include: {
           creator: {
@@ -176,7 +191,7 @@ export class ProjectService {
     id: string,
     data: UpdateProjectDTO,
     userId: string,
-    userRole: UserRole
+    _userRole: UserRole
   ): Promise<Project | null> {
     const project = await prisma.project.findUnique({
       where: { id },
@@ -187,21 +202,12 @@ export class ProjectService {
       throw new Error("Project not found");
     }
 
-    // Check permission: only creator, project admins, or management roles
+    // Check permission: only creator can update project
     const isCreator = project.creatorId === userId;
-    const isProjectAdmin = project.members.some(
-      (m) => m.userId === userId && m.role === "PROJECT_ADMIN"
-    );
-    const isManagement = [
-      UserRole.CEO,
-      UserRole.HOO,
-      UserRole.HR,
-      UserRole.ADMIN,
-    ].includes(userRole as any);
 
-    if (!isCreator && !isProjectAdmin && !isManagement) {
+    if (!isCreator) {
       throw new Error(
-        "Forbidden: You do not have permission to update this project"
+        "Forbidden: Only the project creator can update this project"
       );
     }
 
@@ -442,18 +448,35 @@ export class ProjectService {
       return null;
     }
 
-    // Check access permissions - membership-based visibility
+    // Check access permissions - hierarchical visibility
     const isMember = await prisma.projectMember.findFirst({
       where: { projectId: id, userId },
     });
 
-    const hasAccess =
-      userRole === UserRole.CEO ||
-      userRole === UserRole.HOO ||
-      userRole === UserRole.HR ||
-      userRole === UserRole.SUPER_ADMIN ||
-      project.creatorId === userId ||
-      isMember !== null;
+    // Get creator's role for hierarchical checks
+    const creator = await prisma.user.findUnique({
+      where: { id: project.creatorId },
+      select: { role: true },
+    });
+
+    let hasAccess = false;
+
+    if (userRole === UserRole.SUPER_ADMIN) {
+      // SUPER_ADMIN sees everything for audit
+      hasAccess = true;
+    } else if (userRole === UserRole.CEO) {
+      // CEO sees all projects
+      hasAccess = true;
+    } else if (userRole === UserRole.HOO || userRole === UserRole.HR) {
+      // HOO/HR can see ADMIN and STAFF projects, or if they're members
+      hasAccess =
+        creator?.role === UserRole.ADMIN ||
+        creator?.role === UserRole.STAFF ||
+        isMember !== null;
+    } else {
+      // ADMIN/STAFF can only see if they're creator or member
+      hasAccess = project.creatorId === userId || isMember !== null;
+    }
 
     if (!hasAccess) {
       return null;
