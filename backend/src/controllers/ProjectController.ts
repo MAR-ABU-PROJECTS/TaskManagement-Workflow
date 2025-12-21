@@ -10,7 +10,9 @@ export class ProjectController {
   async createProject(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(403).json({ message: "Forbidden: Authentication required" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const data: CreateProjectDTO = req.body;
@@ -19,13 +21,20 @@ export class ProjectController {
         return res.status(400).json({ message: "Project name is required" });
       }
 
-      const project = await ProjectService.createProject(data, req.user.id);
+      const project = await ProjectService.createProject(
+        data,
+        req.user.id,
+        req.user.role as UserRole
+      );
 
       return res.status(201).json({
         message: "Project created successfully",
         data: project,
       });
     } catch (error: any) {
+      if (error.message.includes("Forbidden")) {
+        return res.status(403).json({ message: error.message });
+      }
       return res.status(500).json({
         message: "Failed to create project",
         error: error.message,
@@ -39,7 +48,9 @@ export class ProjectController {
   async getAllProjects(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(403).json({ message: "Forbidden: Authentication required" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const projects = await ProjectService.getAllProjects(
@@ -66,7 +77,9 @@ export class ProjectController {
   async getProjectById(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(403).json({ message: "Forbidden: Authentication required" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -104,7 +117,9 @@ export class ProjectController {
   async updateProject(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(403).json({ message: "Forbidden: Authentication required" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -146,7 +161,9 @@ export class ProjectController {
   async archiveProject(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(403).json({ message: "Forbidden: Authentication required" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -173,6 +190,151 @@ export class ProjectController {
       }
       return res.status(500).json({
         message: "Failed to archive project",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * POST /projects/:projectId/members - Add project member
+   */
+  async addMember(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const { projectId } = req.params;
+      const { userId, projectRole } = req.body;
+
+      if (!projectId || !userId || !projectRole) {
+        return res
+          .status(400)
+          .json({ message: "Project ID, User ID, and role are required" });
+      }
+
+      const member = await ProjectService.addMember(
+        projectId,
+        userId,
+        projectRole,
+        req.user.id,
+        req.user.role as UserRole
+      );
+
+      return res.status(201).json({
+        message: "Member added successfully",
+        data: member,
+      });
+    } catch (error: any) {
+      if (
+        error.message.includes("Forbidden") ||
+        error.message.includes("already a project member")
+      ) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error.message.includes("not found")) {
+        return res.status(404).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to add member",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * PATCH /projects/:projectId/members/:userId - Update member role
+   */
+  async updateMemberRole(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const { projectId, userId } = req.params;
+      const { projectRole } = req.body;
+
+      if (!projectId || !userId || !projectRole) {
+        return res
+          .status(400)
+          .json({ message: "Project ID, User ID, and role are required" });
+      }
+
+      await ProjectService.updateMemberRole(
+        projectId,
+        userId,
+        projectRole,
+        req.user.id,
+        req.user.role as UserRole
+      );
+
+      return res.status(200).json({
+        message: "Member role updated successfully",
+      });
+    } catch (error: any) {
+      if (
+        error.message.includes("Forbidden") ||
+        error.message.includes("Cannot change")
+      ) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (
+        error.message.includes("not found") ||
+        error.message.includes("not a project member")
+      ) {
+        return res.status(404).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to update member role",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * DELETE /projects/:projectId/members/:userId - Remove project member
+   */
+  async removeMember(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const { projectId, userId } = req.params;
+      if (!projectId || !userId) {
+        return res
+          .status(400)
+          .json({ message: "Project ID and User ID are required" });
+      }
+
+      await ProjectService.removeMember(
+        projectId,
+        userId,
+        req.user.id,
+        req.user.role as UserRole
+      );
+
+      return res.status(200).json({
+        message: "Member removed successfully",
+      });
+    } catch (error: any) {
+      if (
+        error.message.includes("Forbidden") ||
+        error.message.includes("Cannot remove")
+      ) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error.message.includes("not found")) {
+        return res.status(404).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to remove member",
         error: error.message,
       });
     }

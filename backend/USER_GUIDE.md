@@ -1,9 +1,39 @@
 # Task Management System - Complete User Documentation
 
-**Version:** 2.0.0  
-**Last Updated:** December 8, 2025  
+**Version:** 2.1.0  
+**Last Updated:** December 21, 2025  
 **Production URL:** https://taskmanagement-workflow-production.up.railway.app  
 **Documentation Type:** Complete System Guide
+
+> 🆕 **Version 2.1.0 Updates:** ADMIN role now has full operational permissions. SUPER_ADMIN is audit-only.
+
+---
+
+## What's New in v2.1.0 (December 21, 2025)
+
+### Permission System Enhancements
+
+**ADMIN Role - Full Operational Access:**
+- ✅ Create, update, and delete projects
+- ✅ Add, update, and remove project members  
+- ✅ Approve and reject tasks
+- ✅ Assign and unassign tasks
+- ✅ Change task status and update tasks
+- ✅ Delete tasks (in projects they're members of)
+- ✅ Same operational capabilities as CEO/HOO/HR
+
+**SUPER_ADMIN Role - Clarified as Audit-Only:**
+- 🔍 Read-only access for auditing and oversight
+- 🔍 Can view all projects and tasks
+- ❌ Cannot perform operational write operations
+- ❌ Cannot be assigned to tasks
+- ✅ Retains user management capabilities (promote/demote)
+
+**Why This Change?**
+- Improved consistency across permission checks
+- ADMIN can now fully manage their areas of responsibility
+- Clear separation between operational roles and audit roles
+- Better alignment with organizational hierarchies
 
 ---
 
@@ -158,16 +188,20 @@ The system has **6 hierarchical roles** with different authority levels:
 
 **Quantity:** Exactly 2 accounts (permanent)
 
-**Purpose:** System administration, outside company hierarchy
+**Purpose:** Audit and oversight, outside operational hierarchy
 
 **Abilities:**
-- ✅ Complete system access
-- ✅ Promote to any role including CEO
-- ✅ Manage all users, projects, tasks
-- ✅ Access system configuration
-- ✅ Cannot be removed or modified
-- ✅ Not visible in company logs
-- ✅ Bypass all restrictions
+- ✅ Read-only access to all system data (audit/oversight)
+- ✅ Promote/demote users to any role including CEO
+- ✅ View all users, projects, tasks (cannot modify)
+- ✅ Access audit logs and system reports
+- ✅ Cannot be removed or modified by anyone
+- ✅ Not visible in company operational logs
+- ❌ Cannot perform operational write operations
+- ❌ Cannot be assigned to tasks
+- ❌ Does not participate in day-to-day operations
+
+**Key Distinction:** SUPER_ADMIN is for **audit and user management only**, not operational work.
 
 **Restrictions:**
 - Cannot be promoted or demoted
@@ -268,15 +302,19 @@ The system has **6 hierarchical roles** with different authority levels:
 
 **Department:** OPS or HR (based on promoter)
 
-**Purpose:** Mid-level management
+**Purpose:** Mid-level management with **full operational access**
 
 **Abilities:**
-- ✅ Create and manage projects
-- ✅ Assign tasks within department
+- ✅ **Create, update, and delete projects**
+- ✅ **Add, update, and remove project members**
+- ✅ **Approve and reject tasks**
+- ✅ **Assign and unassign tasks**
+- ✅ **Change task status and update tasks**
+- ✅ **Delete tasks** (in projects they're members of)
+- ✅ Manage project teams and workflows
 - ✅ View department reports
-- ✅ Manage project teams
-- ✅ Approve tasks
-- ✅ Bulk operations
+- ✅ Perform bulk operations
+- ✅ Full operational permissions (same as CEO/HOO/HR)
 
 **Department Assignment:**
 - Promoted by HOO → Gets OPS department
@@ -284,12 +322,12 @@ The system has **6 hierarchical roles** with different authority levels:
 - Promoted by CEO/Super Admin → Can choose department
 
 **Restrictions:**
-- ❌ Cannot promote users
-- ❌ Limited to own department
-- ❌ Cannot delete users
+- ❌ Cannot promote users (no promotion authority)
+- ❌ Cannot modify user roles
 
 **Promotion Path:**
 - STAFF promoted by HOO, HR, CEO, or Super Admin
+- **Key role:** Full operational capabilities without promotion authority
 
 ---
 
@@ -442,7 +480,7 @@ Within each project, users have **project-specific roles**:
 
 | Promoter Role | Can Promote To | Department Restriction |
 |--------------|----------------|----------------------|
-| SUPER_ADMIN | CEO, HOO, HR, ADMIN, STAFF | Any |
+| SUPER_ADMIN | CEO, HOO, HR, ADMIN, STAFF | Any (audit-only role, manages user roles but not operational) |
 | CEO | HOO, HR, ADMIN, STAFF | Any |
 | HOO | ADMIN (from STAFF only) | OPS only |
 | HR | ADMIN (from STAFF only) | HR only |
@@ -456,7 +494,9 @@ Within each project, users have **project-specific roles**:
 ### Creating a Project
 
 **Who Can Create:**
-- CEO, HOO, HR, ADMIN, Super Admin
+- CEO, HOO, HR, ADMIN
+
+**Note:** SUPER_ADMIN has audit-only access and does not perform operational tasks.
 
 **Steps:**
 1. Click "Create Project" button

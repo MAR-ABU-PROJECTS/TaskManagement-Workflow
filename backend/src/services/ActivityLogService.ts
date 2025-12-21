@@ -58,7 +58,7 @@ export class ActivityLogService {
         OR: [
           { userId },
           { task: { creatorId: userId } },
-          { task: { assigneeId: userId } },
+          { task: { assignees: { some: { userId } } } },
         ],
       },
       orderBy: { timestamp: "desc" },

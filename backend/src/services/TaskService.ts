@@ -62,29 +62,48 @@ export class TaskService {
       }
     }
 
-    // Validate assignee exists if provided
-    if (data.assigneeId) {
-      const assignee = await prisma.user.findUnique({
-        where: { id: data.assigneeId },
+    // Validate assignees exist if provided
+    const assigneeIds = data.assigneeIds || [];
+    if (assigneeIds.length > 0) {
+      const users = await prisma.user.findMany({
+        where: { id: { in: assigneeIds } },
       });
 
-      if (!assignee) {
-        throw new Error("Assignee not found");
+      if (users.length !== assigneeIds.length) {
+        throw new Error("One or more assignees not found");
+      }
+
+      // Validate assignees are project members if task belongs to a project
+      if (data.projectId) {
+        const members = await prisma.projectMember.findMany({
+          where: {
+            projectId: data.projectId,
+            userId: { in: assigneeIds },
+          },
+        });
+
+        if (members.length !== assigneeIds.length) {
+          throw new Error("All assignees must be project members");
+        }
+      } else {
+        // For personal tasks, validate assignees are operational users (not SUPER_ADMIN)
+        const invalidAssignees = users.filter(
+          (u) => u.role === UserRole.SUPER_ADMIN
+        );
+        if (invalidAssignees.length > 0) {
+          throw new Error(
+            "Cannot assign personal tasks to audit-only users (SUPER_ADMIN)"
+          );
+        }
       }
     }
 
     // AUTOMATION RULE: Determine if task requires approval
-    // Admin → Staff tasks require approval
-    // HOO/HR → Admin/Staff tasks auto-approved
-    // CEO tasks skip approval
+    // Based on creator role:
+    // - STAFF tasks require approval
+    // - ADMIN, HOO, HR, CEO tasks are auto-approved
     const requiresApproval = await this.checkIfRequiresApproval(
       creatorId,
-      creatorRole,
-      data.assigneeId
-    );
-
-    // Auto-approve for CEO, HOO, HR created tasks
-    const autoApprove = [UserRole.CEO, UserRole.HOO, UserRole.HR].includes(
       creatorRole
     );
 
@@ -101,15 +120,35 @@ export class TaskService {
         description: data.description || null,
         priority: (data.priority as any) || "MEDIUM",
         issueType: data.issueType || IssueType.TASK,
-        status: TaskStatus.DRAFT,
+        status: assigneeIds.length > 0 ? TaskStatus.ASSIGNED : TaskStatus.DRAFT,
         creatorId,
-        assigneeId: data.assigneeId || null,
         parentTaskId: data.parentTaskId || null,
         requiresApproval,
-        approvedById: autoApprove ? creatorId : null,
+        approvedById: null, // Only set when explicitly approved by authorized person
         labels: data.labels || [],
         dueDate: data.dueDate || null,
         position,
+        // Create assignee relations
+        assignees: {
+          create: assigneeIds.map((userId) => ({
+            userId,
+            assignedBy: creatorId,
+          })),
+        },
+      },
+      include: {
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -121,26 +160,28 @@ export class TaskService {
       metadata: { taskData: data },
     });
 
-    // AUTOMATION: Send notification if task is assigned
-    if (data.assigneeId && data.assigneeId !== creatorId) {
-      await NotificationService.notifyTaskAssigned(
-        task.id,
-        data.assigneeId,
-        creatorId
-      );
+    // AUTOMATION: Send notification to each assignee
+    for (const assigneeId of assigneeIds) {
+      if (assigneeId !== creatorId) {
+        await NotificationService.notifyTaskAssigned(
+          task.id,
+          assigneeId,
+          creatorId
+        );
+      }
     }
 
     // AUTOMATION: Notify approvers if approval required
-    if (requiresApproval && !autoApprove) {
+    if (requiresApproval) {
       await NotificationService.notifyApprovalRequired(task.id);
     }
 
-    // AUTOMATION: Creator auto-added as watcher
+    // AUTOMATION: Creator auto-added as watcher, plus all assignees
     await prisma.task.update({
       where: { id: task.id },
       data: {
         watchers: {
-          connect: { id: creatorId },
+          connect: [{ id: creatorId }, ...assigneeIds.map((id) => ({ id }))],
         },
       },
     });
@@ -185,7 +226,6 @@ export class TaskService {
         issueType: data.issueType || IssueType.TASK,
         status: TaskStatus.DRAFT,
         creatorId,
-        assigneeId: creatorId, // Auto-assign to creator
         requiresApproval: false, // Personal tasks don't need approval
         approvedById: creatorId, // Auto-approved
         labels: data.labels || [],
@@ -193,6 +233,15 @@ export class TaskService {
         estimatedHours: data.estimatedHours || null,
         storyPoints: data.storyPoints || null,
         position,
+        // Auto-assign to creator
+        assignees: {
+          create: [
+            {
+              userId: creatorId,
+              assignedBy: creatorId,
+            },
+          ],
+        },
       },
       include: {
         creator: {
@@ -203,12 +252,16 @@ export class TaskService {
             role: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
       },
@@ -256,38 +309,32 @@ export class TaskService {
     // Apply filters
     if (filters?.projectId) where.projectId = filters.projectId;
     if (filters?.status) where.status = filters.status;
-    if (filters?.assigneeId) where.assigneeId = filters.assigneeId;
+    if (filters?.assigneeId) {
+      where.assignees = { some: { userId: filters.assigneeId } };
+    }
     if (filters?.creatorId) where.creatorId = filters.creatorId;
 
-    // Personal tasks filtering: users can only see their own personal tasks
-    // Personal tasks are identified by projectId being null
-    const personalTaskFilter = {
-      projectId: null,
-      creatorId: userId, // Only show personal tasks created by this user
-    };
+    // Visibility rules:
+    // - CEO, HOO, HR see all tasks (management oversight)
+    // - ADMIN sees: their tasks + staff-created tasks + tasks assigned to them
+    // - STAFF sees: only their created tasks + tasks assigned to them
+    // Note: SUPER_ADMIN has audit-only access via separate audit endpoints
+    const isManagement = [UserRole.CEO, UserRole.HOO, UserRole.HR].includes(
+      userRole
+    );
 
-    // Role-based filtering
-    if (userRole === UserRole.STAFF) {
-      // Staff only see their own tasks or tasks assigned to them
-      where.OR = [
-        { creatorId: userId, projectId: { not: null } }, // Project tasks created by them
-        { assigneeId: userId, projectId: { not: null } }, // Project tasks assigned to them
-        personalTaskFilter, // Their personal tasks
-      ];
-    } else if (userRole === UserRole.ADMIN) {
-      // Admin sees tasks they created or are assigned to
-      where.OR = [
-        { creatorId: userId, projectId: { not: null } },
-        { assigneeId: userId, projectId: { not: null } },
-        { creator: { role: UserRole.STAFF }, projectId: { not: null } }, // Tasks created by staff they manage
-        personalTaskFilter, // Their personal tasks
-      ];
-    } else {
-      // CEO, HOO, HR see all project tasks + their own personal tasks
-      where.OR = [
-        { projectId: { not: null } }, // All project tasks
-        personalTaskFilter, // Their personal tasks
-      ];
+    if (!isManagement) {
+      if (userRole === UserRole.ADMIN) {
+        // ADMIN sees: their tasks + staff tasks + tasks assigned to them
+        where.OR = [
+          { creatorId: userId },
+          { assignees: { some: { userId } } },
+          { creator: { role: UserRole.STAFF } },
+        ];
+      } else {
+        // STAFF sees only: their created tasks + tasks assigned to them
+        where.OR = [{ creatorId: userId }, { assignees: { some: { userId } } }];
+      }
     }
 
     const tasks = await prisma.task.findMany({
@@ -302,12 +349,16 @@ export class TaskService {
             role: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
         project: {
@@ -347,12 +398,16 @@ export class TaskService {
             role: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
         approvedBy: {
@@ -411,17 +466,25 @@ export class TaskService {
     userId: string,
     userRole: UserRole
   ): Promise<Task | null> {
-    const task = await prisma.task.findUnique({ where: { id } });
+    const task = await prisma.task.findUnique({
+      where: { id },
+      include: {
+        assignees: { select: { userId: true } },
+      },
+    });
 
     if (!task) {
       return null;
     }
 
     // Check permission
+    const isAssignee = task.assignees.some((a) => a.userId === userId);
     const canUpdate =
       task.creatorId === userId ||
-      task.assigneeId === userId ||
-      [UserRole.CEO, UserRole.HOO, UserRole.HR].includes(userRole);
+      isAssignee ||
+      [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
+        userRole
+      );
 
     if (!canUpdate) {
       throw new Error(
@@ -442,7 +505,9 @@ export class TaskService {
     });
 
     // AUTOMATION: Auto-set to In Progress when assignee updates work
-    if (userId === task.assigneeId && task.status === TaskStatus.ASSIGNED) {
+    // Auto-transition to IN_PROGRESS if assignee changes status from ASSIGNED
+    // Note: For multi-assignee tasks, first assignee to update triggers transition
+    if (isAssignee && task.status === TaskStatus.ASSIGNED) {
       await prisma.task.update({
         where: { id },
         data: { status: TaskStatus.IN_PROGRESS },
@@ -483,6 +548,7 @@ export class TaskService {
       where: { id },
       include: {
         project: true,
+        assignees: { select: { userId: true } },
       },
     });
 
@@ -491,10 +557,13 @@ export class TaskService {
     }
 
     // Check permission
+    const isAssignee = task.assignees.some((a) => a.userId === userId);
     const canChange =
       task.creatorId === userId ||
-      task.assigneeId === userId ||
-      [UserRole.CEO, UserRole.HOO, UserRole.HR].includes(userRole);
+      isAssignee ||
+      [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
+        userRole
+      );
 
     if (!canChange) {
       throw new Error(
@@ -555,7 +624,8 @@ export class TaskService {
     }
 
     // AUTOMATION: Auto-move to Review when assignee marks done
-    if (newStatus === TaskStatus.COMPLETED && userId === task.assigneeId) {
+    // Auto-complete if assignee completes the task
+    if (newStatus === TaskStatus.COMPLETED && isAssignee) {
       // Notify assignor when Review starts
       if (task.creatorId && task.creatorId !== userId) {
         await NotificationService.notifyTaskAssigned(
@@ -591,11 +661,16 @@ export class TaskService {
    */
   async assignTask(
     id: string,
-    assigneeId: string,
+    assigneeIds: string[],
     userId: string,
     userRole: UserRole
   ): Promise<Task | null> {
-    const task = await prisma.task.findUnique({ where: { id } });
+    const task = await prisma.task.findUnique({
+      where: { id },
+      include: {
+        assignees: true,
+      },
+    });
 
     if (!task) {
       return null;
@@ -614,20 +689,58 @@ export class TaskService {
       );
     }
 
-    // Validate assignee exists
-    const assignee = await prisma.user.findUnique({
-      where: { id: assigneeId },
+    // Validate all assignees exist
+    const assignees = await prisma.user.findMany({
+      where: { id: { in: assigneeIds } },
     });
 
-    if (!assignee) {
-      throw new Error("Assignee not found");
+    if (assignees.length !== assigneeIds.length) {
+      throw new Error("One or more assignees not found");
+    }
+
+    // Validate assignees are not SUPER_ADMIN (audit-only role)
+    const invalidAssignees = assignees.filter(
+      (u) => u.role === UserRole.SUPER_ADMIN
+    );
+    if (invalidAssignees.length > 0) {
+      throw new Error("Cannot assign tasks to audit-only users (SUPER_ADMIN)");
+    }
+
+    // Validate assignees are project members if task belongs to a project
+    if (task.projectId) {
+      const members = await prisma.projectMember.findMany({
+        where: {
+          projectId: task.projectId,
+          userId: { in: assigneeIds },
+        },
+      });
+
+      if (members.length !== assigneeIds.length) {
+        throw new Error("All assignees must be project members");
+      }
+    }
+
+    // Add new assignees (don't remove existing ones)
+    // Filter out assignees who are already assigned
+    const existingAssigneeIds = task.assignees.map((a) => a.userId);
+    const newAssigneeIds = assigneeIds.filter(
+      (id) => !existingAssigneeIds.includes(id)
+    );
+
+    if (newAssigneeIds.length === 0) {
+      throw new Error("All specified users are already assigned to this task");
     }
 
     const updated = await prisma.task.update({
       where: { id },
       data: {
-        assigneeId,
         status: TaskStatus.ASSIGNED,
+        assignees: {
+          create: newAssigneeIds.map((assigneeId) => ({
+            userId: assigneeId,
+            assignedBy: userId,
+          })),
+        },
       },
       include: {
         project: {
@@ -642,12 +755,16 @@ export class TaskService {
             email: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
       },
@@ -658,38 +775,140 @@ export class TaskService {
       taskId: id,
       userId,
       action: ActivityAction.ASSIGN,
-      metadata: { assigneeId, assigneeName: assignee.name },
+      metadata: {
+        assigneeIds,
+        assigneeNames: assignees.map((a) => a.name),
+      },
     });
 
-    // AUTOMATION: Notify assignee
-    await NotificationService.notifyTaskAssigned(id, assigneeId, userId);
+    // AUTOMATION: Notify each assignee and send emails
+    for (const assignee of assignees) {
+      await NotificationService.notifyTaskAssigned(id, assignee.id, userId);
 
-    // AUTOMATION: Send email notification to assignee
-    emailService
-      .sendTaskAssignmentEmail(assignee.email, {
-        assigneeName: assignee.name,
-        taskTitle: updated.title,
-        taskId: updated.id,
-        projectName: updated.project?.name || "No Project",
-        assignedBy: updated.creator?.name || "Unknown",
-        priority: updated.priority,
-        dueDate: updated.dueDate?.toISOString(),
-      })
-      .catch((err) =>
-        console.error("Failed to send task assignment email:", err)
-      );
+      emailService
+        .sendTaskAssignmentEmail(assignee.email, {
+          assigneeName: assignee.name,
+          taskTitle: updated.title,
+          taskId: updated.id,
+          projectName: updated.project?.name || "No Project",
+          assignedBy: updated.creator?.name || "Unknown",
+          priority: updated.priority,
+          dueDate: updated.dueDate?.toISOString(),
+        })
+        .catch((err) =>
+          console.error("Failed to send task assignment email:", err)
+        );
+    }
 
-    // AUTOMATION: Add assignee as watcher
+    // AUTOMATION: Add all assignees as watchers
     await prisma.task
       .update({
         where: { id },
         data: {
           watchers: {
-            connect: { id: assigneeId },
+            connect: assigneeIds.map((assigneeId) => ({ id: assigneeId })),
           },
         },
       })
       .catch(() => {}); // Ignore if already exists or watchers relation fails
+
+    return updated as Task;
+  }
+
+  /**
+   * Unassign user from task
+   */
+  async unassignTask(
+    taskId: string,
+    userIdToRemove: string,
+    requesterId: string,
+    requesterRole: UserRole
+  ): Promise<Task> {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        assignees: true,
+        project: { include: { members: true } },
+      },
+    });
+
+    if (!task) {
+      throw new Error("Task not found");
+    }
+
+    // Check permission
+    const isCreator = task.creatorId === requesterId;
+    const isAssignee = task.assignees.some((a) => a.userId === requesterId);
+    const isManagement = [
+      UserRole.CEO,
+      UserRole.HOO,
+      UserRole.HR,
+      UserRole.ADMIN,
+    ].includes(requesterRole);
+    const isProjectAdmin = task.project?.members.some(
+      (m) => m.userId === requesterId && m.role === "PROJECT_ADMIN"
+    );
+
+    if (!isCreator && !isAssignee && !isManagement && !isProjectAdmin) {
+      throw new Error(
+        "Forbidden: You do not have permission to unassign this task"
+      );
+    }
+
+    // Remove the assignment
+    await prisma.taskAssignee.deleteMany({
+      where: {
+        taskId,
+        userId: userIdToRemove,
+      },
+    });
+
+    // If no assignees left, update status appropriately
+    const remainingAssignees = await prisma.taskAssignee.count({
+      where: { taskId },
+    });
+
+    if (remainingAssignees === 0) {
+      // If work was in progress, move to ASSIGNED (waiting for reassignment)
+      // If still in early stages, keep as DRAFT or ASSIGNED
+      if (
+        [TaskStatus.IN_PROGRESS, TaskStatus.PAUSED, TaskStatus.REVIEW].includes(
+          task.status as TaskStatus
+        )
+      ) {
+        await prisma.task.update({
+          where: { id: taskId },
+          data: { status: TaskStatus.ASSIGNED as any },
+        });
+      }
+    }
+
+    // Log activity
+    await ActivityLogService.logActivity({
+      taskId,
+      userId: requesterId,
+      action: "UNASSIGNED" as any,
+      metadata: { removedUserId: userIdToRemove },
+    });
+
+    // Get updated task
+    const updated = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
     return updated as Task;
   }
@@ -716,9 +935,15 @@ export class TaskService {
       throw new Error("Task already approved");
     }
 
-    // Only CEO, HOO, HR can approve
-    if (![UserRole.CEO, UserRole.HOO, UserRole.HR].includes(userRole)) {
-      throw new Error("Forbidden: Only CEO, HOO, or HR can approve tasks");
+    // CEO, HOO, HR, ADMIN can approve (ADMIN approves STAFF tasks)
+    if (
+      ![UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
+        userRole
+      )
+    ) {
+      throw new Error(
+        "Forbidden: Only CEO, HOO, HR, or ADMIN can approve tasks"
+      );
     }
 
     const updated = await prisma.task.update({
@@ -775,9 +1000,15 @@ export class TaskService {
       return null;
     }
 
-    // Only CEO, HOO, HR can reject
-    if (![UserRole.CEO, UserRole.HOO, UserRole.HR].includes(userRole)) {
-      throw new Error("Forbidden: Only CEO, HOO, or HR can reject tasks");
+    // Only CEO, HOO, HR, ADMIN can reject
+    if (
+      ![UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
+        userRole
+      )
+    ) {
+      throw new Error(
+        "Forbidden: Only CEO, HOO, HR, and ADMIN can reject tasks"
+      );
     }
 
     if (!rejectionReason) {
@@ -812,26 +1043,21 @@ export class TaskService {
    */
   private async checkIfRequiresApproval(
     _creatorId: string,
-    creatorRole: UserRole,
-    assigneeId?: string
+    creatorRole: UserRole
   ): Promise<boolean> {
-    // Auto-approve for CEO, HOO, HR
-    if ([UserRole.CEO, UserRole.HOO, UserRole.HR].includes(creatorRole)) {
+    // Approval based on creator's authority:
+    // - STAFF tasks require approval (lower authority)
+    // - ADMIN, HOO, HR, CEO tasks are auto-approved (have authority)
+    if (
+      [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
+        creatorRole
+      )
+    ) {
       return false;
     }
 
-    // Admin creating task for Staff requires approval
-    if (creatorRole === UserRole.ADMIN && assigneeId) {
-      const assignee = await prisma.user.findUnique({
-        where: { id: assigneeId },
-      });
-
-      if (assignee?.role === UserRole.STAFF) {
-        return true;
-      }
-    }
-
-    return false;
+    // STAFF tasks require approval
+    return creatorRole === UserRole.STAFF;
   }
 
   /**
@@ -842,13 +1068,25 @@ export class TaskService {
     userId: string,
     userRole: UserRole
   ): boolean {
-    // CEO, HOO, HR see all tasks
-    if ([UserRole.CEO, UserRole.HOO, UserRole.HR].includes(userRole)) {
+    // CEO, HOO, HR, SUPER_ADMIN see all tasks
+    if (
+      [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.SUPER_ADMIN].includes(
+        userRole
+      )
+    ) {
       return true;
     }
 
-    // Creator and assignee have access
-    if (task.creatorId === userId || task.assigneeId === userId) {
+    // Creator has access
+    if (task.creatorId === userId) {
+      return true;
+    }
+
+    // Check if user is in assignees array
+    if (
+      task.assignees &&
+      task.assignees.some((a: any) => a.userId === userId)
+    ) {
       return true;
     }
 
@@ -876,12 +1114,16 @@ export class TaskService {
             role: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
         project: {
@@ -950,12 +1192,16 @@ export class TaskService {
             role: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
         _count: {
@@ -1008,6 +1254,7 @@ export class TaskService {
       where: { id: taskId },
       include: {
         project: true,
+        assignees: { select: { userId: true } },
       },
     });
 
@@ -1016,9 +1263,10 @@ export class TaskService {
     }
 
     // Check permission
+    const isAssignee = task.assignees.some((a: any) => a.userId === userId);
     const canMove =
       task.creatorId === userId ||
-      task.assigneeId === userId ||
+      isAssignee ||
       [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
         userRole
       );
@@ -1075,12 +1323,16 @@ export class TaskService {
             role: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
         project: {
@@ -1224,7 +1476,10 @@ export class TaskService {
         // Get task with project info
         const task = await prisma.task.findUnique({
           where: { id: taskId },
-          include: { project: true },
+          include: {
+            project: true,
+            assignees: { select: { userId: true } },
+          },
         });
 
         if (!task) {
@@ -1233,9 +1488,10 @@ export class TaskService {
         }
 
         // Check permission
+        const isAssignee = task.assignees.some((a) => a.userId === userId);
         const canChange =
           task.creatorId === userId ||
-          task.assigneeId === userId ||
+          isAssignee ||
           [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
             userRole
           );
@@ -1339,18 +1595,28 @@ export class TaskService {
 
     // Check permissions
     // Only PROJECT_ADMIN, PROJECT_LEAD can delete tasks
-    // Or CEO/HOO/HR can delete any task
-    const isGlobalAdmin = [UserRole.CEO, UserRole.HOO, UserRole.HR].includes(
-      userRole
-    );
+    // CEO/HOO/HR/ADMIN can delete if they are project members (respect privacy)
+    const isManagement = [
+      UserRole.CEO,
+      UserRole.HOO,
+      UserRole.HR,
+      UserRole.ADMIN,
+    ].includes(userRole);
 
-    let canDelete = isGlobalAdmin;
+    let canDelete = false;
 
     // Check project permissions
-    if (task.projectId && !isGlobalAdmin) {
+    if (task.projectId) {
       const member = task.project?.members.find((m) => m.userId === userId);
-      if (member && ["PROJECT_ADMIN", "PROJECT_LEAD"].includes(member.role)) {
-        canDelete = true;
+      if (member) {
+        // PROJECT_ADMIN/PROJECT_LEAD can delete
+        // Management (CEO/HOO/HR/ADMIN) can delete if they are project members
+        if (
+          ["PROJECT_ADMIN", "PROJECT_LEAD"].includes(member.role) ||
+          isManagement
+        ) {
+          canDelete = true;
+        }
       }
     }
 

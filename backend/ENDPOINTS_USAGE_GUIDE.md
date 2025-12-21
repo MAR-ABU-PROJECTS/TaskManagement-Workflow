@@ -1,9 +1,11 @@
 # Task Management System - Endpoint Usage Guide
 
-**Version:** 2.0.0  
-**Last Updated:** December 16, 2025  
+**Version:** 2.1.0  
+**Last Updated:** December 21, 2025  
 **Base URL:** `http://localhost:4000/api`
 
+> ⚠️ **Important:** ADMIN role now has full operational permissions (create/update/delete projects, manage members, approve/reject tasks).
+> ⚠️ **Important:** SUPER_ADMIN is audit-only (read access for auditing purposes, no operational write access).
 > ⚠️ **Important:** All status transitions now use workflow-based validation.
 > See [Workflow System](#17-workflows) for details.
 
@@ -34,6 +36,68 @@
 21. [Notifications](#21-notifications)
 22. [Admin Dashboards](#22-admin-dashboards)
 23. [Role-Specific Endpoints](#23-role-specific-endpoints)
+24. [Changelog](#24-changelog)
+
+---
+
+## Changelog - December 21, 2025
+
+### Permission System Updates (v2.1.0)
+
+**ADMIN Role Enhancements:**
+- ✅ Can create, update, and delete projects
+- ✅ Can add, update, and remove project members
+- ✅ Can approve and reject tasks
+- ✅ Can assign, unassign, and change task status
+- ✅ Can update and delete tasks
+- ✅ Full operational access (same as CEO/HOO/HR)
+
+**SUPER_ADMIN Clarification:**
+- 🔍 Audit-only role (read access for oversight)
+- ❌ Cannot perform write operations
+- ❌ Cannot be assigned to operational tasks
+- ✅ Can manage user roles (promote/demote)
+
+**Affected Endpoints:**
+- `POST /api/projects` - Now includes ADMIN
+- `PUT /api/projects/:id` - Now includes ADMIN  
+- `DELETE /api/projects/:id` - Now includes ADMIN
+- `POST /api/projects/:id/members` - Now includes ADMIN
+- `PATCH /api/projects/:id/members/:userId` - Now includes ADMIN
+- `DELETE /api/projects/:id/members/:userId` - Now includes ADMIN
+- `POST /api/tasks/:id/approve` - Now includes ADMIN
+- `POST /api/tasks/:id/reject` - Now includes ADMIN
+- `PUT /api/tasks/:id` - Now includes ADMIN
+- `POST /api/tasks/:id/transition` - Now includes ADMIN
+- `POST /api/tasks/:id/assign` - Now includes ADMIN
+- `DELETE /api/tasks/:id/assign/:userId` - Now includes ADMIN
+- `DELETE /api/tasks/:id` - Now includes ADMIN (project members only)
+
+---
+
+## Permissions Quick Reference
+
+### Who Can Do What
+
+| Operation | Allowed Roles |
+|-----------|--------------|
+| **Create Project** | CEO, HOO, HR, ADMIN |
+| **Update Project** | PROJECT_ADMIN, project creator, CEO, HOO, HR, ADMIN |
+| **Delete Project** | Project creator, CEO, HOO, HR, ADMIN |
+| **Add Project Member** | PROJECT_ADMIN, project creator, CEO, HOO, HR, ADMIN |
+| **Update Member Role** | PROJECT_ADMIN, project creator, CEO, HOO, HR, ADMIN |
+| **Remove Project Member** | PROJECT_ADMIN, project creator, CEO, HOO, HR, ADMIN |
+| **Create Task** | All authenticated users |
+| **Update Task** | Task creator, assignees, CEO, HOO, HR, ADMIN |
+| **Delete Task** | PROJECT_ADMIN, PROJECT_LEAD (project tasks), task creator (personal tasks), CEO/HOO/HR/ADMIN (if project member) |
+| **Assign Task** | Task creator, CEO, HOO, HR, ADMIN |
+| **Unassign Task** | Task creator, assignees, PROJECT_ADMIN, CEO, HOO, HR, ADMIN |
+| **Change Task Status** | Task creator, assignees, CEO, HOO, HR, ADMIN |
+| **Approve Task** | CEO, HOO, HR, ADMIN |
+| **Reject Task** | CEO, HOO, HR, ADMIN |
+| **View All Tasks** | CEO, HOO, HR (management oversight) |
+| **View All Projects** | CEO, HOO, HR, SUPER_ADMIN (audit) |
+| **Manage Users** | CEO, HOO, HR, SUPER_ADMIN |
 
 ---
 
@@ -473,8 +537,8 @@ curl -X GET http://localhost:4000/api/users/super-admin/verify \
 ### 2.1 Create Project
 
 **Endpoint:** `POST /api/projects`  
-**Auth Required:** ✅ Yes (CEO, HOO, HR, or ADMIN only)  
-**Description:** Create a new project
+**Auth Required:** ✅ Yes (CEO, HOO, HR, or ADMIN)  
+**Description:** Create a new project. ADMIN has full operational access.
 
 **Request Body:**
 ```json
@@ -599,7 +663,7 @@ curl http://localhost:4000/api/projects/clh789 \
 ### 2.4 Update Project
 
 **Endpoint:** `PUT /api/projects/:id`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN only)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN, project creator, or management: CEO/HOO/HR/ADMIN)  
 **Description:** Update project details
 
 **Request Body:**
@@ -627,7 +691,7 @@ curl -X PUT http://localhost:4000/api/projects/clh789 \
 ### 2.5 Delete Project
 
 **Endpoint:** `DELETE /api/projects/:id`  
-**Auth Required:** ✅ Yes (CEO, HOO, HR, or project creator)  
+**Auth Required:** ✅ Yes (CEO, HOO, HR, ADMIN, or project creator)  
 **Description:** Archive/delete project
 
 **Example:**
@@ -643,7 +707,7 @@ curl -X DELETE http://localhost:4000/api/projects/clh789 \
 ### 3.1 Add Member to Project
 
 **Endpoint:** `POST /api/projects/:projectId/members`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN only)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN, project creator, or management: CEO/HOO/HR/ADMIN)  
 **Description:** Add a user to the project
 
 **Request Body:**
@@ -705,7 +769,7 @@ curl http://localhost:4000/api/projects/clh789/members \
 ### 3.3 Update Member Role
 
 **Endpoint:** `PATCH /api/projects/:projectId/members/:memberId`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN only)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN, project creator, or management: CEO/HOO/HR/ADMIN)  
 **Description:** Change a member's role
 
 **Request Body:**
@@ -728,7 +792,7 @@ curl -X PATCH http://localhost:4000/api/projects/clh789/members/clh111 \
 ### 3.4 Remove Member
 
 **Endpoint:** `DELETE /api/projects/:projectId/members/:memberId`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN only)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN, project creator, or management: CEO/HOO/HR/ADMIN)  
 **Description:** Remove user from project
 
 **Example:**

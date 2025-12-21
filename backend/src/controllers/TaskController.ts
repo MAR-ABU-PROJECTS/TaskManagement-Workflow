@@ -247,7 +247,7 @@ export class TaskController {
   }
 
   /**
-   * POST /tasks/:id/assign - Assign task to user
+   * POST /tasks/:id/assign - Assign task to multiple users
    */
   async assignTask(req: Request, res: Response): Promise<Response> {
     try {
@@ -262,15 +262,21 @@ export class TaskController {
         return res.status(400).json({ message: "Task ID is required" });
       }
 
-      const { assigneeId } = req.body;
+      const { assigneeIds } = req.body;
 
-      if (!assigneeId) {
-        return res.status(400).json({ message: "Assignee ID is required" });
+      if (
+        !assigneeIds ||
+        !Array.isArray(assigneeIds) ||
+        assigneeIds.length === 0
+      ) {
+        return res
+          .status(400)
+          .json({ message: "At least one assignee ID is required" });
       }
 
       const task = await TaskService.assignTask(
         id,
-        assigneeId,
+        assigneeIds,
         req.user.id,
         req.user.role as UserRole
       );
@@ -292,6 +298,49 @@ export class TaskController {
       }
       return res.status(500).json({
         message: "Failed to assign task",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * DELETE /tasks/:id/assign/:userId - Unassign user from task
+   */
+  async unassignTask(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const { id, userId } = req.params;
+      if (!id || !userId) {
+        return res
+          .status(400)
+          .json({ message: "Task ID and User ID are required" });
+      }
+
+      const task = await TaskService.unassignTask(
+        id,
+        userId,
+        req.user.id,
+        req.user.role as UserRole
+      );
+
+      return res.status(200).json({
+        message: "User unassigned from task successfully",
+        data: task,
+      });
+    } catch (error: any) {
+      if (error.message.includes("Forbidden")) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error.message.includes("not found")) {
+        return res.status(404).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to unassign user from task",
         error: error.message,
       });
     }

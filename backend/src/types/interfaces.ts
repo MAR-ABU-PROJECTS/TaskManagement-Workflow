@@ -36,7 +36,18 @@ export interface Task {
   issueType: IssueType;
   status: TaskStatus;
   creatorId: string;
-  assigneeId: string | null;
+  assignees?: Array<{
+    id: string;
+    userId: string;
+    assignedAt: Date;
+    assignedBy: string | null;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: UserRole;
+    };
+  }>;
   parentTaskId: string | null;
   requiresApproval: boolean;
   approvedById: string | null;
@@ -81,6 +92,7 @@ export interface CreateProjectDTO {
   description?: string;
   workflowType?: string; // BASIC, AGILE, BUG_TRACKING, or CUSTOM
   workflowSchemeId?: string; // Only used when workflowType = CUSTOM
+  members?: Array<{ userId: string; role: string }>; // Optional array of initial members
 }
 
 export interface UpdateProjectDTO {
@@ -96,7 +108,7 @@ export interface CreateTaskDTO {
   description?: string;
   priority?: TaskPriority;
   issueType?: IssueType;
-  assigneeId?: string;
+  assigneeIds?: string[]; // Changed from assigneeId to support multiple assignees
   parentTaskId?: string;
   labels?: string[];
   dueDate?: Date;

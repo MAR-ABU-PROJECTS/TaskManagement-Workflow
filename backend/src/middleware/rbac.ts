@@ -107,11 +107,16 @@ export function canApproveTask(
   }
 
   const userRole = req.user.role as UserRole;
-  const allowedRoles: UserRole[] = [UserRole.CEO, UserRole.HOO, UserRole.HR];
+  const allowedRoles: UserRole[] = [
+    UserRole.CEO,
+    UserRole.HOO,
+    UserRole.HR,
+    UserRole.ADMIN,
+  ];
 
   if (!allowedRoles.includes(userRole)) {
     return res.status(403).json({
-      message: "Forbidden: Only CEO, HOO, and HR can approve tasks",
+      message: "Forbidden: Only CEO, HOO, HR, and ADMIN can approve tasks",
     });
   }
 

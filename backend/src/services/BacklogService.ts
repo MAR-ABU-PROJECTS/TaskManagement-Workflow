@@ -27,17 +27,21 @@ class BacklogService {
     }
 
     if (options?.assigneeId) {
-      where.assigneeId = options.assigneeId;
+      where.assignees = { some: { userId: options.assigneeId } };
     }
 
     const tasks = await prisma.task.findMany({
       where,
       include: {
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         epic: {
@@ -75,10 +79,14 @@ class BacklogService {
         tasks: {
           where: { sprintId: null },
           include: {
-            assignee: {
-              select: {
-                id: true,
-                name: true,
+            assignees: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
           },
@@ -96,10 +104,14 @@ class BacklogService {
         epicId: null,
       },
       include: {
-        assignee: {
-          select: {
-            id: true,
-            name: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -127,10 +139,14 @@ class BacklogService {
       where: { id: taskId },
       data: { priority: priority as any },
       include: {
-        assignee: {
-          select: {
-            id: true,
-            name: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
         epic: {
@@ -232,10 +248,14 @@ class BacklogService {
         storyPoints: { not: null },
       },
       include: {
-        assignee: {
-          select: {
-            id: true,
-            name: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
         epic: {

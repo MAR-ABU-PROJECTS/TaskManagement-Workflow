@@ -25,11 +25,15 @@ export class CommentService {
             email: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         project: {
@@ -71,39 +75,43 @@ export class CommentService {
     });
 
     // AUTOMATION: Send email to task creator if they're not the commenter
-    if (task.creator && task.creator.id !== userId) {
-      emailService
-        .sendCommentNotificationEmail(task.creator.email, {
-          recipientName: task.creator.name,
-          commenterName: comment.user.name,
-          taskTitle: task.title,
-          taskId: task.id,
-          commentText: data.message,
-          projectName: task.project?.name,
-        })
-        .catch((err) =>
-          console.error("Failed to send comment email to creator:", err)
-        );
+    if (task.creatorId && task.creatorId !== userId) {
+      const creator = task.creator;
+      if (creator) {
+        emailService
+          .sendCommentNotificationEmail(creator.email, {
+            recipientName: creator.name,
+            commenterName: comment.user.name,
+            taskTitle: task.title,
+            taskId: task.id,
+            commentText: data.message,
+            projectName: task.project?.name,
+          })
+          .catch((err) =>
+            console.error("Failed to send comment email to creator:", err)
+          );
+      }
     }
 
-    // AUTOMATION: Send email to assignee if they're not the commenter and not the creator
-    if (
-      task.assignee &&
-      task.assignee.id !== userId &&
-      task.assignee.id !== task.creator?.id
-    ) {
-      emailService
-        .sendCommentNotificationEmail(task.assignee.email, {
-          recipientName: task.assignee.name,
-          commenterName: comment.user.name,
-          taskTitle: task.title,
-          taskId: task.id,
-          commentText: data.message,
-          projectName: task.project?.name,
-        })
-        .catch((err) =>
-          console.error("Failed to send comment email to assignee:", err)
-        );
+    // AUTOMATION: Send email to all assignees if they're not the commenter and not the creator
+    for (const assignment of task.assignees) {
+      if (
+        assignment.userId !== userId &&
+        assignment.userId !== task.creatorId
+      ) {
+        emailService
+          .sendCommentNotificationEmail(assignment.user.email, {
+            recipientName: assignment.user.name,
+            commenterName: comment.user.name,
+            taskTitle: task.title,
+            taskId: task.id,
+            commentText: data.message,
+            projectName: task.project?.name,
+          })
+          .catch((err) =>
+            console.error("Failed to send comment email to assignee:", err)
+          );
+      }
     }
 
     // AUTOMATION: @Mention notifications

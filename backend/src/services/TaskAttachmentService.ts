@@ -161,14 +161,15 @@ class TaskAttachmentService {
       where: { id: attachment.taskId },
       select: {
         creatorId: true,
-        assigneeId: true,
+        assignees: { select: { userId: true } },
       },
     });
 
+    const isAssignee = task?.assignees.some((a) => a.userId === userId);
     const canDelete =
       attachment.uploadedById === userId ||
       task?.creatorId === userId ||
-      task?.assigneeId === userId ||
+      isAssignee ||
       ["CEO", "HOO", "HR", "ADMIN"].includes(userRole);
 
     if (!canDelete) {

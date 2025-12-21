@@ -209,7 +209,7 @@ model User {
    createdProjects Project[]         @relation("ProjectCreator")
    projectMembers  ProjectMember[]
    createdTasks    Task[]            @relation("TaskCreator")
-   assignedTasks   Task[]            @relation("TaskAssignee")
+   taskAssignments TaskAssignee[] // Many-to-many relation for task assignments
    approvedTasks   Task[]            @relation("TaskApprover")
    comments        TaskComment[]
    activityLogs    TaskActivityLog[]
@@ -263,7 +263,6 @@ model Task {
    issueType        IssueType    @default(TASK) @map("issue_type")
    status           TaskStatus   @default(DRAFT)
    creatorId        String       @map("creator_id")
-   assigneeId       String?      @map("assignee_id")
    reporterId       String?      @map("reporter_id")
    parentTaskId     String?      @map("parent_task_id")
    requiresApproval Boolean      @default(false) @map("requires_approval")
@@ -286,7 +285,7 @@ model Task {
    component    ProjectComponent? @relation(fields: [componentId], references: [id])
    version      ProjectVersion?   @relation(fields: [versionId], references: [id])
    creator      User              @relation("TaskCreator", fields: [creatorId], references: [id])
-   assignee     User?             @relation("TaskAssignee", fields: [assigneeId], references: [id])
+   assignees    TaskAssignee[] // Many-to-many relation for multiple assignees
    approvedBy   User?             @relation("TaskApprover", fields: [approvedById], references: [id])
    parentTask   Task?             @relation("SubTasks", fields: [parentTaskId], references: [id])
    subTasks     Task[]            @relation("SubTasks")
@@ -303,6 +302,21 @@ model Task {
    boardColumn  BoardColumn?      @relation(fields: [boardColumnId], references: [id])
 
    @@map("tasks")
+}
+
+model TaskAssignee {
+   id         String   @id @default(uuid())
+   taskId     String   @map("task_id")
+   userId     String   @map("user_id")
+   assignedAt DateTime @default(now()) @map("assigned_at")
+   assignedBy String?  @map("assigned_by") // Who assigned this user
+
+   // Relations
+   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+   @@unique([taskId, userId]) // Prevent duplicate assignments
+   @@map("task_assignees")
 }
 
 model TaskComment {

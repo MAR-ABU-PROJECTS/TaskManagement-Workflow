@@ -36,12 +36,13 @@ export class PermissionService {
     try {
       const task = await prisma.task.findUnique({
         where: { id: taskId },
-        select: { assigneeId: true, projectId: true },
+        select: { assignees: { select: { userId: true } }, projectId: true },
       });
 
       if (!task?.projectId) return false;
 
-      if (task.assigneeId === userId) {
+      const isAssignee = task.assignees.some((a) => a.userId === userId);
+      if (isAssignee) {
         return this.hasProjectPermission(
           userId,
           task.projectId,
