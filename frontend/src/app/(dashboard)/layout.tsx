@@ -14,7 +14,7 @@ export default async function DashboardLayout({
 	if (!session?.user) {
 		redirect("/");
 	}
-	console.log(session);
+	
 	return (
 		<SidebarProvider>
 			<AppSidebar />

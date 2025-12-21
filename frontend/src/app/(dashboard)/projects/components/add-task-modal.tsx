@@ -85,7 +85,7 @@ export function AddTaskModal({
 		if (!isOpen) {
 			form.reset();
 		}
-	}, [isOpen]);
+	}, [isOpen, form]);
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
@@ -269,7 +269,7 @@ export function AddTaskModal({
 								Add Task
 							</Button>
 						</div>
-						
+
 					</form>
 				</Form>
 			</DialogContent>

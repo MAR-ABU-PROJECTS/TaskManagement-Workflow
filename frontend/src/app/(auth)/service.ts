@@ -8,6 +8,5 @@ export const authService = {
 	register: (data: AuthBody) => apiService.post("/auth/register", data),
 	login: (data: Pick<AuthBody, "email" | "password">) =>
 		apiService.post("/auth/login", data),
-	logOut: (data: Pick<AuthBody, "email" | "password">) =>
-		apiService.post("/auth/login", data),
+	logOut: () => apiService.post("/auth/logout", {}),
 };

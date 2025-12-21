@@ -11,8 +11,22 @@ import {
 	BreadcrumbPage,
 	// BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "@/app/(auth)/service";
+import { removeSession } from "@/lib/action";
+import { Spinner } from "./ui/spinner";
 
 const Navbar = () => {
+	const LogOutMutation = useMutation({
+		mutationFn: authService.logOut,
+		onSuccess: async () => {
+			await removeSession();
+			window.location.href = "/";
+		},
+		meta: {
+			disableGlobalSuccess: true,
+		},
+	});
 	return (
 		<header className="flex h-[80px] shrink-0 items-center gap-2 border-b border-border px-4 sticky top-0  z-10 bg-background/80 w-full">
 			<SidebarTrigger className="-ml-1" />
@@ -45,8 +59,10 @@ const Navbar = () => {
 					size="icon"
 					aria-label="Log Out"
 					title="Log out"
+					disabled={LogOutMutation.isPending}
+					onClick={() => LogOutMutation.mutate()}
 				>
-					<LogOut />
+					{LogOutMutation.isPending ? <Spinner /> : <LogOut />}
 				</Button>
 			</div>
 		</header>

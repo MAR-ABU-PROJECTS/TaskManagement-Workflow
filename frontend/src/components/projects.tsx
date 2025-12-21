@@ -13,7 +13,7 @@ export default function ProjectsPage() {
 			{/* Main Content */}
 			<main className="flex-1 overflow-auto p-6 px-4">
 				<div className="mx-auto space-y-6">
-					{/* Header */}
+		
 					<div className="flex items-center gap-2">
 						<div className="flex items-center gap-2">
 							<Button size="sm" asChild>
