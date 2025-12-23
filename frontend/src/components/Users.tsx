@@ -9,11 +9,10 @@ import { RoleBadge } from "./ui/role-badge";
 import { UserActionDropdown } from "@/app/(dashboard)/user-management/component/UserActionDropDown";
 import { Role } from "@/lib/rolespermissions";
 import { useGetUsers } from "@/app/(dashboard)/user-management/lib/queries";
-// import dayjs from "dayjs";
-// import advancedFormat from "dayjs/plugin/advancedFormat";
-// dayjs.extend(advancedFormat);
+import { useSession } from "@/app/providers/session-provider";
 
 const UsersManagement = () => {
+	const { user: currentUser } = useSession();
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
 		pageSize: 10,
@@ -41,7 +40,7 @@ const UsersManagement = () => {
 				const user = row.original;
 				return (
 					<UserActionDropdown
-						currentUserRole={Role.SUPER_ADMIN}
+						currentUserRole={currentUser?.role as Role}
 						user={user}
 					/>
 				);

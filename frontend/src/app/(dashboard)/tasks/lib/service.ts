@@ -23,6 +23,32 @@ export const TaskService = {
 
 	transitionTask: ({ taskId, status }: { status: string; taskId: string }) =>
 		apiService.post(`/tasks/${taskId}/transition`, { status }),
+	uploadAttachment: ({
+		formData,
+		taskId,
+	}: {
+		formData: FormData;
+		taskId: string;
+	}) => apiService.post(`/tasks/${taskId}/attachments`, formData),
+	getTaskAttachments: (taskId: string) =>
+		apiService.get(`/tasks/${taskId}/attachments`),
+	deleteAttachment: ({
+		taskId,
+		attachmentId,
+	}: {
+		taskId: string;
+		attachmentId: string;
+	}) => apiService.delete(`/tasks/${taskId}/attachments/${attachmentId}`),
+	downloadAttachment: ({
+		taskId,
+		attachmentId,
+	}: {
+		taskId: string;
+		attachmentId: string;
+	}) =>
+		apiService.get(`/tasks/${taskId}/attachments/${attachmentId}`, {
+			responseType: "blob",
+		}),
 
 	// getProjectById: (id: string) => apiService.get(`/projects/${id}`),
 	// updateProject: (id: string, data: editProjectType) =>

@@ -58,3 +58,23 @@ export const useDeleteProjectMember = () => {
 		},
 	});
 };
+
+export const useAddProjectMembers = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			projectId,
+			members,
+		}: {
+			projectId: string;
+			members: string[];
+		}) => projectService.addProjectMembers(projectId, members),
+		onSuccess: (_data, variables) => {
+			qc.invalidateQueries({
+				queryKey: projectKeys.projectMembers({
+					projectId: variables.projectId,
+				}),
+			});
+		},
+	});
+};

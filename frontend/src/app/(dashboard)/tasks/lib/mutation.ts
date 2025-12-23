@@ -66,3 +66,31 @@ export const useTransitionTask = (projectId: string) => {
 		},
 	});
 };
+
+export const useAttachmentMutation = (taskId: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: TaskService.uploadAttachment,
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: taskKeys.attachments(taskId) });
+		},
+	});
+};
+
+export const useDeleteAttachment = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			taskId,
+			attachmentId,
+		}: {
+			taskId: string;
+			attachmentId: string;
+		}) => TaskService.deleteAttachment({ taskId, attachmentId }),
+		onSuccess: (data, variables) => {
+			qc.invalidateQueries({
+				queryKey: taskKeys.attachments(variables.taskId),
+			});
+		},
+	});
+};

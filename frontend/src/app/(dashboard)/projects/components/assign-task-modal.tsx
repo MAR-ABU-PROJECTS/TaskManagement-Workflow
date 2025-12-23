@@ -8,10 +8,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { BoardTask } from "../lib/type";
-import { useGetUsers } from "../../user-management/lib/queries";
 import { useEffect, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { useAssignTaskProject } from "../../tasks/lib/mutation";
+import { useGetProjectsMembers } from "../lib/queries";
 
 interface AssignTaskModalProps {
 	isOpen: boolean;
@@ -27,11 +27,17 @@ export function AssignTaskModal({
 	task,
 	projectId,
 }: AssignTaskModalProps) {
-	const users = useGetUsers();
-	const [selectedUser, setSelectedUser] = useState(task.assignee?.id ?? "");
+	const members = useGetProjectsMembers(projectId);
+	console.log(members.data);
+	const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
+	const toggleSelectedUsers = (id: string) => {
+		setSelectedUsers((prev) =>
+			prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+		);
+	};
 	useEffect(() => {
-		setSelectedUser(task.assignee?.id ?? "");
+		setSelectedUsers([]);
 	}, [task.assignee, isOpen]);
 
 	const assignMutation = useAssignTaskProject(projectId);
@@ -41,29 +47,31 @@ export function AssignTaskModal({
 				<DialogHeader>
 					<DialogTitle>Assign Task</DialogTitle>
 					<DialogDescription>
-						Select a member to assign this task to
+						Select at least one member to assign this task to
 					</DialogDescription>
 				</DialogHeader>
 				<div>
 					<div className="space-y-2.5">
-						{users.data?.users.map((user) => (
-							<Button
-								key={user.id}
-								variant={
-									selectedUser === user.id
-										? "default"
-										: "outline"
-								}
-								onClick={() => {
-									setSelectedUser(user.id);
-								}}
-								className="w-full justify-between"
-							>
-								{user.name}
-							</Button>
-						))}
+						{members.data?.map(
+							(u: { user: { id: string; name: string } }) => (
+								<Button
+									key={u.user.id}
+									variant={"outline"}
+									className=" justify-between w-full items-center"
+								>
+									<p> {u.user.name}</p>
+									<input
+										type="checkbox"
+										onChange={() =>
+											toggleSelectedUsers(u.user.id)
+										}
+										className="size-4 accent-primary"
+									/>
+								</Button>
+							)
+						)}
 					</div>
-					<div className="flex justify-end mt-5">
+					<div className="flex justify-end mt-5 gap-4">
 						<Button
 							type="button"
 							variant="outline"
@@ -75,21 +83,23 @@ export function AssignTaskModal({
 						</Button>
 						<Button
 							type="submit"
-							disabled={!selectedUser || assignMutation.isPending}
-							className="bg-primary hover:bg-primary/90 text-white"
-							onClick={() =>
-								assignMutation.mutate(
-									{
-										taskId: task.id,
-										assigneeId: selectedUser,
-									},
-									{
-										onSuccess: () => {
-											onClose();
-										},
-									}
-								)
+							disabled={
+								!selectedUsers || assignMutation.isPending
 							}
+							className="bg-primary hover:bg-primary/90 text-white"
+							// onClick={() =>
+							// 	assignMutation.mutate(
+							// 		{
+							// 			taskId: task.id,
+							// 			assigneeId: selectedUser,
+							// 		},
+							// 		{
+							// 			onSuccess: () => {
+							// 				onClose();
+							// 			},
+							// 		}
+							// 	)
+							// }
 						>
 							{assignMutation.isPending && (
 								<Spinner className="mr-1.5" />

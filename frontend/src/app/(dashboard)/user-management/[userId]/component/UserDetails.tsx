@@ -2,7 +2,6 @@
 import React from "react";
 import { useGetUserById } from "../../lib/queries";
 import { QueryStateHandler } from "@/components/QueryStateHandler";
-import Link from "next/link";
 import { ArrowLeft, Calendar, Mail, Shield } from "lucide-react";
 import {
 	Card,
@@ -16,28 +15,26 @@ import { RoleBadge } from "@/components/ui/role-badge";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Role } from "@/lib/rolespermissions";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 const UserDetails = ({ userId }: { userId: string }) => {
+	const router = useRouter();
 	return (
 		<div className="flex flex-1 flex-col px-4 p-6">
-			{/* Header */}
-
 			<div className="mb-3">
-				<Link
-					href={`/user-management`}
-					className="flex items-center gap-2  hover:text-black/50 text-base font-[500] text-black"
+				<Button
+				
+					onClick={() => router.back()}
+					className="flex items-center gap-2  hover:text-black/50 text-base font-[500] text-black bg-white hover:bg-white"
 				>
 					<ArrowLeft className="h-5 w-5" />
-					<span className="text-sm">Back to Users</span>
-				</Link>
+					<span className="text-sm">Back</span>
+				</Button>
 			</div>
-
-			{/* Main Content */}
 
 			<main className="flex-1">
 				<div className="mx-auto max-w-7xl">
-					{/* Profile Card */}
-
 					<QueryStateHandler
 						query={useGetUserById(userId)}
 						emptyMessage="User Not found"

@@ -37,3 +37,13 @@ export const useGetProjectsMembers = (id: string) => {
 		queryFn: () => projectService.getProjectMembers(id),
 	});
 };
+
+
+
+export const useGetTaskAttachments = (id: string) => {
+	return useQuery({
+		queryKey: projectKeys.projectMembers({ projectId: id }),
+		queryFn: () => projectService.getProjectMembers(id),
+	});
+};
+

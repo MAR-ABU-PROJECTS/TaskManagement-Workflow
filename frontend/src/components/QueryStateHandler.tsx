@@ -56,7 +56,7 @@ export function QueryStateHandler<T>({
 		return (
 			loadingComponent ?? (
 				<div className="my-10 flex justify-center">
-					<Loader2 className="animate-spin text-amber-500 size-6" />
+					<Loader2 className="animate-spin text-amber-500 size-8" />
 				</div>
 			)
 		);

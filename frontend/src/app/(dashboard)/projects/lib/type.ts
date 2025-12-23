@@ -37,13 +37,7 @@ export interface Task {
 export interface KanbanColumnProps {
 	id: string;
 	title: string;
-	// color: string;
 	tasks: BoardTask[];
-	onAddTask: () => void;
-	onEditTask: (taskId: number) => void;
-	onChangeStatus: (taskId: number) => void;
-	onAssignTask: (taskId: number) => void;
-	onDeleteTask: (taskId: number) => void;
 	projectId: string;
 }
 
@@ -62,12 +56,6 @@ export interface Column {
 
 export interface KanbanBoardProps {
 	columns: Column[];
-	tasks: BoardTask[];
-	onAddTask: (columnId: string) => void;
-	onEditTask: (taskId: number) => void;
-	onChangeStatus: (taskId: number) => void;
-	onAssignTask: (taskId: number) => void;
-	onDeleteTask: (taskId: number) => void;
 	projectId: string;
 }
 

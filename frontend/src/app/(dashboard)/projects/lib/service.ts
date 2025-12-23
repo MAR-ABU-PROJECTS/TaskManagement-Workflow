@@ -21,4 +21,7 @@ export const projectService = {
 		projectId: string;
 		userId: string;
 	}) => apiService.delete(`/projects/${projectId}/members/${userId}`),
+
+	addProjectMembers: (projectId: string, members: string[]) =>
+		apiService.post(`/projects/${projectId}/members`, { ...members }),
 };

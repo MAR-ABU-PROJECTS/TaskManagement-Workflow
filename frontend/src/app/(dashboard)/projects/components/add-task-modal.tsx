@@ -1,5 +1,4 @@
 "use client";
-
 import type React from "react";
 import { useEffect } from "react";
 import {
@@ -22,6 +21,7 @@ import {
 import { useGetUsers } from "../../user-management/lib/queries";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import ReactSelect from "react-select";
 
 import {
 	Form,
@@ -34,22 +34,10 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateTaskProject } from "../../tasks/lib/mutation";
 import { Spinner } from "@/components/ui/spinner";
-interface Task {
-	id: number;
-	title: string;
-	description: string;
-	status: string;
-	priority: string;
-	assignee: string;
-	comments: number;
-	attachments: number;
-}
 
 interface AddTaskModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onAdd: (task: Task) => void;
-	columnId?: string;
 	projectId: string;
 }
 export type createTaskPSchemaType = z.infer<typeof createTaskSchema>;
@@ -70,6 +58,15 @@ export function AddTaskModal({
 			priority: "",
 		},
 	});
+
+	type AssigneeOption = {
+		value: string;
+		label: string;
+	};
+	const options = users.data?.users.map((u) => ({
+		value: u.id,
+		label: u.name,
+	}));
 
 	const taskMutation = useCreateTaskProject();
 	const onSubmit = (data: createTaskPSchemaType) => {
@@ -139,7 +136,7 @@ export function AddTaskModal({
 							)}
 						/>
 
-						<div className="grid gap-4 md:grid-cols-2">
+						<div className="">
 							<FormField
 								control={form.control}
 								name="priority"
@@ -175,44 +172,37 @@ export function AddTaskModal({
 									</FormItem>
 								)}
 							/>
-
-							<FormField
-								control={form.control}
-								name="assignee"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel> Assignee *</FormLabel>
-										<FormControl>
-											<div className="w-full">
-												<Select
-													value={field.value}
-													onValueChange={
-														field.onChange
-													}
-												>
-													<SelectTrigger className="border-slate-200 dark:border-slate-800">
-														<SelectValue placeholder="Assign to" />
-													</SelectTrigger>
-													<SelectContent>
-														{users.data?.users.map(
-															(u, i) => (
-																<SelectItem
-																	key={i}
-																	value={u.id}
-																>
-																	{u.name}
-																</SelectItem>
-															)
-														)}
-													</SelectContent>
-												</Select>
-											</div>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
 						</div>
+						<FormField
+							control={form.control}
+							name="assigneeIds"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel> Assignee *</FormLabel>
+									<FormControl>
+										<div className="w-full">
+											<ReactSelect<AssigneeOption, true>
+												isMulti
+												options={options}
+												value={options?.filter((o) =>
+													field.value?.includes(
+														o.value
+													)
+												)}
+												onChange={(selected) =>
+													field.onChange(
+														selected.map(
+															(s) => s.value
+														)
+													)
+												}
+											/>
+										</div>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
 						<FormField
 							control={form.control}
@@ -269,7 +259,6 @@ export function AddTaskModal({
 								Add Task
 							</Button>
 						</div>
-
 					</form>
 				</Form>
 			</DialogContent>
@@ -283,5 +272,5 @@ export const createTaskSchema = z.object({
 	description: z.string().min(1, "description is required"),
 	issueType: z.string().min(1, "issue type is required"),
 	priority: z.string().min(1, "priority is required"),
-	assignee: z.string().optional(),
+	assigneeIds: z.array(z.string()),
 });

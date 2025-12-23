@@ -14,6 +14,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+	ExternalLink,
 	GripVertical,
 	MessageSquare,
 	MoreVertical,
@@ -23,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getPriorityColor } from "../lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { BoardTask, TaskCardProps } from "../lib/type";
+import { BoardTask } from "../lib/type";
 import Link from "next/link";
 import { DeleteTaskModal } from "./delete-task-modal";
 import { AssignTaskModal } from "./assign-task-modal";
@@ -32,10 +33,11 @@ import { ChangeStatusModal } from "./change-status-modal";
 
 const TaskCard = ({
 	task,
-	onEdit,
-	onChangeStatus,
 	projectId,
-}: TaskCardProps & BoardTask) => {
+}: {
+	task: BoardTask;
+	projectId: string;
+}) => {
 	const [openModal, setOpenModal] = useState<
 		"edit" | "status" | "assign" | "delete" | "add" | null
 	>(null);
@@ -51,8 +53,16 @@ const TaskCard = ({
 						<div className="flex items-start gap-2">
 							<GripVertical className="mt-0.5 h-4 w-4 text-muted-foreground" />
 							<div className="flex-1">
-								<CardTitle className="text-sm font-medium leading-tight">
-									{task.title}
+								<CardTitle className="text-sm font-medium leading-tight ">
+									<Link
+										href={`/projects/${projectId}/task/${task.id}`}
+										className="inline-flex items-center gap-3"
+									>
+										{task.title}{" "}
+										<span>
+											<ExternalLink className="size-4" />
+										</span>
+									</Link>
 								</CardTitle>
 								{task.description && (
 									<CardDescription className="mt-1 text-xs line-clamp-3 text-wrap break-all">
@@ -86,7 +96,7 @@ const TaskCard = ({
 								<DropdownMenuItem
 									onClick={() => setOpenModal("assign")}
 								>
-									Assign to
+									Assign
 								</DropdownMenuItem>
 
 								<DropdownMenuItem>

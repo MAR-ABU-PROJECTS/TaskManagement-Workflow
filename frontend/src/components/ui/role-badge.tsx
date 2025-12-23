@@ -9,29 +9,31 @@ interface RoleBadgeProps {
 }
 
 export const RoleBadge = ({ role }: RoleBadgeProps) => {
-	const getBadgeVariants = () => {
+	const getBadgeVariants = (role: Role) => {
 		if (!role) return "";
 		switch (role) {
 			case Role.SUPER_ADMIN:
-				return "bg-red-100 text-red-800";
+				return "bg-red-100 !text-red-800";
 			case Role.CEO:
-				return "bg-orange-100 text-orange-800";
+				return "bg-orange-100 !text-orange-800";
 			case Role.HR:
-				return "bg-yellow-100 text-yellow-800";
+				return "bg-yellow-100 !text-yellow-800";
 			case Role.HOO:
-				return "bg-green-100 text-green-800";
+				return "bg-green-100 !text-green-800";
 			case Role.ADMIN:
-				return "bg-blue-100 text-blue-800";
+				return "bg-blue-100 !text-blue-800";
 			case Role.STAFF:
-				return "bg-gray-100 text-gray-800";
+				return "bg-gray-100 !text-gray-800";
 			default:
-				return "bg-gray-100 text-gray-800";
+				return "bg-gray-100 !text-gray-800";
 		}
 	};
 
+
 	return (
-		<Badge className={cn(`${getBadgeVariants}, hover:bg-none`)}>
+		<Badge className={cn(`${getBadgeVariants(role)}`)}>
 			{role && role.replace("_", " ")}
 		</Badge>
+	
 	);
 };
