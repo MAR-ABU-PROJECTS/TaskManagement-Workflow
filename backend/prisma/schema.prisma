@@ -1,527 +1,527 @@
 generator client {
-  provider = "prisma-client-js"
+   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+   provider = "postgresql"
+   url      = env("DATABASE_URL")
 }
 
 model active_timers {
-  id          String   @id
-  task_id     String
-  user_id     String   @unique
-  start_time  DateTime
-  description String?
-  tasks       tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade)
-  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+   id          String   @id
+   task_id     String
+   user_id     String   @unique
+   start_time  DateTime
+   description String?
+   tasks       tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade)
+   users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model audit_logs {
-  id            String      @id
-  user_id       String?
-  action        AuditAction
-  entity_type   String
-  entity_id     String?
-  changes       Json?
-  metadata      Json?
-  ip_address    String?
-  user_agent    String?
-  success       Boolean     @default(true)
-  error_message String?
-  created_at    DateTime    @default(now())
-  users         users?      @relation(fields: [user_id], references: [id])
+   id            String      @id
+   user_id       String?
+   action        AuditAction
+   entity_type   String
+   entity_id     String?
+   changes       Json?
+   metadata      Json?
+   ip_address    String?
+   user_agent    String?
+   success       Boolean     @default(true)
+   error_message String?
+   created_at    DateTime    @default(now())
+   users         users?      @relation(fields: [user_id], references: [id])
 
-  @@index([action])
-  @@index([created_at])
-  @@index([entity_type, entity_id])
-  @@index([user_id])
+   @@index([action])
+   @@index([created_at])
+   @@index([entity_type, entity_id])
+   @@index([user_id])
 }
 
 model board_columns {
-  id              String         @id
-  board_id        String
-  name            String
-  status          WorkflowStatus @default(TODO)
-  mapped_statuses TaskStatus[]
-  position        Int            @default(0)
-  wip_limit       Int?
-  created_at      DateTime       @default(now())
-  updated_at      DateTime
-  boards          boards         @relation(fields: [board_id], references: [id], onDelete: Cascade)
-  tasks           tasks[]
+   id              String         @id
+   board_id        String
+   name            String
+   status          WorkflowStatus @default(TODO)
+   mapped_statuses TaskStatus[]
+   position        Int            @default(0)
+   wip_limit       Int?
+   created_at      DateTime       @default(now())
+   updated_at      DateTime
+   boards          boards         @relation(fields: [board_id], references: [id], onDelete: Cascade)
+   tasks           tasks[]
 
-  @@index([board_id])
+   @@index([board_id])
 }
 
 model boards {
-  id            String          @id
-  project_id    String
-  name          String
-  type          BoardType       @default(KANBAN)
-  description   String?
-  filter_id     String?
-  created_at    DateTime        @default(now())
-  updated_at    DateTime
-  board_columns board_columns[]
-  saved_filters saved_filters?  @relation(fields: [filter_id], references: [id])
-  projects      projects        @relation(fields: [project_id], references: [id], onDelete: Cascade)
+   id            String          @id
+   project_id    String
+   name          String
+   type          BoardType       @default(KANBAN)
+   description   String?
+   filter_id     String?
+   created_at    DateTime        @default(now())
+   updated_at    DateTime
+   board_columns board_columns[]
+   saved_filters saved_filters?  @relation(fields: [filter_id], references: [id])
+   projects      projects        @relation(fields: [project_id], references: [id], onDelete: Cascade)
 
-  @@index([project_id])
+   @@index([project_id])
 }
 
 model epics {
-  id          String    @id
-  project_id  String
-  name        String
-  description String?
-  color       String?
-  start_date  DateTime?
-  end_date    DateTime?
-  created_at  DateTime  @default(now())
-  updated_at  DateTime
-  projects    projects  @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  tasks       tasks[]
+   id          String    @id
+   project_id  String
+   name        String
+   description String?
+   color       String?
+   start_date  DateTime?
+   end_date    DateTime?
+   created_at  DateTime  @default(now())
+   updated_at  DateTime
+   projects    projects  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+   tasks       tasks[]
 }
 
 model notifications {
-  id         String           @id
-  user_id    String
-  type       NotificationType
-  payload    Json
-  read       Boolean          @default(false)
-  created_at DateTime         @default(now())
-  users      users            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+   id         String           @id
+   user_id    String
+   type       NotificationType
+   payload    Json
+   read       Boolean          @default(false)
+   created_at DateTime         @default(now())
+   users      users            @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model project_components {
-  id          String   @id
-  project_id  String
-  name        String
-  description String?
-  lead_id     String?
-  created_at  DateTime @default(now())
-  updated_at  DateTime
-  projects    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  tasks       tasks[]
+   id          String   @id
+   project_id  String
+   name        String
+   description String?
+   lead_id     String?
+   created_at  DateTime @default(now())
+   updated_at  DateTime
+   projects    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+   tasks       tasks[]
 
-  @@unique([project_id, name])
-  @@index([project_id])
+   @@unique([project_id, name])
+   @@index([project_id])
 }
 
 model project_members {
-  id                                       String      @id
-  project_id                               String
-  user_id                                  String
-  role                                     ProjectRole @default(DEVELOPER)
-  added_at                                 DateTime    @default(now())
-  added_by_id                              String
-  users_project_members_added_by_idTousers users       @relation("project_members_added_by_idTousers", fields: [added_by_id], references: [id])
-  projects                                 projects    @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  users_project_members_user_idTousers     users       @relation("project_members_user_idTousers", fields: [user_id], references: [id])
+   id                                       String      @id
+   project_id                               String
+   user_id                                  String
+   role                                     ProjectRole @default(DEVELOPER)
+   added_at                                 DateTime    @default(now())
+   added_by_id                              String
+   users_project_members_added_by_idTousers users       @relation("project_members_added_by_idTousers", fields: [added_by_id], references: [id])
+   projects                                 projects    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+   users_project_members_user_idTousers     users       @relation("project_members_user_idTousers", fields: [user_id], references: [id])
 
-  @@unique([project_id, user_id])
-  @@index([project_id])
-  @@index([user_id])
+   @@unique([project_id, user_id])
+   @@index([project_id])
+   @@index([user_id])
 }
 
 model project_versions {
-  id           String    @id
-  project_id   String
-  name         String
-  description  String?
-  release_date DateTime?
-  is_released  Boolean   @default(false)
-  is_archived  Boolean   @default(false)
-  created_at   DateTime  @default(now())
-  updated_at   DateTime
-  projects     projects  @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  tasks        tasks[]
+   id           String    @id
+   project_id   String
+   name         String
+   description  String?
+   release_date DateTime?
+   is_released  Boolean   @default(false)
+   is_archived  Boolean   @default(false)
+   created_at   DateTime  @default(now())
+   updated_at   DateTime
+   projects     projects  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+   tasks        tasks[]
 
-  @@unique([project_id, name])
-  @@index([project_id])
+   @@unique([project_id, name])
+   @@index([project_id])
 }
 
 model projects {
-  id                 String               @id
-  name               String
-  description        String?
-  creator_id         String
-  created_at         DateTime             @default(now())
-  updated_at         DateTime
-  is_public          Boolean              @default(false)
-  key                String               @unique
-  workflow_scheme_id String?
-  workflow_type      WorkflowType         @default(BASIC)
-  boards             boards[]
-  epics              epics[]
-  project_components project_components[]
-  project_members    project_members[]
-  project_versions   project_versions[]
-  users              users                @relation(fields: [creator_id], references: [id])
-  workflow_schemes   workflow_schemes?    @relation(fields: [workflow_scheme_id], references: [id])
-  sprints            sprints[]
-  tasks              tasks[]
+   id                 String               @id
+   name               String
+   description        String?
+   creator_id         String
+   created_at         DateTime             @default(now())
+   updated_at         DateTime
+   is_public          Boolean              @default(false)
+   key                String               @unique
+   workflow_scheme_id String?
+   workflow_type      WorkflowType         @default(BASIC)
+   boards             boards[]
+   epics              epics[]
+   project_components project_components[]
+   project_members    project_members[]
+   project_versions   project_versions[]
+   users              users                @relation(fields: [creator_id], references: [id])
+   workflow_schemes   workflow_schemes?    @relation(fields: [workflow_scheme_id], references: [id])
+   sprints            sprints[]
+   tasks              tasks[]
 }
 
 model saved_filters {
-  id          String   @id
-  user_id     String
-  name        String
-  description String?
-  jql         String
-  is_public   Boolean  @default(false)
-  is_favorite Boolean  @default(false)
-  created_at  DateTime @default(now())
-  updated_at  DateTime
-  boards      boards[]
+   id          String   @id
+   user_id     String
+   name        String
+   description String?
+   jql         String
+   is_public   Boolean  @default(false)
+   is_favorite Boolean  @default(false)
+   created_at  DateTime @default(now())
+   updated_at  DateTime
+   boards      boards[]
 
-  @@index([user_id])
+   @@index([user_id])
 }
 
 model sprints {
-  id             String       @id
-  project_id     String
-  name           String
-  goal           String?
-  status         SprintStatus @default(PLANNING)
-  start_date     DateTime?
-  end_date       DateTime?
-  capacity_hours Float?
-  completed_at   DateTime?
-  created_at     DateTime     @default(now())
-  updated_at     DateTime
-  projects       projects     @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  tasks          tasks[]
+   id             String       @id
+   project_id     String
+   name           String
+   goal           String?
+   status         SprintStatus @default(PLANNING)
+   start_date     DateTime?
+   end_date       DateTime?
+   capacity_hours Float?
+   completed_at   DateTime?
+   created_at     DateTime     @default(now())
+   updated_at     DateTime
+   projects       projects     @relation(fields: [project_id], references: [id], onDelete: Cascade)
+   tasks          tasks[]
 }
 
 model task_activity_logs {
-  id              String         @id
-  task_id         String
-  user_id         String
-  action          ActivityAction
-  previous_status TaskStatus?
-  new_status      TaskStatus?
-  metadata        Json?
-  timestamp       DateTime       @default(now())
-  tasks           tasks          @relation(fields: [task_id], references: [id], onDelete: Cascade)
-  users           users          @relation(fields: [user_id], references: [id])
+   id              String         @id
+   task_id         String
+   user_id         String
+   action          ActivityAction
+   previous_status TaskStatus?
+   new_status      TaskStatus?
+   metadata        Json?
+   timestamp       DateTime       @default(now())
+   tasks           tasks          @relation(fields: [task_id], references: [id], onDelete: Cascade)
+   users           users          @relation(fields: [user_id], references: [id])
 }
 
 model task_assignees {
-  id          String   @id
-  task_id     String
-  user_id     String
-  assigned_at DateTime @default(now())
-  assigned_by String?
-  tasks       tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade)
-  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+   id          String   @id
+   task_id     String
+   user_id     String
+   assigned_at DateTime @default(now())
+   assigned_by String?
+   tasks       tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade)
+   users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@unique([task_id, user_id])
+   @@unique([task_id, user_id])
 }
 
 model task_attachments {
-  id             String   @id
-  task_id        String
-  uploaded_by_id String
-  file_name      String
-  original_name  String
-  file_path      String
-  mime_type      String
-  file_size      Int
-  created_at     DateTime @default(now())
-  tasks          tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade)
-  users          users    @relation(fields: [uploaded_by_id], references: [id])
+   id             String   @id
+   task_id        String
+   uploaded_by_id String
+   file_name      String
+   original_name  String
+   file_path      String
+   mime_type      String
+   file_size      Int
+   created_at     DateTime @default(now())
+   tasks          tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade)
+   users          users    @relation(fields: [uploaded_by_id], references: [id])
 }
 
 model task_comments {
-  id         String   @id
-  task_id    String
-  user_id    String
-  message    String
-  created_at DateTime @default(now())
-  tasks      tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade)
-  users      users    @relation(fields: [user_id], references: [id])
+   id         String   @id
+   task_id    String
+   user_id    String
+   message    String
+   created_at DateTime @default(now())
+   tasks      tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade)
+   users      users    @relation(fields: [user_id], references: [id])
 }
 
 model task_dependencies {
-  id                                               String         @id
-  dependent_task_id                                String
-  blocking_task_id                                 String
-  type                                             DependencyType @default(BLOCKS)
-  created_at                                       DateTime       @default(now())
-  tasks_task_dependencies_blocking_task_idTotasks  tasks          @relation("task_dependencies_blocking_task_idTotasks", fields: [blocking_task_id], references: [id], onDelete: Cascade)
-  tasks_task_dependencies_dependent_task_idTotasks tasks          @relation("task_dependencies_dependent_task_idTotasks", fields: [dependent_task_id], references: [id], onDelete: Cascade)
+   id                                               String         @id
+   dependent_task_id                                String
+   blocking_task_id                                 String
+   type                                             DependencyType @default(BLOCKS)
+   created_at                                       DateTime       @default(now())
+   tasks_task_dependencies_blocking_task_idTotasks  tasks          @relation("task_dependencies_blocking_task_idTotasks", fields: [blocking_task_id], references: [id], onDelete: Cascade)
+   tasks_task_dependencies_dependent_task_idTotasks tasks          @relation("task_dependencies_dependent_task_idTotasks", fields: [dependent_task_id], references: [id], onDelete: Cascade)
 
-  @@unique([dependent_task_id, blocking_task_id])
+   @@unique([dependent_task_id, blocking_task_id])
 }
 
 model tasks {
-  id                                                           String               @id
-  project_id                                                   String?
-  title                                                        String
-  description                                                  String?
-  priority                                                     TaskPriority         @default(MEDIUM)
-  issue_type                                                   IssueType            @default(TASK)
-  status                                                       TaskStatus           @default(DRAFT)
-  creator_id                                                   String
-  parent_task_id                                               String?
-  requires_approval                                            Boolean              @default(false)
-  approved_by_id                                               String?
-  rejection_reason                                             String?
-  labels                                                       String[]             @default([])
-  due_date                                                     DateTime?
-  created_at                                                   DateTime             @default(now())
-  updated_at                                                   DateTime
-  board_column_id                                              String?
-  component_id                                                 String?
-  epic_id                                                      String?
-  estimated_hours                                              Float?
-  logged_hours                                                 Float                @default(0)
-  position                                                     Int                  @default(0)
-  reporter_id                                                  String?
-  sprint_id                                                    String?
-  story_points                                                 Int?
-  version_id                                                   String?
-  active_timers                                                active_timers[]
-  task_activity_logs                                           task_activity_logs[]
-  task_assignees                                               task_assignees[]
-  task_attachments                                             task_attachments[]
-  task_comments                                                task_comments[]
-  task_dependencies_task_dependencies_blocking_task_idTotasks  task_dependencies[]  @relation("task_dependencies_blocking_task_idTotasks")
-  task_dependencies_task_dependencies_dependent_task_idTotasks task_dependencies[]  @relation("task_dependencies_dependent_task_idTotasks")
-  users_tasks_approved_by_idTousers                            users?               @relation("tasks_approved_by_idTousers", fields: [approved_by_id], references: [id])
-  board_columns                                                board_columns?       @relation(fields: [board_column_id], references: [id])
-  project_components                                           project_components?  @relation(fields: [component_id], references: [id])
-  users_tasks_creator_idTousers                                users                @relation("tasks_creator_idTousers", fields: [creator_id], references: [id])
-  epics                                                        epics?               @relation(fields: [epic_id], references: [id])
-  tasks                                                        tasks?               @relation("tasksTotasks", fields: [parent_task_id], references: [id])
-  other_tasks                                                  tasks[]              @relation("tasksTotasks")
-  projects                                                     projects?            @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  sprints                                                      sprints?             @relation(fields: [sprint_id], references: [id])
-  project_versions                                             project_versions?    @relation(fields: [version_id], references: [id])
-  time_entries                                                 time_entries[]
-  users_TaskWatchers                                           users[]              @relation("TaskWatchers")
+   id                                                           String               @id
+   project_id                                                   String?
+   title                                                        String
+   description                                                  String?
+   priority                                                     TaskPriority         @default(MEDIUM)
+   issue_type                                                   IssueType            @default(TASK)
+   status                                                       TaskStatus           @default(DRAFT)
+   creator_id                                                   String
+   parent_task_id                                               String?
+   requires_approval                                            Boolean              @default(false)
+   approved_by_id                                               String?
+   rejection_reason                                             String?
+   labels                                                       String[]             @default([])
+   due_date                                                     DateTime?
+   created_at                                                   DateTime             @default(now())
+   updated_at                                                   DateTime
+   board_column_id                                              String?
+   component_id                                                 String?
+   epic_id                                                      String?
+   estimated_hours                                              Float?
+   logged_hours                                                 Float                @default(0)
+   position                                                     Int                  @default(0)
+   reporter_id                                                  String?
+   sprint_id                                                    String?
+   story_points                                                 Int?
+   version_id                                                   String?
+   active_timers                                                active_timers[]
+   task_activity_logs                                           task_activity_logs[]
+   task_assignees                                               task_assignees[]
+   task_attachments                                             task_attachments[]
+   task_comments                                                task_comments[]
+   task_dependencies_task_dependencies_blocking_task_idTotasks  task_dependencies[]  @relation("task_dependencies_blocking_task_idTotasks")
+   task_dependencies_task_dependencies_dependent_task_idTotasks task_dependencies[]  @relation("task_dependencies_dependent_task_idTotasks")
+   users_tasks_approved_by_idTousers                            users?               @relation("tasks_approved_by_idTousers", fields: [approved_by_id], references: [id])
+   board_columns                                                board_columns?       @relation(fields: [board_column_id], references: [id])
+   project_components                                           project_components?  @relation(fields: [component_id], references: [id])
+   users_tasks_creator_idTousers                                users                @relation("tasks_creator_idTousers", fields: [creator_id], references: [id])
+   epics                                                        epics?               @relation(fields: [epic_id], references: [id])
+   tasks                                                        tasks?               @relation("tasksTotasks", fields: [parent_task_id], references: [id])
+   other_tasks                                                  tasks[]              @relation("tasksTotasks")
+   projects                                                     projects?            @relation(fields: [project_id], references: [id], onDelete: Cascade)
+   sprints                                                      sprints?             @relation(fields: [sprint_id], references: [id])
+   project_versions                                             project_versions?    @relation(fields: [version_id], references: [id])
+   time_entries                                                 time_entries[]
+   users_TaskWatchers                                           users[]              @relation("TaskWatchers")
 }
 
 model time_entries {
-  id          String   @id
-  task_id     String
-  user_id     String
-  hours       Float
-  description String?
-  date        DateTime @default(now())
-  created_at  DateTime @default(now())
-  updated_at  DateTime
-  tasks       tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade)
-  users       users    @relation(fields: [user_id], references: [id])
+   id          String   @id
+   task_id     String
+   user_id     String
+   hours       Float
+   description String?
+   date        DateTime @default(now())
+   created_at  DateTime @default(now())
+   updated_at  DateTime
+   tasks       tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade)
+   users       users    @relation(fields: [user_id], references: [id])
 }
 
 model users {
-  id                                                 String               @id
-  email                                              String               @unique
-  password_hash                                      String
-  name                                               String
-  role                                               UserRole             @default(STAFF)
-  is_active                                          Boolean              @default(true)
-  created_at                                         DateTime             @default(now())
-  updated_at                                         DateTime
-  is_super_admin                                     Boolean              @default(false)
-  promoted_at                                        DateTime?
-  promoted_by_id                                     String?
-  active_timers                                      active_timers?
-  audit_logs                                         audit_logs[]
-  notifications                                      notifications[]
-  project_members_project_members_added_by_idTousers project_members[]    @relation("project_members_added_by_idTousers")
-  project_members_project_members_user_idTousers     project_members[]    @relation("project_members_user_idTousers")
-  projects                                           projects[]
-  task_activity_logs                                 task_activity_logs[]
-  task_assignees                                     task_assignees[]
-  task_attachments                                   task_attachments[]
-  task_comments                                      task_comments[]
-  tasks_tasks_approved_by_idTousers                  tasks[]              @relation("tasks_approved_by_idTousers")
-  tasks_tasks_creator_idTousers                      tasks[]              @relation("tasks_creator_idTousers")
-  time_entries                                       time_entries[]
-  users                                              users?               @relation("usersTousers", fields: [promoted_by_id], references: [id])
-  other_users                                        users[]              @relation("usersTousers")
-  tasks_TaskWatchers                                 tasks[]              @relation("TaskWatchers")
+   id                                                 String               @id
+   email                                              String               @unique
+   password_hash                                      String
+   name                                               String
+   role                                               UserRole             @default(STAFF)
+   is_active                                          Boolean              @default(true)
+   created_at                                         DateTime             @default(now())
+   updated_at                                         DateTime
+   is_super_admin                                     Boolean              @default(false)
+   promoted_at                                        DateTime?
+   promoted_by_id                                     String?
+   active_timers                                      active_timers?
+   audit_logs                                         audit_logs[]
+   notifications                                      notifications[]
+   project_members_project_members_added_by_idTousers project_members[]    @relation("project_members_added_by_idTousers")
+   project_members_project_members_user_idTousers     project_members[]    @relation("project_members_user_idTousers")
+   projects                                           projects[]
+   task_activity_logs                                 task_activity_logs[]
+   task_assignees                                     task_assignees[]
+   task_attachments                                   task_attachments[]
+   task_comments                                      task_comments[]
+   tasks_tasks_approved_by_idTousers                  tasks[]              @relation("tasks_approved_by_idTousers")
+   tasks_tasks_creator_idTousers                      tasks[]              @relation("tasks_creator_idTousers")
+   time_entries                                       time_entries[]
+   users                                              users?               @relation("usersTousers", fields: [promoted_by_id], references: [id])
+   other_users                                        users[]              @relation("usersTousers")
+   tasks_TaskWatchers                                 tasks[]              @relation("TaskWatchers")
 }
 
 model workflow_schemes {
-  id                   String                 @id
-  name                 String                 @unique
-  description          String?
-  is_default           Boolean                @default(false)
-  created_at           DateTime               @default(now())
-  updated_at           DateTime
-  projects             projects[]
-  workflow_transitions workflow_transitions[]
+   id                   String                 @id
+   name                 String                 @unique
+   description          String?
+   is_default           Boolean                @default(false)
+   created_at           DateTime               @default(now())
+   updated_at           DateTime
+   projects             projects[]
+   workflow_transitions workflow_transitions[]
 }
 
 model workflow_transitions {
-  id               String           @id
-  scheme_id        String
-  name             String
-  from_status      TaskStatus
-  to_status        TaskStatus
-  issue_type       IssueType?
-  required_role    ProjectRole?
-  created_at       DateTime         @default(now())
-  workflow_schemes workflow_schemes @relation(fields: [scheme_id], references: [id], onDelete: Cascade)
+   id               String           @id
+   scheme_id        String
+   name             String
+   from_status      TaskStatus
+   to_status        TaskStatus
+   issue_type       IssueType?
+   required_role    ProjectRole?
+   created_at       DateTime         @default(now())
+   workflow_schemes workflow_schemes @relation(fields: [scheme_id], references: [id], onDelete: Cascade)
 
-  @@index([scheme_id])
+   @@index([scheme_id])
 }
 
 enum ActivityAction {
-  CREATE
-  ASSIGN
-  APPROVE
-  REJECT
-  STATUS_UPDATE
-  COMMENT
+   CREATE
+   ASSIGN
+   APPROVE
+   REJECT
+   STATUS_UPDATE
+   COMMENT
 }
 
 enum AuditAction {
-  LOGIN
-  LOGOUT
-  REGISTER
-  PASSWORD_CHANGE
-  TOKEN_REFRESH
-  USER_CREATE
-  USER_UPDATE
-  USER_DELETE
-  USER_PROMOTE
-  USER_DEMOTE
-  USER_ACTIVATE
-  USER_DEACTIVATE
-  TASK_CREATE
-  TASK_UPDATE
-  TASK_DELETE
-  TASK_ASSIGN
-  TASK_STATUS_CHANGE
-  TASK_COMMENT
-  PROJECT_CREATE
-  PROJECT_UPDATE
-  PROJECT_DELETE
-  PROJECT_MEMBER_ADD
-  PROJECT_MEMBER_REMOVE
-  SPRINT_CREATE
-  SPRINT_UPDATE
-  SPRINT_DELETE
-  SPRINT_START
-  SPRINT_COMPLETE
-  SETTINGS_UPDATE
-  PERMISSION_CHANGE
-  WORKFLOW_CHANGE
+   LOGIN
+   LOGOUT
+   REGISTER
+   PASSWORD_CHANGE
+   TOKEN_REFRESH
+   USER_CREATE
+   USER_UPDATE
+   USER_DELETE
+   USER_PROMOTE
+   USER_DEMOTE
+   USER_ACTIVATE
+   USER_DEACTIVATE
+   TASK_CREATE
+   TASK_UPDATE
+   TASK_DELETE
+   TASK_ASSIGN
+   TASK_STATUS_CHANGE
+   TASK_COMMENT
+   PROJECT_CREATE
+   PROJECT_UPDATE
+   PROJECT_DELETE
+   PROJECT_MEMBER_ADD
+   PROJECT_MEMBER_REMOVE
+   SPRINT_CREATE
+   SPRINT_UPDATE
+   SPRINT_DELETE
+   SPRINT_START
+   SPRINT_COMPLETE
+   SETTINGS_UPDATE
+   PERMISSION_CHANGE
+   WORKFLOW_CHANGE
 }
 
 enum BoardType {
-  SCRUM
-  KANBAN
+   SCRUM
+   KANBAN
 }
 
 enum DependencyType {
-  BLOCKS
-  IS_BLOCKED_BY
-  RELATES_TO
+   BLOCKS
+   IS_BLOCKED_BY
+   RELATES_TO
 }
 
 enum IssueType {
-  TASK
-  BUG
-  STORY
+   TASK
+   BUG
+   STORY
 }
 
 enum NotificationType {
-  TASK_ASSIGNED
-  STATUS_CHANGED
-  COMMENT
-  MENTION
-  APPROVAL_REQUIRED
-  APPROVED
-  REJECTED
+   TASK_ASSIGNED
+   STATUS_CHANGED
+   COMMENT
+   MENTION
+   APPROVAL_REQUIRED
+   APPROVED
+   REJECTED
 }
 
 enum Permission {
-  ADMINISTER_PROJECT
-  BROWSE_PROJECT
-  EDIT_PROJECT
-  CREATE_ISSUES
-  EDIT_ISSUES
-  EDIT_OWN_ISSUES
-  DELETE_ISSUES
-  DELETE_OWN_ISSUES
-  ASSIGN_ISSUES
-  ASSIGNABLE_USER
-  CLOSE_ISSUES
-  TRANSITION_ISSUES
-  MOVE_ISSUES
-  ADD_COMMENTS
-  EDIT_ALL_COMMENTS
-  EDIT_OWN_COMMENTS
-  DELETE_ALL_COMMENTS
-  DELETE_OWN_COMMENTS
-  CREATE_ATTACHMENTS
-  DELETE_ALL_ATTACHMENTS
-  DELETE_OWN_ATTACHMENTS
-  WORK_ON_ISSUES
-  EDIT_OWN_WORKLOGS
-  EDIT_ALL_WORKLOGS
-  DELETE_OWN_WORKLOGS
-  DELETE_ALL_WORKLOGS
-  MANAGE_SPRINTS
-  VIEW_SPRINTS
-  MANAGE_EPICS
-  VIEW_EPICS
+   ADMINISTER_PROJECT
+   BROWSE_PROJECT
+   EDIT_PROJECT
+   CREATE_ISSUES
+   EDIT_ISSUES
+   EDIT_OWN_ISSUES
+   DELETE_ISSUES
+   DELETE_OWN_ISSUES
+   ASSIGN_ISSUES
+   ASSIGNABLE_USER
+   CLOSE_ISSUES
+   TRANSITION_ISSUES
+   MOVE_ISSUES
+   ADD_COMMENTS
+   EDIT_ALL_COMMENTS
+   EDIT_OWN_COMMENTS
+   DELETE_ALL_COMMENTS
+   DELETE_OWN_COMMENTS
+   CREATE_ATTACHMENTS
+   DELETE_ALL_ATTACHMENTS
+   DELETE_OWN_ATTACHMENTS
+   WORK_ON_ISSUES
+   EDIT_OWN_WORKLOGS
+   EDIT_ALL_WORKLOGS
+   DELETE_OWN_WORKLOGS
+   DELETE_ALL_WORKLOGS
+   MANAGE_SPRINTS
+   VIEW_SPRINTS
+   MANAGE_EPICS
+   VIEW_EPICS
 }
 
 enum ProjectRole {
-  PROJECT_ADMIN
-  DEVELOPER
+   PROJECT_ADMIN
+   DEVELOPER
 }
 
 enum SprintStatus {
-  PLANNING
-  ACTIVE
-  COMPLETED
-  CANCELLED
+   PLANNING
+   ACTIVE
+   COMPLETED
+   CANCELLED
 }
 
 enum TaskPriority {
-  LOW
-  MEDIUM
-  HIGH
+   LOW
+   MEDIUM
+   HIGH
 }
 
 enum TaskStatus {
-  DRAFT
-  ASSIGNED
-  IN_PROGRESS
-  PAUSED
-  REVIEW
-  COMPLETED
-  REJECTED
+   DRAFT
+   ASSIGNED
+   IN_PROGRESS
+   PAUSED
+   REVIEW
+   COMPLETED
+   REJECTED
 }
 
 enum UserRole {
-  CEO
-  HOO
-  HR
-  ADMIN
-  STAFF
-  SUPER_ADMIN
+   CEO
+   HOO
+   HR
+   ADMIN
+   STAFF
+   SUPER_ADMIN
 }
 
 enum WorkflowStatus {
-  TODO
-  IN_PROGRESS
-  DONE
-  CUSTOM
+   TODO
+   IN_PROGRESS
+   DONE
+   CUSTOM
 }
 
 enum WorkflowType {
-  BASIC
-  AGILE
-  BUG_TRACKING
-  CUSTOM
+   BASIC
+   AGILE
+   BUG_TRACKING
+   CUSTOM
 }
