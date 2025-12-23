@@ -67,8 +67,6 @@ export default function TaskDetailPage() {
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">
-						{/* <DropdownMenuItem>Duplicate Task</DropdownMenuItem> */}
-						<DropdownMenuItem>Convert to Issue</DropdownMenuItem>
 						<DropdownMenuItem>Move to Project</DropdownMenuItem>
 						<DropdownMenuItem>
 							<button
@@ -101,17 +99,15 @@ export default function TaskDetailPage() {
 							</CardContent>
 						</Card>
 
-						{/* Subtasks */}
 						<Subtasks />
-						{/* Attachments */}
+
 						<Attachments />
-						{/* Comments */}
+
 						<TaskComments />
-						{/* Activity Log */}
+
 						<Activity />
 					</div>
 
-					{/* Right Column - Task Details */}
 					<TaskDetails />
 				</div>
 			</main>

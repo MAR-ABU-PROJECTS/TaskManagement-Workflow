@@ -18,4 +18,7 @@ export const taskKeys = {
 		taskId: string;
 		attachmentId: string;
 	}) => [...taskKeys.all, "attachments", { taskId, attachmentId }] as const,
+
+	comments: (taskId: string) =>
+		[...taskKeys.all, "comments", { taskId }] as const,
 };

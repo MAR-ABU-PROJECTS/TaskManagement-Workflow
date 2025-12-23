@@ -30,6 +30,7 @@ import { DeleteTaskModal } from "./delete-task-modal";
 import { AssignTaskModal } from "./assign-task-modal";
 import { EditTaskModal } from "./edit-task-modal";
 import { ChangeStatusModal } from "./change-status-modal";
+import { getInitials } from "@/lib/utils";
 
 const TaskCard = ({
 	task,
@@ -41,6 +42,9 @@ const TaskCard = ({
 	const [openModal, setOpenModal] = useState<
 		"edit" | "status" | "assign" | "delete" | "add" | null
 	>(null);
+
+	const name = task?.assignee?.name ?? "";
+	const { first, last } = getInitials(name);
 
 	return (
 		<div>
@@ -123,7 +127,7 @@ const TaskCard = ({
 							{task.assignee && (
 								<Avatar className="h-5 w-5 flex justify-center items-center">
 									<AvatarFallback className="text-[14px] uppercase">
-										{task.assignee?.name?.[0]}
+										{first} {last}
 									</AvatarFallback>
 								</Avatar>
 							)}

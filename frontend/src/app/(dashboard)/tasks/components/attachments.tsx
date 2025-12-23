@@ -7,11 +7,12 @@ import { AddFileModal } from "./add-file-modal";
 import { useParams } from "next/navigation";
 import { useGetAttachment } from "../lib/queries";
 import TaskAttachment from "./attachment";
+import { QueryStateHandler } from "@/components/QueryStateHandler";
 
 const Attachments = () => {
 	const { taskId } = useParams();
 	const [showFileModal, setShowFileModal] = useState(false);
-	const attachments = useGetAttachment(taskId as string, {
+	const query = useGetAttachment(taskId as string, {
 		disableGlobalSuccess: true,
 	});
 	return (
@@ -32,15 +33,30 @@ const Attachments = () => {
 					</div>
 				</CardHeader>
 				<CardContent className="space-y-2">
-					{attachments?.data?.data?.map((file) => (
-						<TaskAttachment key={file.id} {...file} />
-					))}
+					<QueryStateHandler
+						query={query}
+						emptyMessage="No Attachments."
+						getItems={(res) => res.data}
+						render={(res) => {
+							const attachments = res.data ?? [];
+
+							return (
+								<div className="space-y-4">
+									{attachments?.map((file) => (
+										<TaskAttachment
+											key={file.id}
+											{...file}
+										/>
+									))}
+								</div>
+							);
+						}}
+					/>
 				</CardContent>
 			</Card>
 			<AddFileModal
 				open={showFileModal}
 				onOpenChange={setShowFileModal}
-				// onAddFile={handleAddFile}
 			/>
 		</div>
 	);

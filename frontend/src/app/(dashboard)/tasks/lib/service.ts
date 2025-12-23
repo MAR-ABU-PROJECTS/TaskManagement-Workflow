@@ -49,6 +49,11 @@ export const TaskService = {
 		apiService.get(`/tasks/${taskId}/attachments/${attachmentId}`, {
 			responseType: "blob",
 		}),
+	getTaskComments: (taskId: string) =>
+		apiService.get(`/tasks/${taskId}/comments`),
+
+	addComment: ({ comment, taskId }: { comment: string; taskId: string }) =>
+		apiService.post(`/tasks/${taskId}/comments`, { content: comment }),
 
 	// getProjectById: (id: string) => apiService.get(`/projects/${id}`),
 	// updateProject: (id: string, data: editProjectType) =>

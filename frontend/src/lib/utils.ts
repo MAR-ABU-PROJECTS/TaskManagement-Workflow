@@ -16,19 +16,24 @@ export function formatFileSize(bytes: number) {
 }
 
 // utils/downloadFile.ts
-export const downloadFile = (
-  blob: Blob,
-  filename: string
-) => {
-  const url = window.URL.createObjectURL(blob);
+export const downloadFile = (blob: Blob, filename: string) => {
+	const url = window.URL.createObjectURL(blob);
 
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
+	const link = document.createElement("a");
+	link.href = url;
+	link.download = filename;
 
-  document.body.appendChild(link);
-  link.click();
+	document.body.appendChild(link);
+	link.click();
 
-  link.remove();
-  window.URL.revokeObjectURL(url);
+	link.remove();
+	window.URL.revokeObjectURL(url);
+};
+
+export const getInitials = (name: string) => {
+	const initials = name.split(" ");
+	const first = initials?.[0]?.[0];
+	const last = initials?.[1]?.[0];
+
+	return { first, last };
 };

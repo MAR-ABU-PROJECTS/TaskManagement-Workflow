@@ -94,3 +94,15 @@ export const useDeleteAttachment = () => {
 		},
 	});
 };
+
+export const useCommentMutation = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: TaskService.addComment,
+		onSuccess: (variables) => {
+			qc.invalidateQueries({
+				queryKey: taskKeys.comments(variables.taskId),
+			});
+		},
+	});
+};

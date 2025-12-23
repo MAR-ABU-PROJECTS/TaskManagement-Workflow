@@ -61,3 +61,17 @@ export const useDownloadAttachment = (
 		},
 	});
 };
+
+export const useGetComments = (
+	taskId: string,
+	options?: { disableGlobalSuccess?: boolean }
+) => {
+	return useQuery({
+		queryKey: taskKeys.comments(taskId),
+		queryFn: () => TaskService.getTaskComments(taskId),
+		enabled: !!taskId,
+		meta: {
+			disableGlobalSuccess: options?.disableGlobalSuccess,
+		},
+	});
+};
