@@ -14,6 +14,13 @@ export class CommentService {
     userId: string,
     data: CreateCommentDTO
   ): Promise<any> {
+    // Accept both 'message' and 'content' fields
+    const messageText = data.message || data.content || '';
+    
+    if (!messageText) {
+      throw new Error('Comment message/content is required');
+    }
+
     // Verify task exists
     const task = await prisma.task.findUnique({
       where: { id: taskId },
@@ -52,7 +59,7 @@ export class CommentService {
       data: {
         taskId,
         userId,
-        message: data.message,
+        message: messageText,
       },
       include: {
         user: {
@@ -81,10 +88,10 @@ export class CommentService {
         emailService
           .sendCommentNotificationEmail(creator.email, {
             recipientName: creator.name,
-            commenterName: comment.user.name,
+            commenterName: comment.user?.name || 'Unknown',
             taskTitle: task.title,
             taskId: task.id,
-            commentText: data.message,
+            commentText: messageText,
             projectName: task.project?.name,
           })
           .catch((err) =>
@@ -102,10 +109,10 @@ export class CommentService {
         emailService
           .sendCommentNotificationEmail(assignment.user.email, {
             recipientName: assignment.user.name,
-            commenterName: comment.user.name,
+            commenterName: comment.user?.name || 'Unknown',
             taskTitle: task.title,
             taskId: task.id,
-            commentText: data.message,
+            commentText: messageText,
             projectName: task.project?.name,
           })
           .catch((err) =>
@@ -116,7 +123,7 @@ export class CommentService {
 
     // AUTOMATION: @Mention notifications
     const mentionRegex = /@(\w+)/g;
-    const mentions = data.message.match(mentionRegex);
+    const mentions = messageText.match(mentionRegex);
     if (mentions) {
       const usernames = mentions.map((m) => m.substring(1));
       const mentionedUsers = await prisma.user.findMany({
@@ -129,12 +136,12 @@ export class CommentService {
       });
 
       for (const user of mentionedUsers) {
-        await NotificationService.notifyComment(taskId, user.id, data.message);
+        await NotificationService.notifyComment(taskId, user.id, messageText);
       }
     }
 
     // AUTOMATION: Notify all watchers
-    await NotificationService.notifyComment(taskId, userId, data.message);
+    await NotificationService.notifyComment(taskId, userId, messageText);
 
     return comment;
   }
