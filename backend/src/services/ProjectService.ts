@@ -42,13 +42,8 @@ export class ProjectService {
       },
     });
 
-    // Auto-assign creator with role based on organizational hierarchy
-    // CEO/HOO/HR → PROJECT_ADMIN, ADMIN → PROJECT_LEAD
-    const projectRole = [UserRole.CEO, UserRole.HOO, UserRole.HR].includes(
-      creatorRole as any
-    )
-      ? ProjectRole.PROJECT_ADMIN
-      : ProjectRole.PROJECT_LEAD;
+    // Auto-assign creator as PROJECT_ADMIN (all creators get admin role)
+    const projectRole = ProjectRole.PROJECT_ADMIN;
 
     await prisma.projectMember.create({
       data: {
@@ -59,13 +54,13 @@ export class ProjectService {
       },
     });
 
-    // Add additional members if provided
+    // Add additional members if provided (all auto-assigned as DEVELOPER)
     if (members.length > 0) {
       await prisma.projectMember.createMany({
         data: members.map((member) => ({
           projectId: project.id,
           userId: member.userId,
-          role: member.role as ProjectRole,
+          role: ProjectRole.DEVELOPER,
           addedById: creatorId,
         })),
         skipDuplicates: true, // Skip if creator is in members array
@@ -240,7 +235,6 @@ export class ProjectService {
   async addMember(
     projectId: string,
     userIdToAdd: string,
-    projectRole: string,
     requesterId: string,
     requesterRole: UserRole
   ): Promise<any> {
@@ -287,11 +281,12 @@ export class ProjectService {
       throw new Error("User is already a project member");
     }
 
+    // All added members are DEVELOPER role only
     const member = await prisma.projectMember.create({
       data: {
         projectId,
         userId: userIdToAdd,
-        role: projectRole as any,
+        role: ProjectRole.DEVELOPER,
         addedById: requesterId,
       },
       include: {
@@ -310,7 +305,6 @@ export class ProjectService {
   async updateMemberRole(
     projectId: string,
     userIdToUpdate: string,
-    newRole: string,
     requesterId: string,
     requesterRole: UserRole
   ): Promise<void> {
@@ -352,15 +346,11 @@ export class ProjectService {
       throw new Error("Cannot change project creator's role");
     }
 
-    await prisma.projectMember.updateMany({
-      where: {
-        projectId,
-        userId: userIdToUpdate,
-      },
-      data: {
-        role: newRole as any,
-      },
-    });
+    // Cannot change roles - only PROJECT_ADMIN (creator) and DEVELOPER roles exist
+    // All non-creator members must be DEVELOPER
+    throw new Error(
+      "Role updates are not allowed. Only project creator has PROJECT_ADMIN role. All other members are DEVELOPER."
+    );
   }
 
   /**

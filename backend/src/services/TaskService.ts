@@ -1615,7 +1615,7 @@ export class TaskService {
     }
 
     // Check permissions
-    // Only PROJECT_ADMIN, PROJECT_LEAD can delete tasks
+    // Only PROJECT_ADMIN can delete tasks
     // CEO/HOO/HR/ADMIN can delete if they are project members (respect privacy)
     const isManagement = [
       UserRole.CEO,
@@ -1630,12 +1630,9 @@ export class TaskService {
     if (task.projectId) {
       const member = task.project?.members.find((m) => m.userId === userId);
       if (member) {
-        // PROJECT_ADMIN/PROJECT_LEAD can delete
+        // PROJECT_ADMIN can delete
         // Management (CEO/HOO/HR/ADMIN) can delete if they are project members
-        if (
-          ["PROJECT_ADMIN", "PROJECT_LEAD"].includes(member.role) ||
-          isManagement
-        ) {
+        if (member.role === "PROJECT_ADMIN" || isManagement) {
           canDelete = true;
         }
       }

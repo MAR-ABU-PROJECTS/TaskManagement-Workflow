@@ -207,18 +207,17 @@ export class ProjectController {
       }
 
       const { projectId } = req.params;
-      const { userId, projectRole } = req.body;
+      const { userId } = req.body;
 
-      if (!projectId || !userId || !projectRole) {
+      if (!projectId || !userId) {
         return res
           .status(400)
-          .json({ message: "Project ID, User ID, and role are required" });
+          .json({ message: "Project ID and User ID are required" });
       }
 
       const member = await ProjectService.addMember(
         projectId,
         userId,
-        projectRole,
         req.user.id,
         req.user.role as UserRole
       );
@@ -256,18 +255,16 @@ export class ProjectController {
       }
 
       const { projectId, userId } = req.params;
-      const { projectRole } = req.body;
 
-      if (!projectId || !userId || !projectRole) {
+      if (!projectId || !userId) {
         return res
           .status(400)
-          .json({ message: "Project ID, User ID, and role are required" });
+          .json({ message: "Project ID and User ID are required" });
       }
 
       await ProjectService.updateMemberRole(
         projectId,
         userId,
-        projectRole,
         req.user.id,
         req.user.role as UserRole
       );

@@ -1,13 +1,12 @@
 # Task Management System - Endpoint Usage Guide
 
-**Version:** 2.2.0  
-**Last Updated:** December 21, 2025  
+**Version:** 2.3.0  
+**Last Updated:** December 23, 2025  
 **Base URL:** `http://localhost:4000/api`
 
-> ⚠️ **Version 2.2.0:** Hierarchical visibility implemented - HOO/HR cannot view CEO projects/tasks unless added as members.
-> ⚠️ **Personal tasks** are now private (only creator + SUPER_ADMIN can view).
-> ⚠️ **Project/task updates** are creator-only (v2.1.1).
-> See [Hierarchical Visibility](#permissions-quick-reference) for details.
+> 🎉 **Version 2.3.0:** Simplified project roles - only PROJECT_ADMIN (creator) and DEVELOPER (members).
+> ⚠️ **API Change:** No `projectRole` field needed when adding members. Roles auto-assigned.
+> 🔒 **Breaking:** PROJECT_LEAD, DEVELOPER, DEVELOPER roles removed. Role updates disabled.
 
 ---
 
@@ -89,7 +88,7 @@
 | **Remove Project Member** | PROJECT_ADMIN, project creator, CEO, HOO, HR, ADMIN |
 | **Create Task** | All authenticated users |
 | **Update Task** | **Task creator only** |
-| **Delete Task** | PROJECT_ADMIN, PROJECT_LEAD (project tasks), task creator (personal tasks), CEO/HOO/HR/ADMIN (if project member) |
+| **Delete Task** | PROJECT_ADMIN (project tasks), task creator (personal tasks), CEO/HOO/HR/ADMIN (if project member) |
 | **Assign Task** | Task creator, CEO, HOO, HR, ADMIN |
 | **Unassign Task** | Task creator, assignees, PROJECT_ADMIN, CEO, HOO, HR, ADMIN |
 | **Change Task Status** | Task creator, assignees, CEO, HOO, HR, ADMIN |
@@ -547,7 +546,7 @@ curl -X GET http://localhost:4000/api/users/super-admin/verify \
 
 **Endpoint:** `POST /api/projects`  
 **Auth Required:** ✅ Yes (CEO, HOO, HR, or ADMIN)  
-**Description:** Create a new project. ADMIN has full operational access.
+**Description:** Create a new project. Creator automatically becomes PROJECT_ADMIN. Members can be added with userId only (auto-assigned as DEVELOPER).
 
 **Request Body:**
 ```json
@@ -555,10 +554,19 @@ curl -X GET http://localhost:4000/api/users/super-admin/verify \
   "name": "New Product Launch",
   "description": "Launch our new product line",
   "key": "NPL",
-  "leadId": "clh123",
-  "workflowSchemeId": "clh456"
+  "workflowSchemeId": "clh456",
+  "members": [
+    { "userId": "user-id-1" },
+    { "userId": "user-id-2" }
+  ]
 }
 ```
+
+**Notes:**
+- ✅ Creator becomes PROJECT_ADMIN automatically
+- ✅ All members in array become DEVELOPER automatically
+- ❌ No `role` field needed or accepted
+- ❌ Roles cannot be changed after assignment
 
 **Example:**
 ```bash
@@ -568,7 +576,11 @@ curl -X POST http://localhost:4000/api/projects \
   -d '{
     "name": "Website Redesign",
     "description": "Redesign company website",
-    "key": "WEB"
+    "key": "WEB",
+    "members": [
+      { "userId": "clh123" },
+      { "userId": "clh456" }
+    ]
   }'
 ```
 
@@ -717,17 +729,19 @@ curl -X DELETE http://localhost:4000/api/projects/clh789 \
 
 **Endpoint:** `POST /api/projects/:projectId/members`  
 **Auth Required:** ✅ Yes (PROJECT_ADMIN, project creator, or management: CEO/HOO/HR/ADMIN)  
-**Description:** Add a user to the project
+**Description:** Add a user to the project. Member automatically becomes DEVELOPER.
 
 **Request Body:**
 ```json
 {
-  "userId": "clh123",
-  "role": "DEVELOPER"
+  "userId": "clh123"
 }
 ```
 
-**Roles:** `PROJECT_ADMIN`, `PROJECT_LEAD`, `DEVELOPER`, `REPORTER`, `VIEWER`
+**Notes:**
+- ✅ Member automatically assigned DEVELOPER role
+- ❌ No `role` or `projectRole` field needed
+- ❌ Only DEVELOPER role available for members
 
 **Example:**
 ```bash
@@ -735,9 +749,26 @@ curl -X POST http://localhost:4000/api/projects/clh789/members \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "userId": "clh123",
-    "role": "DEVELOPER"
+    "userId": "clh123"
   }'
+```
+
+**Response:**
+```json
+{
+  "message": "Member added successfully",
+  "data": {
+    "id": "clh111",
+    "userId": "clh123",
+    "projectId": "clh789",
+    "role": "DEVELOPER",
+    "addedAt": "2025-12-23T10:00:00Z",
+    "user": {
+      "name": "John Doe",
+      "email": "john@example.com"
+    }
+  }
+}
 ```
 
 ---
@@ -784,7 +815,7 @@ curl http://localhost:4000/api/projects/clh789/members \
 **Request Body:**
 ```json
 {
-  "role": "PROJECT_LEAD"
+  "role": "PROJECT_ADMIN"
 }
 ```
 
@@ -793,7 +824,7 @@ curl http://localhost:4000/api/projects/clh789/members \
 curl -X PATCH http://localhost:4000/api/projects/clh789/members/clh111 \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"role": "PROJECT_LEAD"}'
+  -d '{"role": "PROJECT_ADMIN"}'
 ```
 
 ---
@@ -1006,7 +1037,7 @@ curl -X PUT http://localhost:4000/api/tasks/clh999 \
 **Description:** Delete a task (with permission checks)
 
 **Permission Rules:**
-- **PROJECT_ADMIN / PROJECT_LEAD**: Can delete any task in their project
+- **PROJECT_ADMIN / PROJECT_ADMIN**: Can delete any task in their project
 - **Task Creator**: Can delete their own personal tasks
 - **Global Admins (CEO/HOO/HR/SUPER_ADMIN)**: Can delete any task
 
@@ -1033,7 +1064,7 @@ curl -X DELETE http://localhost:4000/api/tasks/clh999 \
 ### 4.6 Assign Task
 
 **Endpoint:** `POST /api/tasks/:id/assign`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_ADMIN)  
 **Description:** Assign task to a user
 
 **Request Body:**
@@ -1309,7 +1340,7 @@ curl -X DELETE http://localhost:4000/api/attachments/clh666 \
 ### 7.1 Create Sprint
 
 **Endpoint:** `POST /api/projects/:projectId/sprints`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_ADMIN)  
 **Description:** Create a new sprint
 
 **Request Body:**
@@ -1340,7 +1371,7 @@ curl -X POST http://localhost:4000/api/projects/clh789/sprints \
 ### 7.2 Start Sprint
 
 **Endpoint:** `POST /api/sprints/:sprintId/start`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_ADMIN)  
 **Description:** Activate a sprint (only one active sprint per project)
 
 **Example:**
@@ -1354,7 +1385,7 @@ curl -X POST http://localhost:4000/api/sprints/clh555/start \
 ### 7.3 Complete Sprint
 
 **Endpoint:** `POST /api/sprints/:sprintId/complete`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_ADMIN)  
 **Description:** Close a sprint
 
 **Example:**
@@ -1368,7 +1399,7 @@ curl -X POST http://localhost:4000/api/sprints/clh555/complete \
 ### 7.4 Add Tasks to Sprint
 
 **Endpoint:** `POST /api/sprints/:sprintId/tasks`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_ADMIN)  
 **Description:** Add tasks to a sprint
 
 **Request Body:**
@@ -1433,7 +1464,7 @@ curl http://localhost:4000/api/sprints/clh555/burndown \
 ### 8.1 Create Epic
 
 **Endpoint:** `POST /api/projects/:projectId/epics`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_ADMIN)  
 **Description:** Create an epic (large user story)
 
 **Request Body:**
@@ -1506,7 +1537,7 @@ curl http://localhost:4000/api/projects/clh789/backlog \
 ### 9.2 Prioritize Backlog
 
 **Endpoint:** `POST /api/backlog/prioritize`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_ADMIN)  
 **Description:** Reorder backlog items
 
 **Request Body:**
@@ -1533,7 +1564,7 @@ curl -X POST http://localhost:4000/api/backlog/prioritize \
 ### 9.3 Estimate Story Points
 
 **Endpoint:** `POST /api/backlog/estimate`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_ADMIN)  
 **Description:** Add story point estimates
 
 **Request Body:**
@@ -1951,7 +1982,7 @@ curl http://localhost:4000/api/filters/clh222/execute \
 ### 16.1 Bulk Assign
 
 **Endpoint:** `POST /api/bulk/assign`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_ADMIN)  
 **Description:** Assign multiple tasks at once
 
 **Request Body:**
@@ -1978,7 +2009,7 @@ curl -X POST http://localhost:4000/api/bulk/assign \
 ### 16.2 Bulk Status Change (Workflow-Validated)
 
 **Endpoint:** `POST /api/bulk/transition`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_ADMIN)  
 **Description:** Change status of multiple tasks with workflow validation
 
 > 🔒 **Workflow Validation:** Each task is validated individually against its project's workflow rules.
@@ -2034,7 +2065,7 @@ curl -X POST http://localhost:4000/api/bulk/transition \
 ### 16.3 Bulk Update
 
 **Endpoint:** `POST /api/bulk/update`  
-**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_LEAD)  
+**Auth Required:** ✅ Yes (PROJECT_ADMIN or PROJECT_ADMIN)  
 **Description:** Update multiple tasks with same changes
 
 **Request Body:**
@@ -2329,7 +2360,7 @@ curl http://localhost:4000/api/permission-schemes \
   "grants": [
     {
       "permission": "CREATE_ISSUES",
-      "role": "REPORTER"
+      "role": "DEVELOPER"
     },
     {
       "permission": "EDIT_ISSUES",

@@ -8,7 +8,7 @@ import { Permission, ProjectRole, UserRole } from "@prisma/client";
 /**
  * Default permissions for each ProjectRole
  */
-export const ROLE_PERMISSIONS: Record<ProjectRole, Permission[]> = {
+export const ROLE_PERMISSIONS: Partial<Record<ProjectRole, Permission[]>> = {
   PROJECT_ADMIN: [
     // Full project control
     Permission.ADMINISTER_PROJECT,
@@ -55,46 +55,6 @@ export const ROLE_PERMISSIONS: Record<ProjectRole, Permission[]> = {
     Permission.DELETE_OWN_WORKLOGS,
   ],
 
-  PROJECT_LEAD: [
-    // Project viewing
-    Permission.BROWSE_PROJECT,
-    Permission.EDIT_PROJECT,
-
-    // Issue management
-    Permission.CREATE_ISSUES,
-    Permission.EDIT_ISSUES,
-    Permission.EDIT_OWN_ISSUES,
-    Permission.DELETE_OWN_ISSUES,
-    Permission.ASSIGN_ISSUES,
-    Permission.ASSIGNABLE_USER,
-    Permission.CLOSE_ISSUES,
-    Permission.TRANSITION_ISSUES,
-    Permission.MOVE_ISSUES,
-
-    // Comments
-    Permission.ADD_COMMENTS,
-    Permission.EDIT_ALL_COMMENTS,
-    Permission.EDIT_OWN_COMMENTS,
-    Permission.DELETE_OWN_COMMENTS,
-
-    // Attachments
-    Permission.CREATE_ATTACHMENTS,
-    Permission.DELETE_OWN_ATTACHMENTS,
-
-    // Sprint management
-    Permission.MANAGE_SPRINTS,
-    Permission.VIEW_SPRINTS,
-
-    // Epic management
-    Permission.MANAGE_EPICS,
-    Permission.VIEW_EPICS,
-
-    // Time tracking
-    Permission.WORK_ON_ISSUES,
-    Permission.EDIT_OWN_WORKLOGS,
-    Permission.DELETE_OWN_WORKLOGS,
-  ],
-
   DEVELOPER: [
     // Project viewing
     Permission.BROWSE_PROJECT,
@@ -119,29 +79,12 @@ export const ROLE_PERMISSIONS: Record<ProjectRole, Permission[]> = {
     Permission.WORK_ON_ISSUES,
     Permission.EDIT_OWN_WORKLOGS,
     Permission.DELETE_OWN_WORKLOGS,
-  ],
 
-  REPORTER: [
-    // Project viewing
-    Permission.BROWSE_PROJECT,
+    // Sprint viewing
+    Permission.VIEW_SPRINTS,
 
-    // Create and edit own issues
-    Permission.CREATE_ISSUES,
-    Permission.EDIT_OWN_ISSUES,
-
-    // Comments
-    Permission.ADD_COMMENTS,
-    Permission.EDIT_OWN_COMMENTS,
-    Permission.DELETE_OWN_COMMENTS,
-
-    // Attachments
-    Permission.CREATE_ATTACHMENTS,
-    Permission.DELETE_OWN_ATTACHMENTS,
-  ],
-
-  VIEWER: [
-    // Read-only access
-    Permission.BROWSE_PROJECT,
+    // Epic viewing
+    Permission.VIEW_EPICS,
   ],
 };
 

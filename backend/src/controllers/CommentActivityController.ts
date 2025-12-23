@@ -11,7 +11,9 @@ export class CommentController {
   async createComment(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(403).json({ message: "Forbidden: Authentication required" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id: taskId } = req.params;
@@ -21,14 +23,20 @@ export class CommentController {
 
       const data: CreateCommentDTO = req.body;
 
-      if (!data.message || data.message.trim() === "") {
+      // Accept both 'content' and 'message' fields
+      const commentText = data.content || data.message;
+
+      if (!commentText || commentText.trim() === "") {
         return res.status(400).json({ message: "Comment message is required" });
       }
+
+      // Normalize to use 'message' field
+      const normalizedData = { ...data, message: commentText };
 
       const comment = await CommentService.createComment(
         taskId,
         req.user.id,
-        data
+        normalizedData
       );
 
       return res.status(201).json({
@@ -52,7 +60,9 @@ export class CommentController {
   async getTaskComments(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(403).json({ message: "Forbidden: Authentication required" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id: taskId } = req.params;
@@ -81,7 +91,9 @@ export class CommentController {
   async deleteComment(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(403).json({ message: "Forbidden: Authentication required" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { commentId } = req.params;
@@ -121,7 +133,9 @@ export class ActivityLogController {
   async getTaskLogs(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(403).json({ message: "Forbidden: Authentication required" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id: taskId } = req.params;
@@ -152,7 +166,9 @@ export class NotificationController {
   async getUserNotifications(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(403).json({ message: "Forbidden: Authentication required" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const unreadOnly = req.query.unread === "true";
@@ -180,7 +196,9 @@ export class NotificationController {
   async markAsRead(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(403).json({ message: "Forbidden: Authentication required" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -211,7 +229,9 @@ export class NotificationController {
   async markAllAsRead(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(403).json({ message: "Forbidden: Authentication required" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const count = await NotificationService.markAllAsRead(req.user.id);

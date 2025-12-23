@@ -69,28 +69,20 @@ router.use(authenticate);
  *                 example: 550e8400-e29b-41d4-a716-446655440000
  *               members:
  *                 type: array
- *                 description: Array of project members to add during creation (creator automatically becomes PROJECT_ADMIN)
+ *                 description: Array of project members to add during creation (creator automatically becomes PROJECT_ADMIN, all members auto-assigned as DEVELOPER)
  *                 items:
  *                   type: object
  *                   required:
  *                     - userId
- *                     - role
  *                   properties:
  *                     userId:
  *                       type: string
  *                       format: uuid
- *                       description: User ID of the member to add
+ *                       description: User ID of the member to add (will be auto-assigned DEVELOPER role)
  *                       example: 550e8400-e29b-41d4-a716-446655440001
- *                     role:
- *                       type: string
- *                       enum: [PROJECT_LEAD, PROJECT_ADMIN, DEVELOPER, TESTER, VIEWER]
- *                       description: Role to assign to the member
- *                       example: DEVELOPER
  *                 example:
  *                   - userId: "user-id-1"
- *                     role: "PROJECT_LEAD"
  *                   - userId: "user-id-2"
- *                     role: "DEVELOPER"
  *     responses:
  *       201:
  *         description: Project created successfully
@@ -470,7 +462,7 @@ router.delete(
 
 /**
  * @swagger
- * /api/projects/{id}/members:
+ * /api/projects/{projectId}/members:
  *   get:
  *     summary: Get all project members
  *     description: |
@@ -482,7 +474,7 @@ router.delete(
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: projectId
  *         required: true
  *         schema:
  *           type: string
@@ -506,7 +498,7 @@ router.delete(
  *                     type: string
  *                   role:
  *                     type: string
- *                     enum: [PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER, REPORTER, VIEWER]
+ *                     enum: [PROJECT_ADMIN, DEVELOPER]
  *                   addedAt:
  *                     type: string
  *                     format: date-time
@@ -552,14 +544,14 @@ router.get(
 
       return res.json(members);
     } catch (error: any) {
-      return res.status(500).json({ error: error.message });
+      return res.status(500).json({ message: error.message });
     }
   }
 );
 
 /**
  * @swagger
- * /api/projects/{id}/members:
+ * /api/projects/{projectId}/members:
  *   post:
  *     summary: Add member to project
  *     description: |
@@ -567,17 +559,14 @@ router.get(
  *       Requires ADMINISTER_PROJECT permission.
  *
  *       **Project Roles:**
- *       - PROJECT_ADMIN - Full project control
- *       - PROJECT_LEAD - Manage sprints, assign tasks
- *       - DEVELOPER - Create and edit tasks
- *       - REPORTER - Create tasks only
- *       - VIEWER - Read-only access
+ *       - PROJECT_ADMIN - Project creator with full control
+ *       - DEVELOPER - All added members, can create and work on tasks
  *     tags: [Projects]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: projectId
  *         required: true
  *         schema:
  *           type: string
@@ -599,8 +588,8 @@ router.get(
  *                 description: User ID to add
  *               projectRole:
  *                 type: string
- *                 enum: [PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER, REPORTER, VIEWER]
- *                 description: Role in this project
+ *                 enum: [DEVELOPER]
+ *                 description: Role in this project (always DEVELOPER)
  *                 example: DEVELOPER
  *     responses:
  *       201:
@@ -620,18 +609,19 @@ router.post(
 
 /**
  * @swagger
- * /api/projects/{id}/members/{userId}:
+ * /api/projects/{projectId}/members/{userId}:
  *   patch:
- *     summary: Update project member role
+ *     summary: Update project member role (Disabled)
  *     description: |
- *       Change a team member's role within the project.
+ *       Role changes are disabled. All members are DEVELOPER, only creator is PROJECT_ADMIN.
+ *       This endpoint will return an error.
  *       Requires ADMINISTER_PROJECT permission.
  *     tags: [Projects]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: projectId
  *         required: true
  *         schema:
  *           type: string
@@ -655,9 +645,9 @@ router.post(
  *             properties:
  *               projectRole:
  *                 type: string
- *                 enum: [PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER, REPORTER, VIEWER]
- *                 description: New role for the member
- *                 example: PROJECT_LEAD
+ *                 enum: [DEVELOPER]
+ *                 description: New role (note: role changes disabled, members are always DEVELOPER)
+ *                 example: DEVELOPER
  *     responses:
  *       200:
  *         description: Member role updated successfully
