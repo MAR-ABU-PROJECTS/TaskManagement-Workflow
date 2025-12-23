@@ -12,12 +12,12 @@ class TaskAttachmentController {
       const userId = req.user?.id;
 
       if (!taskId) {
-        res.status(400).json({ error: "Task ID is required" });
+        res.status(400).json({ message: "Task ID is required" });
         return;
       }
 
       if (!req.file) {
-        res.status(400).json({ error: "No file uploaded" });
+        res.status(400).json({ message: "No file uploaded" });
         return;
       }
 
@@ -35,7 +35,7 @@ class TaskAttachmentController {
         data: attachment,
       });
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      res.status(400).json({ message: error.message });
     }
   }
 
@@ -48,7 +48,7 @@ class TaskAttachmentController {
       const { taskId } = req.params;
 
       if (!taskId) {
-        res.status(400).json({ error: "Task ID is required" });
+        res.status(400).json({ message: "Task ID is required" });
         return;
       }
 
@@ -61,7 +61,7 @@ class TaskAttachmentController {
         data: attachments,
       });
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      res.status(400).json({ message: error.message });
     }
   }
 
@@ -71,15 +71,15 @@ class TaskAttachmentController {
    */
   async downloadAttachment(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const { attachmentId } = req.params;
 
-      if (!id) {
-        res.status(400).json({ error: "Attachment ID is required" });
+      if (!attachmentId) {
+        res.status(400).json({ message: "Attachment ID is required" });
         return;
       }
 
       const { buffer, filename, mimeType } =
-        await TaskAttachmentService.downloadAttachment(id);
+        await TaskAttachmentService.downloadAttachment(attachmentId);
 
       res.setHeader("Content-Type", mimeType);
       res.setHeader(
@@ -88,7 +88,7 @@ class TaskAttachmentController {
       );
       res.send(buffer);
     } catch (error: any) {
-      res.status(404).json({ error: error.message });
+      res.status(404).json({ message: error.message });
     }
   }
 
@@ -101,7 +101,7 @@ class TaskAttachmentController {
       const { id } = req.params;
 
       if (!id) {
-        res.status(400).json({ error: "Attachment ID is required" });
+        res.status(400).json({ message: "Attachment ID is required" });
         return;
       }
 
@@ -112,7 +112,7 @@ class TaskAttachmentController {
         data: attachment,
       });
     } catch (error: any) {
-      res.status(404).json({ error: error.message });
+      res.status(404).json({ message: error.message });
     }
   }
 
@@ -122,24 +122,24 @@ class TaskAttachmentController {
    */
   async deleteAttachment(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const { attachmentId } = req.params;
       const userId = req.user?.id;
       const userRole = req.user?.role;
 
-      if (!id) {
-        res.status(400).json({ error: "Attachment ID is required" });
+      if (!attachmentId) {
+        res.status(400).json({ message: "Attachment ID is required" });
         return;
       }
 
       const result = await TaskAttachmentService.deleteAttachment(
-        id,
+        attachmentId,
         userId!,
         userRole!
       );
 
       res.json(result);
     } catch (error: any) {
-      res.status(403).json({ error: error.message });
+      res.status(403).json({ message: error.message });
     }
   }
 
@@ -152,7 +152,7 @@ class TaskAttachmentController {
       const { taskId } = req.params;
 
       if (!taskId) {
-        res.status(400).json({ error: "Task ID is required" });
+        res.status(400).json({ message: "Task ID is required" });
         return;
       }
 
@@ -163,7 +163,7 @@ class TaskAttachmentController {
         data: stats,
       });
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      res.status(400).json({ message: error.message });
     }
   }
 
@@ -183,7 +183,7 @@ class TaskAttachmentController {
         data: attachments,
       });
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      res.status(400).json({ message: error.message });
     }
   }
 }

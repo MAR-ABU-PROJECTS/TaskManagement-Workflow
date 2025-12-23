@@ -1,9 +1,9 @@
 import rateLimit from "express-rate-limit";
 
-// General API rate limiter
+// General API rate limiter - Very lenient for development/testing
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 1000, // Limit each IP to 1000 requests per windowMs
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
@@ -12,7 +12,7 @@ export const apiLimiter = rateLimit({
 // Strict limiter for auth endpoints
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
+  max: 50, // Limit each IP to 50 requests per windowMs
   message:
     "Too many authentication attempts, please try again after 15 minutes.",
   standardHeaders: true,
@@ -23,7 +23,7 @@ export const authLimiter = rateLimit({
 // Medium limiter for creation endpoints
 export const createLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30, // Limit each IP to 30 requests per windowMs
+  max: 200, // Limit each IP to 200 requests per windowMs
   message: "Too many creation requests, please slow down.",
   standardHeaders: true,
   legacyHeaders: false,

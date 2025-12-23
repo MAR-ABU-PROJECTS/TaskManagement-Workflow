@@ -102,7 +102,7 @@ export class EmailService {
         return;
       }
 
-      const from = process.env.EMAIL_FROM || "no-reply@marprojects.com";
+      const from = process.env.EMAIL_FROM || "noreply@tasks.marabuprojects.com";
 
       await this.resend.emails.send({
         from,

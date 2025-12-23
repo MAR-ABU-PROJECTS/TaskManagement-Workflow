@@ -1,11 +1,12 @@
 # Task Management System - Complete User Documentation
 
-**Version:** 2.2.0  
-**Last Updated:** December 21, 2025  
+**Version:** 2.3.0  
+**Last Updated:** December 23, 2025  
 **Production URL:** https://taskmanagement-workflow-production.up.railway.app  
 **Documentation Type:** Complete System Guide
 
-> 🆕 **Version 2.2.0 Updates:** Hierarchical visibility implemented. HOO/HR cannot view CEO projects/tasks. Personal tasks are private.
+> 🎉 **Version 2.3.0 Updates:** Simplified project roles! Only PROJECT_ADMIN (creator) and DEVELOPER (members). Roles auto-assigned, no selection needed.
+> 🔒 **Breaking Change:** PROJECT_LEAD, DEVELOPER, DEVELOPER roles removed. All members now DEVELOPER.
 
 ---
 
@@ -394,37 +395,33 @@ The system has **6 hierarchical roles** with different authority levels:
 
 Within each project, users have **project-specific roles**:
 
-#### ⚙️ PROJECT_ADMIN (Project Level 4)
+#### ⚙️ PROJECT_ADMIN (Creator Only)
+
+**Automatically Assigned To:**
+- Project creator only
 
 **Abilities:**
-- ✅ Full project control
+- ✅ Full project control and ownership
 - ✅ Add/remove team members
 - ✅ Manage all permissions
 - ✅ Delete any task
-- ✅ Archive project
+- ✅ Archive/delete project
 - ✅ Configure workflows
-- ✅ Access all project settings
-
----
-
-#### 👨‍💼 PROJECT_LEAD (Project Level 3)
-
-**Abilities:**
+- ✅ Approve and reject tasks
 - ✅ Manage sprints and epics
+- ✅ Access all project settings
 - ✅ Assign tasks to any team member
-- ✅ Create and edit all tasks
-- ✅ View all project reports
-- ✅ Approve tasks
-- ✅ Manage backlog
 
-**Restrictions:**
-- ❌ Cannot add/remove team members
-- ❌ Cannot delete project
-- ❌ Cannot modify permissions
+**Notes:**
+- This role cannot be changed or assigned to others
+- Only one PROJECT_ADMIN per project (the creator)
 
 ---
 
-#### 💻 DEVELOPER (Project Level 2)
+#### 💻 DEVELOPER (All Members)
+
+**Automatically Assigned To:**
+- All users added to the project
 
 **Abilities:**
 - ✅ Create tasks
@@ -434,42 +431,19 @@ Within each project, users have **project-specific roles**:
 - ✅ Upload attachments
 - ✅ Log time
 - ✅ Move tasks between statuses
+- ✅ View project data
+- ✅ View sprints and epics
+- ✅ Transition tasks through workflow
 
 **Restrictions:**
-- ❌ Cannot edit other users' tasks
-- ❌ Cannot delete tasks
-- ❌ Cannot manage sprints
+- ❌ Cannot approve or reject tasks
+- ❌ Cannot delete project
+- ❌ Cannot manage team members
+- ❌ Cannot create or manage sprints/epics
 
----
-
-#### 📝 REPORTER (Project Level 1)
-
-**Abilities:**
-- ✅ Create tasks
-- ✅ Add comments
-- ✅ View all project tasks
-- ✅ Upload attachments
-
-**Restrictions:**
-- ❌ Cannot edit tasks
-- ❌ Cannot assign tasks
-- ❌ Cannot log time
-
----
-
-#### 🎨 VIEWER (Project Level 0)
-
-**Abilities:**
-- ✅ View all project tasks
-- ✅ View comments
-- ✅ View attachments
-- ✅ Search tasks
-
-**Restrictions:**
-- ❌ Cannot create tasks
-- ❌ Cannot comment
-- ❌ Cannot edit anything
-- ❌ Read-only access
+**Notes:**
+- This role is automatically assigned and cannot be changed
+- All non-creator project members have this role
 
 ---
 
@@ -888,7 +862,7 @@ When you open a task, you see:
 - Watch/Unwatch
 
 **Delete Permissions:**
-- PROJECT_ADMIN/PROJECT_LEAD can delete any project task
+- PROJECT_ADMIN/PROJECT_ADMIN can delete any project task
 - Task creator can delete their own personal tasks
 - Global admins (CEO/HOO/HR/SUPER_ADMIN) can delete any task
 - Deletion is permanent and cannot be undone

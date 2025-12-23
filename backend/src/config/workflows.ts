@@ -35,7 +35,7 @@ const BASIC_WORKFLOW: WorkflowTransitionRule[] = [
     name: "Complete",
     from: TaskStatus.IN_PROGRESS,
     to: TaskStatus.COMPLETED,
-    requiredRole: ProjectRole.PROJECT_LEAD,
+    requiredRole: ProjectRole.PROJECT_ADMIN,
   },
   {
     name: "Submit for Review",
@@ -48,7 +48,7 @@ const BASIC_WORKFLOW: WorkflowTransitionRule[] = [
     name: "Reject Work",
     from: TaskStatus.IN_PROGRESS,
     to: TaskStatus.REJECTED,
-    requiredRole: ProjectRole.PROJECT_LEAD,
+    requiredRole: ProjectRole.PROJECT_ADMIN,
   },
 
   // From PAUSED
@@ -60,7 +60,7 @@ const BASIC_WORKFLOW: WorkflowTransitionRule[] = [
     name: "Approve",
     from: TaskStatus.REVIEW,
     to: TaskStatus.COMPLETED,
-    requiredRole: ProjectRole.PROJECT_LEAD,
+    requiredRole: ProjectRole.PROJECT_ADMIN,
   },
   {
     name: "Request Changes",
@@ -71,7 +71,7 @@ const BASIC_WORKFLOW: WorkflowTransitionRule[] = [
     name: "Reject Review",
     from: TaskStatus.REVIEW,
     to: TaskStatus.REJECTED,
-    requiredRole: ProjectRole.PROJECT_LEAD,
+    requiredRole: ProjectRole.PROJECT_ADMIN,
   },
 
   // From REJECTED - Allow reopen
@@ -131,7 +131,7 @@ const AGILE_WORKFLOW: WorkflowTransitionRule[] = [
     name: "Approve & Done",
     from: TaskStatus.REVIEW,
     to: TaskStatus.COMPLETED,
-    requiredRole: ProjectRole.PROJECT_LEAD,
+    requiredRole: ProjectRole.PROJECT_ADMIN,
   },
   {
     name: "Request Changes",
@@ -142,7 +142,7 @@ const AGILE_WORKFLOW: WorkflowTransitionRule[] = [
     name: "Reject & Close",
     from: TaskStatus.REVIEW,
     to: TaskStatus.REJECTED,
-    requiredRole: ProjectRole.PROJECT_LEAD,
+    requiredRole: ProjectRole.PROJECT_ADMIN,
   },
 
   // From REJECTED
@@ -171,7 +171,7 @@ const BUG_TRACKING_WORKFLOW: WorkflowTransitionRule[] = [
     name: "Confirm Bug",
     from: TaskStatus.DRAFT,
     to: TaskStatus.ASSIGNED,
-    requiredRole: ProjectRole.PROJECT_LEAD,
+    requiredRole: ProjectRole.PROJECT_ADMIN,
   },
   { name: "Cannot Reproduce", from: TaskStatus.DRAFT, to: TaskStatus.REJECTED },
   { name: "Duplicate", from: TaskStatus.DRAFT, to: TaskStatus.REJECTED },
@@ -198,7 +198,7 @@ const BUG_TRACKING_WORKFLOW: WorkflowTransitionRule[] = [
     name: "Test Passed - Close",
     from: TaskStatus.REVIEW,
     to: TaskStatus.COMPLETED,
-    requiredRole: ProjectRole.PROJECT_LEAD,
+    requiredRole: ProjectRole.PROJECT_ADMIN,
   },
   {
     name: "Test Failed - Reopen",
@@ -220,7 +220,7 @@ const BUG_TRACKING_WORKFLOW: WorkflowTransitionRule[] = [
     name: "Regression Found",
     from: TaskStatus.COMPLETED,
     to: TaskStatus.ASSIGNED,
-    requiredRole: ProjectRole.PROJECT_LEAD,
+    requiredRole: ProjectRole.PROJECT_ADMIN,
   },
 ];
 

@@ -61,11 +61,8 @@ export enum NotificationType {
 
 // Project-Level Roles (Jira-style)
 export enum ProjectRole {
-  PROJECT_ADMIN = "PROJECT_ADMIN", // Full project control
-  PROJECT_LEAD = "PROJECT_LEAD", // Manage sprints, epics, approve tasks
-  DEVELOPER = "DEVELOPER", // Create, edit assigned tasks
-  REPORTER = "REPORTER", // Create issues, add comments
-  VIEWER = "VIEWER", // Read-only access
+  PROJECT_ADMIN = "PROJECT_ADMIN", // Project creator - full project control
+  DEVELOPER = "DEVELOPER", // Project members - can create, edit assigned tasks, work on issues
 }
 
 // Granular Permissions (Jira-style)
@@ -178,9 +175,6 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
 
 // Project Role Hierarchy
 export const PROJECT_ROLE_HIERARCHY: Record<ProjectRole, number> = {
-  [ProjectRole.PROJECT_ADMIN]: 4,
-  [ProjectRole.PROJECT_LEAD]: 3,
-  [ProjectRole.DEVELOPER]: 2,
-  [ProjectRole.REPORTER]: 1,
-  [ProjectRole.VIEWER]: 0,
+  [ProjectRole.PROJECT_ADMIN]: 2,
+  [ProjectRole.DEVELOPER]: 1,
 };

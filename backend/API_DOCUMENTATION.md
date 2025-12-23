@@ -1,11 +1,12 @@
 # Task Management System - Complete API Documentation
 
-**Version:** 2.2.0  
-**Last Updated:** December 21, 2025  
+**Version:** 2.3.0  
+**Last Updated:** December 23, 2025  
 **Base URL:** `https://taskmanagement-workflow-production.up.railway.app`  
 **Total Endpoints:** 75+ (includes new workflow endpoints)  
 **Documentation Coverage:** 100%
 
+> ⚡ **v2.3.0:** Simplified project roles - PROJECT_ADMIN (creator only) + DEVELOPER (all members). Roles auto-assigned.
 > ⚡ **v2.2.0:** Hierarchical visibility model - HOO/HR cannot view CEO projects/tasks. Personal tasks are private.
 > ⚡ **v2.1.1:** Update permissions restricted to creators only.
 > ⚡ **v2.1.0:** ADMIN has full operational access. SUPER_ADMIN is audit-only.
@@ -26,6 +27,29 @@
 ---
 
 ## Changelog
+
+### Version 2.3.0 - December 23, 2025
+
+**🎯 Simplified Project Role System:**
+- Project roles reduced from 5 to 2 for clarity
+- **PROJECT_ADMIN**: Project creator only - full control over project settings, members, workflows, approvals
+- **DEVELOPER**: All added members - can create tasks, work on issues, comment, track time
+- Role assignment is automatic: creator becomes PROJECT_ADMIN, all members become DEVELOPER
+- Role changes disabled - roles are immutable after assignment
+- API simplified: no `projectRole` parameter needed when adding members
+
+**Updated Endpoints:**
+- `POST /api/projects` - Members array no longer requires `role` field
+- `POST /api/projects/:projectId/members` - No `projectRole` in request body
+- `PATCH /api/projects/:projectId/members/:userId` - Returns error (role changes disabled)
+- All workflow transitions requiring approval now need PROJECT_ADMIN role
+
+**Breaking Changes:**
+- PROJECT_ADMIN, DEVELOPER, DEVELOPER roles removed
+- Existing PROJECT_ADMIN converted to PROJECT_ADMIN
+- Existing DEVELOPER/DEVELOPER converted to DEVELOPER
+
+---
 
 ### Version 2.2.0 - December 21, 2025
 
@@ -87,7 +111,7 @@
 
 This is a comprehensive **Jira-like Task Management System** with advanced features including:
 
-- ✅ **Dual RBAC System**: Global user roles (CEO, HOO, HR, ADMIN, STAFF) + Project-level roles (PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER, REPORTER, VIEWER)
+- ✅ **Dual RBAC System**: Global user roles (CEO, HOO, HR, ADMIN, STAFF) + Project-level roles (PROJECT_ADMIN, DEVELOPER)
 - ✅ **Granular Permissions**: 32+ fine-grained permissions following Jira's permission model
 - ✅ **Workflow State Machine**: Jira-style workflow with validated transitions (BASIC, AGILE, BUG_TRACKING, CUSTOM)
 - ✅ **Agile Workflows**: Sprints, Epics, Backlogs, Status-based Kanban boards
@@ -207,10 +231,10 @@ The system implements a **Jira-style hierarchical role system** with strict prom
 | Role | Hierarchy Level | Description |
 |------|----------------|-------------|
 | **PROJECT_ADMIN** | 4 | Full project control, all permissions |
-| **PROJECT_LEAD** | 3 | Manage sprints, epics, assign tasks |
+| **PROJECT_ADMIN** | 3 | Manage sprints, epics, assign tasks |
 | **DEVELOPER** | 2 | Create, edit own issues, work on tasks |
-| **REPORTER** | 1 | Create issues, add comments |
-| **VIEWER** | 0 | Read-only access to project |
+| **DEVELOPER** | 1 | Create issues, add comments |
+| **DEVELOPER** | 0 | Read-only access to project |
 
 The system uses **32 granular permissions** organized into categories:
 
@@ -391,14 +415,14 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 
 **Notes:**
 
-- Only PROJECT_ADMIN, PROJECT_LEAD, and DEVELOPER roles can be assigned to tasks
+- Only PROJECT_ADMIN, and DEVELOPER roles can be assigned to tasks
 - Removing last PROJECT_ADMIN is prevented
 | PATCH | `/:projectId/members/:memberId` | Update member role | `ADMINISTER_PROJECT` | PROJECT_ADMIN |
 | DELETE | `/:projectId/members/:memberId` | Remove member | `ADMINISTER_PROJECT` | PROJECT_ADMIN |
 | GET | `/:projectId/assignable-users` | Get assignable users | `BROWSE_PROJECT` | All project members |
 
 **Notes:**
-- Only PROJECT_ADMIN, PROJECT_LEAD, and DEVELOPER roles can be assigned to tasks
+- Only PROJECT_ADMIN, and DEVELOPER roles can be assigned to tasks
 - Removing last PROJECT_ADMIN is prevented
 
 ---
@@ -408,15 +432,15 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 | Method | Endpoint | Description | Permissions | Roles |
 |--------|----------|-------------|-------------|-------|
 | POST | `/tasks/personal` | Create personal task | Authenticated | All |
-| POST | `/tasks` | Create project task | `CREATE_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER, REPORTER |
+| POST | `/tasks` | Create project task | `CREATE_ISSUES` | PROJECT_ADMIN, DEVELOPER |
 | GET | `/tasks` | List all tasks | Authenticated | All (filtered by role) |
 | GET | `/tasks/:id` | Get task by ID | `BROWSE_PROJECT` | All project members |
 | PUT | `/tasks/:id` | Update task | `EDIT_OWN_ISSUES` only | **Task creator only** |
-| DELETE | `/tasks/:id` | Delete task (with permission checks) | `DELETE_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD, Creator (personal), Global admins |
+| DELETE | `/tasks/:id` | Delete task (with permission checks) | `DELETE_ISSUES` | PROJECT_ADMIN, Creator (personal), Global admins |
 | PATCH | `/tasks/:id/status` | Change task status (legacy) | Authenticated | Task creator/assignee |
 | **POST** | **`/tasks/:id/transition`** | **Workflow-validated status change (comment optional)** | `TRANSITION_ISSUES` | Workflow-based |
 | **GET** | **`/tasks/:id/transitions`** | **Get available transitions** | Authenticated | Task creator/assignee |
-| POST | `/tasks/:id/assign` | Assign task to user | `ASSIGN_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
+| POST | `/tasks/:id/assign` | Assign task to user | `ASSIGN_ISSUES` | PROJECT_ADMIN |
 | POST | `/tasks/:id/approve` | Approve task | - | CEO, HOO, HR |
 | POST | `/tasks/:id/reject` | Reject task | - | CEO, HOO, HR, ADMIN |
 | **GET** | **`/tasks/board/:projectId`** | **Get Kanban board view** | Authenticated | All project members |
@@ -428,7 +452,7 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 - Status transitions follow project workflow type (BASIC, AGILE, BUG_TRACKING)
 - `/tasks/:id/transitions` returns only valid next statuses based on workflow + role
 - Approval/rejection requires management roles (CEO/HOO/HR/ADMIN)
-- **Task deletion permissions:** PROJECT_ADMIN/PROJECT_LEAD for project tasks, task creator for personal tasks, management (CEO/HOO/HR/ADMIN) for tasks in projects they're members of
+- **Task deletion permissions:** PROJECT_ADMIN/PROJECT_ADMIN for project tasks, task creator for personal tasks, management (CEO/HOO/HR/ADMIN) for tasks in projects they're members of
 - **Personal tasks use BASIC workflow by default**
 - **Kanban board groups tasks by status categories (TODO, IN_PROGRESS, REVIEW, DONE)**
 - **All tasks are auto-positioned for board ordering**
@@ -440,7 +464,7 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 - Comments support @mentions for user notifications
 - Activity logs are auto-generated for task changes
 |--------|----------|-------------|-------------|-------|
-| POST | `/:id/comments` | Add comment | `ADD_COMMENTS` | PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER, REPORTER |
+| POST | `/:id/comments` | Add comment | `ADD_COMMENTS` | PROJECT_ADMIN, DEVELOPER |
 | GET | `/:id/comments` | Get task comments | `BROWSE_PROJECT` | All project members |
 | DELETE | `/:taskId/comments/:commentId` | Delete comment | `DELETE_ALL_COMMENTS` or `DELETE_OWN_COMMENTS` | Varies by ownership |
 | GET | `/:id/logs` | Get activity logs | `BROWSE_PROJECT` | All project members |
@@ -456,7 +480,7 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 
 - Supports multipart/form-data file uploads
 - Files stored with metadata (filename, size, mime type, uploader)
-| POST | `/tasks/:taskId/attachments` | Upload attachment | `CREATE_ATTACHMENTS` | PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER, REPORTER |
+| POST | `/tasks/:taskId/attachments` | Upload attachment | `CREATE_ATTACHMENTS` | PROJECT_ADMIN, DEVELOPER |
 | GET | `/tasks/:taskId/attachments` | Get task attachments | `BROWSE_PROJECT` | All project members |
 | GET | `/tasks/:taskId/attachments/stats` | Get attachment stats | `BROWSE_PROJECT` | All project members |
 | GET | `/attachments/:id` | Get attachment by ID | `BROWSE_PROJECT` | All project members |
@@ -480,9 +504,9 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 - Sprint states: PLANNING → ACTIVE → COMPLETED/CANCELLED
 - Only one active sprint per project allowed
 - Burndown charts track story points over time
-| POST | `/sprints/:sprintId/cancel` | Cancel sprint | `MANAGE_SPRINTS` | PROJECT_ADMIN, PROJECT_LEAD |
-| POST | `/sprints/:sprintId/tasks` | Add tasks to sprint | `MANAGE_SPRINTS` | PROJECT_ADMIN, PROJECT_LEAD |
-| DELETE | `/sprints/tasks` | Remove tasks from sprint | `MANAGE_SPRINTS` | PROJECT_ADMIN, PROJECT_LEAD |
+| POST | `/sprints/:sprintId/cancel` | Cancel sprint | `MANAGE_SPRINTS` | PROJECT_ADMIN |
+| POST | `/sprints/:sprintId/tasks` | Add tasks to sprint | `MANAGE_SPRINTS` | PROJECT_ADMIN |
+| DELETE | `/sprints/tasks` | Remove tasks from sprint | `MANAGE_SPRINTS` | PROJECT_ADMIN |
 | GET | `/sprints/:sprintId/burndown` | Get burndown data | `VIEW_SPRINTS` | All project members |
 | GET | `/sprints/:sprintId/velocity` | Get sprint velocity | `VIEW_SPRINTS` | All project members |
 | GET | `/projects/:projectId/velocity` | Get team velocity | `VIEW_SPRINTS` | All project members |
@@ -499,11 +523,11 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 - Epics are large user stories spanning multiple sprints
 - Tasks can belong to one epic
 - Epic progress tracked by child task completion
-| POST | `/projects/:projectId/epics` | Create epic | `CREATE_TASKS` | PROJECT_ADMIN, PROJECT_LEAD |
+| POST | `/projects/:projectId/epics` | Create epic | `CREATE_TASKS` | PROJECT_ADMIN |
 | GET | `/projects/:projectId/epics` | Get project epics | `VIEW_TASKS` | All project members |
 | GET | `/epics/:epicId` | Get epic by ID | `VIEW_TASKS` | All project members |
-| PUT | `/epics/:epicId` | Update epic | `EDIT_TASKS` | PROJECT_ADMIN, PROJECT_LEAD |
-| DELETE | `/epics/:epicId` | Delete epic | `DELETE_TASKS` | PROJECT_ADMIN, PROJECT_LEAD |
+| PUT | `/epics/:epicId` | Update epic | `EDIT_TASKS` | PROJECT_ADMIN |
+| DELETE | `/epics/:epicId` | Delete epic | `DELETE_TASKS` | PROJECT_ADMIN |
 | POST | `/epics/:epicId/tasks/:taskId` | Add task to epic | Authenticated | Project members |
 | DELETE | `/tasks/:taskId/epic` | Remove task from epic | Authenticated | Project members |
 
@@ -512,7 +536,7 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 - Tasks can belong to one epic
 - Epic progress tracked by child task completion
 
-| POST | `/backlog/move-to-sprint` | Move tasks to sprint | `MANAGE_SPRINTS` | PROJECT_ADMIN, PROJECT_LEAD |
+| POST | `/backlog/move-to-sprint` | Move tasks to sprint | `MANAGE_SPRINTS` | PROJECT_ADMIN |
 
 **Notes:**
 
@@ -520,13 +544,13 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 - "Ready" tasks have estimates and meet DoR (Definition of Ready)
 |--------|----------|-------------|-------------|-------|
 | GET | `/projects/:projectId/backlog` | Get project backlog | `BROWSE_PROJECT` | All project members |
-| POST | `/backlog/prioritize` | Prioritize backlog items | `EDIT_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
-| POST | `/backlog/estimate` | Estimate story points | `EDIT_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
+| POST | `/backlog/prioritize` | Prioritize backlog items | `EDIT_ISSUES` | PROJECT_ADMIN |
+| POST | `/backlog/estimate` | Estimate story points | `EDIT_ISSUES` | PROJECT_ADMIN |
 | GET | `/backlog/ready` | Get ready-to-sprint tasks | `BROWSE_PROJECT` | All project members |
 | GET | `/backlog/stats` | Get backlog statistics | `BROWSE_PROJECT` | All project members |
-| POST | `/backlog/bulk-estimate` | Bulk estimate tasks | `EDIT_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
-| PATCH | `/backlog/priority` | Update task priority | `EDIT_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
-| POST | `/backlog/move-to-sprint` | Move tasks to sprint | `MANAGE_SPRINTS` | PROJECT_ADMIN, PROJECT_LEAD |
+| POST | `/backlog/bulk-estimate` | Bulk estimate tasks | `EDIT_ISSUES` | PROJECT_ADMIN |
+| PATCH | `/backlog/priority` | Update task priority | `EDIT_ISSUES` | PROJECT_ADMIN |
+| POST | `/backlog/move-to-sprint` | Move tasks to sprint | `MANAGE_SPRINTS` | PROJECT_ADMIN |
 | PUT | `/board/:boardId/config` | Update board config | `ADMINISTER_PROJECT` | PROJECT_ADMIN |
 
 **Notes:**
@@ -540,7 +564,7 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 | Method | Endpoint | Description | Permissions | Roles |
 |--------|----------|-------------|-------------|-------|
 | GET | `/projects/:projectId/board` | Get Kanban board | `BROWSE_PROJECT` | All project members |
-| POST | `/board/move` | Move card on board | `TRANSITION_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER |
+| POST | `/board/move` | Move card on board | `TRANSITION_ISSUES` | PROJECT_ADMIN, DEVELOPER |
 | GET | `/board/:boardId/config` | Get board configuration | `BROWSE_PROJECT` | All project members |
 | PUT | `/board/:boardId/config` | Update board config | `ADMINISTER_PROJECT` | PROJECT_ADMIN |
 
@@ -577,16 +601,16 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 
 - Timer tracks active work session
 - Time entries support descriptions and date overrides
-- Users can only edit/delete own time entries (unless PROJECT_ADMIN/PROJECT_LEAD)
+- Users can only edit/delete own time entries (unless PROJECT_ADMIN/PROJECT_ADMIN)
 | Method | Endpoint | Description | Permissions | Roles |
 |--------|----------|-------------|-------------|-------|
-| POST | `/tasks/:taskId/time` | Log time for task | `WORK_ON_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER |
+| POST | `/tasks/:taskId/time` | Log time for task | `WORK_ON_ISSUES` | PROJECT_ADMIN, DEVELOPER |
 | GET | `/tasks/:taskId/time` | Get task time entries | `BROWSE_PROJECT` | All project members |
 | GET | `/time-entries` | Get user time entries | Authenticated | Current user |
 | PUT | `/time-entries/:id` | Update time entry | `EDIT_OWN_WORKLOGS` or `EDIT_ALL_WORKLOGS` | Varies by ownership |
 | DELETE | `/time-entries/:id` | Delete time entry | `DELETE_OWN_WORKLOGS` or `DELETE_ALL_WORKLOGS` | Varies by ownership |
-| POST | `/time/start` | Start timer | `WORK_ON_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER |
-| POST | `/time/stop` | Stop timer | `WORK_ON_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD, DEVELOPER |
+| POST | `/time/start` | Start timer | `WORK_ON_ISSUES` | PROJECT_ADMIN, DEVELOPER |
+| POST | `/time/stop` | Stop timer | `WORK_ON_ISSUES` | PROJECT_ADMIN, DEVELOPER |
 | GET | `/time/active` | Get active timer | Authenticated | Current user |
 | GET | `/projects/:projectId/reports/burnup` | Burnup chart data | `BROWSE_PROJECT` | All project members |
 
@@ -685,7 +709,7 @@ The system includes **17 built-in automation rules** that execute automatically 
 
 **11. High-Priority Approval Required**
 - **Trigger:** HIGH priority task created
-- **Action:** Requires PROJECT_LEAD or PROJECT_ADMIN approval
+- **Action:** Requires PROJECT_ADMIN or PROJECT_ADMIN approval
 - **Business Logic:** Quality control for critical tasks
 
 **12. CEO Approval for Critical Tasks**
@@ -801,9 +825,9 @@ created >= 2025-01-01 ORDER BY priority DESC
 
 | Method | Endpoint | Description | Permissions | Roles |
 |--------|----------|-------------|-------------|-------|
-| POST | `/bulk/assign` | Bulk assign tasks | `ASSIGN_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
-| **POST** | **`/bulk/transition`** | **Bulk status change (workflow-validated)** | `TRANSITION_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
-| POST | `/bulk/update` | Bulk update fields | `EDIT_ISSUES` | PROJECT_ADMIN, PROJECT_LEAD |
+| POST | `/bulk/assign` | Bulk assign tasks | `ASSIGN_ISSUES` | PROJECT_ADMIN |
+| **POST** | **`/bulk/transition`** | **Bulk status change (workflow-validated)** | `TRANSITION_ISSUES` | PROJECT_ADMIN |
+| POST | `/bulk/update` | Bulk update fields | `EDIT_ISSUES` | PROJECT_ADMIN |
 | POST | `/bulk/delete` | Bulk delete tasks | `DELETE_ISSUES` | PROJECT_ADMIN |
 | POST | `/projects/:projectId/workflow` | Assign workflow to project | `ADMINISTER_PROJECT` | PROJECT_ADMIN |
 
@@ -852,8 +876,8 @@ created >= 2025-01-01 ORDER BY priority DESC
   "workflowType": "AGILE",
   "availableStatuses": ["DRAFT", "ASSIGNED", "IN_PROGRESS", "PAUSED", "REVIEW", "COMPLETED", "REJECTED"],
   "transitions": [
-    { "from": "DRAFT", "to": "ASSIGNED", "roles": ["PROJECT_ADMIN", "PROJECT_LEAD"] },
-    { "from": "ASSIGNED", "to": "IN_PROGRESS", "roles": ["PROJECT_ADMIN", "PROJECT_LEAD", "DEVELOPER"] }
+    { "from": "DRAFT", "to": "ASSIGNED", "roles": ["PROJECT_ADMIN", "PROJECT_ADMIN"] },
+    { "from": "ASSIGNED", "to": "IN_PROGRESS", "roles": ["PROJECT_ADMIN", "PROJECT_ADMIN", "DEVELOPER"] }
   ]
 }
 ```
@@ -977,7 +1001,7 @@ created >= 2025-01-01 ORDER BY priority DESC
 | GET | `/hr/users` | All users management | - | HR, CEO |
 | POST | `/hr/users` | Create user | - | HR, CEO |
 | PUT | `/hr/users/:id` | Update user | - | HR, CEO |
-| Permission | PROJECT_ADMIN | PROJECT_LEAD | DEVELOPER | REPORTER | VIEWER |
+| Permission | PROJECT_ADMIN | PROJECT_ADMIN | DEVELOPER | DEVELOPER | DEVELOPER |
 |-----------|---------------|--------------|-----------|----------|--------|
 | **Project Permissions** | | | | | |
 | ADMINISTER_PROJECT | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -1008,7 +1032,7 @@ created >= 2025-01-01 ORDER BY priority DESC
 | WORK_ON_ISSUES | ✅ | ✅ | ✅ | ❌ | ❌ |
 ### Default Permission Scheme
 
-| Permission | PROJECT_ADMIN | PROJECT_LEAD | DEVELOPER | REPORTER | VIEWER |
+| Permission | PROJECT_ADMIN | PROJECT_ADMIN | DEVELOPER | DEVELOPER | DEVELOPER |
 | DELETE_ALL_WORKLOGS | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Sprint & Epic** | | | | | |
 | MANAGE_SPRINTS | ✅ | ✅ | ❌ | ❌ | ❌ |
@@ -1075,10 +1099,10 @@ CEO (Level 5)
 
 ```
 PROJECT_ADMIN (Level 4)
-  └─ PROJECT_LEAD (Level 3)
+  └─ PROJECT_ADMIN (Level 3)
       └─ DEVELOPER (Level 2)
-          └─ REPORTER (Level 1)
-              └─ VIEWER (Level 0)
+          └─ DEVELOPER (Level 1)
+              └─ DEVELOPER (Level 0)
 ```
 
 **Rules:**

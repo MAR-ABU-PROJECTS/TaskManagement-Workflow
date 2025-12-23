@@ -198,16 +198,14 @@ export class WorkflowService {
 
     // Check role requirement
     if (transition.requiredRole && userProjectRole) {
-      const roleHierarchy: Record<ProjectRole, number> = {
-        [ProjectRole.VIEWER]: 0,
-        [ProjectRole.REPORTER]: 1,
-        [ProjectRole.DEVELOPER]: 2,
-        [ProjectRole.PROJECT_LEAD]: 3,
-        [ProjectRole.PROJECT_ADMIN]: 4,
+      const roleHierarchy: Record<string, number> = {
+        DEVELOPER: 1,
+        PROJECT_ADMIN: 2,
       };
 
       const userLevel = roleHierarchy[userProjectRole] || 0;
-      const requiredLevel = roleHierarchy[transition.requiredRole] || 0;
+      const requiredLevel =
+        roleHierarchy[transition.requiredRole as string] || 0;
 
       if (userLevel < requiredLevel) {
         return {
@@ -350,19 +348,19 @@ export class WorkflowService {
         name: "Approve",
         fromStatus: TaskStatus.REVIEW,
         toStatus: TaskStatus.COMPLETED,
-        requiredRole: ProjectRole.PROJECT_LEAD,
+        requiredRole: ProjectRole.PROJECT_ADMIN,
       },
       {
         name: "Reject",
         fromStatus: TaskStatus.REVIEW,
         toStatus: TaskStatus.REJECTED,
-        requiredRole: ProjectRole.PROJECT_LEAD,
+        requiredRole: ProjectRole.PROJECT_ADMIN,
       },
       {
         name: "Request Changes",
         fromStatus: TaskStatus.REVIEW,
         toStatus: TaskStatus.IN_PROGRESS,
-        requiredRole: ProjectRole.PROJECT_LEAD,
+        requiredRole: ProjectRole.PROJECT_ADMIN,
       },
       // REJECTED transitions
       {
@@ -376,7 +374,7 @@ export class WorkflowService {
         name: "Reopen Completed",
         fromStatus: TaskStatus.COMPLETED,
         toStatus: TaskStatus.IN_PROGRESS,
-        requiredRole: ProjectRole.PROJECT_LEAD,
+        requiredRole: ProjectRole.PROJECT_ADMIN,
       },
     ];
 

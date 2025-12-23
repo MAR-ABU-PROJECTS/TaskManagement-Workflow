@@ -481,7 +481,7 @@ router.patch("/:id", canEditIssue, (req, res) =>
  * /api/tasks/{id}:
  *   delete:
  *     summary: Delete task
- *     description: Permanently delete a task. Requires DELETE_ISSUES permission. Only PROJECT_ADMIN and PROJECT_LEAD can delete tasks.
+ *     description: Permanently delete a task. Requires DELETE_ISSUES permission. Only PROJECT_ADMIN can delete tasks.
  *     tags: [Tasks]
  *     security:
  *       - bearerAuth: []
@@ -664,7 +664,7 @@ router.post(
  *     summary: Approve task
  *     description: |
  *       Approve a task that requires approval. Transitions task to DONE status.
- *       Only PROJECT_LEAD, PROJECT_ADMIN, or authorized approvers can approve.
+ *       Only PROJECT_ADMIN or authorized approvers can approve.
  *     tags: [Tasks]
  *     security:
  *       - bearerAuth: []
@@ -704,7 +704,7 @@ router.post("/:id/approve", canApproveTask, (req, res) =>
  *     summary: Reject task
  *     description: |
  *       Reject a task that requires approval. Returns task to IN_PROGRESS for revisions.
- *       Requires PROJECT_LEAD, PROJECT_ADMIN, or authorized approver role.
+ *       Requires PROJECT_ADMIN or authorized approver role.
  *     tags: [Tasks]
  *     security:
  *       - bearerAuth: []
@@ -1687,8 +1687,8 @@ router.post("/:id/move", (req, res) => TaskController.moveTask(req, res));
  *                             example: Move task to review stage
  *                           requiredRole:
  *                             type: string
- *                             enum: [VIEWER, CONTRIBUTOR, PROJECT_LEAD, PROJECT_ADMIN]
- *                             example: PROJECT_LEAD
+ *                             enum: [DEVELOPER, PROJECT_ADMIN]
+ *                             example: DEVELOPER
  *                     workflowType:
  *                       type: string
  *                       enum: [BASIC, AGILE, BUG_TRACKING, CUSTOM]

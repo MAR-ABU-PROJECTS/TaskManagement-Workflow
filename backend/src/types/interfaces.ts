@@ -92,7 +92,7 @@ export interface CreateProjectDTO {
   description?: string;
   workflowType?: string; // BASIC, AGILE, BUG_TRACKING, or CUSTOM
   workflowSchemeId?: string; // Only used when workflowType = CUSTOM
-  members?: Array<{ userId: string; role: string }>; // Optional array of initial members
+  members?: Array<{ userId: string }>; // Optional array of initial members (auto-assigned as DEVELOPER)
 }
 
 export interface UpdateProjectDTO {
@@ -151,5 +151,6 @@ export interface ChangeStatusDTO {
 }
 
 export interface CreateCommentDTO {
-  message: string;
+  message?: string;
+  content?: string;
 }
