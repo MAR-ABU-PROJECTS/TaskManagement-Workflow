@@ -646,7 +646,7 @@ router.post(
  *               projectRole:
  *                 type: string
  *                 enum: [DEVELOPER]
- *                 description: New role (note: role changes disabled, members are always DEVELOPER)
+ *                 description: "New role (note: role changes disabled, members are always DEVELOPER)"
  *                 example: DEVELOPER
  *     responses:
  *       200:
