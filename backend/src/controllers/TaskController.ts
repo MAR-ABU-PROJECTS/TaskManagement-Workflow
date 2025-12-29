@@ -330,11 +330,9 @@ export class TaskController {
           : [];
 
       if (idsToUnassign.length === 0) {
-        return res
-          .status(400)
-          .json({
-            message: "At least one User ID is required (via path or body)",
-          });
+        return res.status(400).json({
+          message: "At least one User ID is required (via path or body)",
+        });
       }
 
       // Unassign each user
@@ -361,7 +359,7 @@ export class TaskController {
         return res.status(207).json({
           message: `${successful} of ${idsToUnassign.length} users unassigned`,
           successful,
-          failed: failed.map((f: any, idx) => ({
+          failed: failed.map((f: any) => ({
             userId: idsToUnassign[results.findIndex((r) => r === f)],
             reason: f.reason?.message || "Unknown error",
           })),
