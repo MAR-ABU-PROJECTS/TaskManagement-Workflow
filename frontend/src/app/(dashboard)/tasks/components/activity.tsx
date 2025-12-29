@@ -33,7 +33,7 @@ export type TaskActivityType = {
 	id: string;
 	taskId: string;
 	userId: string;
-	action: "COMMENT" | "CREATE" | "UPDATE" | "DELETE";
+	action: string;
 	previousStatus: string | null;
 	newStatus: string | null;
 	timestamp: string;
