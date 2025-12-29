@@ -555,7 +555,7 @@ router.get(
  *   post:
  *     summary: Add member to project
  *     description: |
- *       Add a user to the project team with a specific project role.
+ *       Add a user to the project team. All members are automatically assigned as DEVELOPER.
  *       Requires ADMINISTER_PROJECT permission.
  *
  *       **Project Roles:**
@@ -580,22 +580,17 @@ router.get(
  *             type: object
  *             required:
  *               - userId
- *               - projectRole
  *             properties:
  *               userId:
  *                 type: string
  *                 format: uuid
- *                 description: User ID to add
- *               projectRole:
- *                 type: string
- *                 enum: [DEVELOPER]
- *                 description: Role in this project (always DEVELOPER)
- *                 example: DEVELOPER
+ *                 description: User ID to add (will be automatically assigned as DEVELOPER)
+ *                 example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
  *     responses:
  *       201:
  *         description: Member added successfully
  *       400:
- *         description: userId and projectRole are required
+ *         description: Project ID and User ID are required
  *       403:
  *         description: Insufficient permissions
  *       404:
