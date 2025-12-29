@@ -32,7 +32,7 @@ export default function DashboardPage() {
 							<h2 className="text-2xl font-bold tracking-tight">
 								Welcome back, {user?.name ?? ""}
 							</h2>
-							<Button size="lg" variant={"default"} asChild>
+							<Button size="sm" variant={"default"} asChild>
 								<Link href="/projects/new">
 									<Plus className="mr-2 h-4 w-4" />
 									New Project
