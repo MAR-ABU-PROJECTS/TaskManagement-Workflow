@@ -304,7 +304,7 @@ export class TaskController {
   }
 
   /**
-   * DELETE /tasks/:id/assign/:userId - Unassign user from task
+   * DELETE /tasks/:id/assign/:userId - Unassign user(s) from task
    */
   async unassignTask(req: Request, res: Response): Promise<Response> {
     try {
@@ -315,32 +315,61 @@ export class TaskController {
       }
 
       const { id, userId } = req.params;
-      if (!id || !userId) {
+      const { userIds } = req.body; // Optional: bulk unassignment via body
+
+      if (!id) {
+        return res.status(400).json({ message: "Task ID is required" });
+      }
+
+      // Determine if single or bulk unassignment
+      const idsToUnassign =
+        userIds && Array.isArray(userIds) && userIds.length > 0
+          ? userIds
+          : userId
+          ? [userId]
+          : [];
+
+      if (idsToUnassign.length === 0) {
         return res
           .status(400)
-          .json({ message: "Task ID and User ID are required" });
+          .json({
+            message: "At least one User ID is required (via path or body)",
+          });
       }
 
-      const task = await TaskService.unassignTask(
-        id,
-        userId,
-        req.user.id,
-        req.user.role as UserRole
+      // Unassign each user
+      const results = await Promise.allSettled(
+        idsToUnassign.map((uid: string) =>
+          TaskService.unassignTask(
+            id,
+            uid,
+            req.user!.id,
+            req.user!.role as UserRole
+          )
+        )
       );
 
-      return res.status(200).json({
-        message: "User unassigned from task successfully",
-        data: task,
-      });
+      const successful = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected");
+
+      if (failed.length === 0) {
+        return res.status(200).json({
+          message: `${successful} user(s) unassigned from task successfully`,
+          unassigned: idsToUnassign,
+        });
+      } else {
+        return res.status(207).json({
+          message: `${successful} of ${idsToUnassign.length} users unassigned`,
+          successful,
+          failed: failed.map((f: any, idx) => ({
+            userId: idsToUnassign[results.findIndex((r) => r === f)],
+            reason: f.reason?.message || "Unknown error",
+          })),
+        });
+      }
     } catch (error: any) {
-      if (error.message.includes("Forbidden")) {
-        return res.status(403).json({ message: error.message });
-      }
-      if (error.message.includes("not found")) {
-        return res.status(404).json({ message: error.message });
-      }
       return res.status(500).json({
-        message: "Failed to unassign user from task",
+        message: "Failed to unassign user(s) from task",
         error: error.message,
       });
     }

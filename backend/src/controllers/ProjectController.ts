@@ -293,7 +293,7 @@ export class ProjectController {
   }
 
   /**
-   * DELETE /projects/:projectId/members/:userId - Remove project member
+   * DELETE /projects/:projectId/members/:userId - Remove project member(s)
    */
   async removeMember(req: Request, res: Response): Promise<Response> {
     try {
@@ -304,34 +304,61 @@ export class ProjectController {
       }
 
       const { projectId, userId } = req.params;
-      if (!projectId || !userId) {
+      const { userIds } = req.body; // Optional: bulk removal via body
+
+      if (!projectId) {
+        return res.status(400).json({ message: "Project ID is required" });
+      }
+
+      // Determine if single or bulk removal
+      const idsToRemove =
+        userIds && Array.isArray(userIds) && userIds.length > 0
+          ? userIds
+          : userId
+          ? [userId]
+          : [];
+
+      if (idsToRemove.length === 0) {
         return res
           .status(400)
-          .json({ message: "Project ID and User ID are required" });
+          .json({
+            message: "At least one User ID is required (via path or body)",
+          });
       }
 
-      await ProjectService.removeMember(
-        projectId,
-        userId,
-        req.user.id,
-        req.user.role as UserRole
+      // Remove each member
+      const results = await Promise.allSettled(
+        idsToRemove.map((id: string) =>
+          ProjectService.removeMember(
+            projectId,
+            id,
+            req.user!.id,
+            req.user!.role as UserRole
+          )
+        )
       );
 
-      return res.status(200).json({
-        message: "Member removed successfully",
-      });
+      const successful = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected");
+
+      if (failed.length === 0) {
+        return res.status(200).json({
+          message: `${successful} member(s) removed successfully`,
+          removed: idsToRemove,
+        });
+      } else {
+        return res.status(207).json({
+          message: `${successful} of ${idsToRemove.length} members removed`,
+          successful,
+          failed: failed.map((f: any) => ({
+            userId: idsToRemove[results.findIndex((r) => r === f)],
+            reason: f.reason?.message || "Unknown error",
+          })),
+        });
+      }
     } catch (error: any) {
-      if (
-        error.message.includes("Forbidden") ||
-        error.message.includes("Cannot remove")
-      ) {
-        return res.status(403).json({ message: error.message });
-      }
-      if (error.message.includes("not found")) {
-        return res.status(404).json({ message: error.message });
-      }
       return res.status(500).json({
-        message: "Failed to remove member",
+        message: "Failed to remove member(s)",
         error: error.message,
       });
     }

@@ -302,7 +302,7 @@ router.get("/", authenticate, (req, res) =>
  *     description: |
  *       Retrieve detailed information about a specific project.
  *       Requires BROWSE_PROJECT permission.
- *       Returns full project details including workflow configuration, members count, and statistics.
+ *       Returns full project details including workflow configuration, members, and task statistics.
  *     tags: [Projects]
  *     security:
  *       - bearerAuth: []
@@ -323,32 +323,90 @@ router.get("/", authenticate, (req, res) =>
  *             schema:
  *               type: object
  *               properties:
- *                 id:
+ *                 message:
  *                   type: string
- *                   format: uuid
- *                 name:
- *                   type: string
- *                 key:
- *                   type: string
- *                 description:
- *                   type: string
- *                   nullable: true
- *                 workflowType:
- *                   type: string
- *                   enum: [BASIC, AGILE, BUG_TRACKING, CUSTOM]
- *                 workflowSchemeId:
- *                   type: string
- *                   nullable: true
- *                 isArchived:
- *                   type: boolean
- *                 creatorId:
- *                   type: string
- *                 createdAt:
- *                   type: string
- *                   format: date-time
- *                 updatedAt:
- *                   type: string
- *                   format: date-time
+ *                   example: "Project retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     name:
+ *                       type: string
+ *                     key:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                       nullable: true
+ *                     workflowType:
+ *                       type: string
+ *                       enum: [BASIC, AGILE, BUG_TRACKING, CUSTOM]
+ *                     workflowSchemeId:
+ *                       type: string
+ *                       nullable: true
+ *                     isArchived:
+ *                       type: boolean
+ *                     creatorId:
+ *                       type: string
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *                     creator:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         name:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         role:
+ *                           type: string
+ *                     members:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                           userId:
+ *                             type: string
+ *                           projectId:
+ *                             type: string
+ *                           role:
+ *                             type: string
+ *                             enum: [PROJECT_ADMIN, DEVELOPER]
+ *                           addedAt:
+ *                             type: string
+ *                             format: date-time
+ *                           user:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                               name:
+ *                                 type: string
+ *                               email:
+ *                                 type: string
+ *                               role:
+ *                                 type: string
+ *                     tasks:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                           title:
+ *                             type: string
+ *                           status:
+ *                             type: string
+ *                           priority:
+ *                             type: string
  *       403:
  *         description: Insufficient permissions to view this project
  *       404:
@@ -674,10 +732,13 @@ router.patch(
  * @swagger
  * /api/projects/{id}/members/{userId}:
  *   delete:
- *     summary: Remove member from project team
+ *     summary: Remove one or more members from project team
  *     description: |
- *       Remove a user from the project team.
- *       The user will lose access to the project.
+ *       Remove user(s) from the project team. Supports single or bulk removal.
+ *       - **Single**: Provide userId in path parameter
+ *       - **Bulk**: Provide userIds array in request body (ignores path userId)
+ *
+ *       Removed users will lose access to the project.
  *       Requires ADMINISTER_PROJECT permission.
  *
  *       **Note**: Cannot remove the project creator.
@@ -694,14 +755,28 @@ router.patch(
  *         description: Project ID
  *       - in: path
  *         name: userId
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
  *           format: uuid
- *         description: User ID to remove
+ *         description: User ID to remove (for single removal, ignored if body has userIds)
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *                 description: Array of user IDs to remove (for bulk removal)
+ *                 example: ["user-id-1", "user-id-2", "user-id-3"]
  *     responses:
  *       200:
- *         description: Member removed successfully
+ *         description: All members removed successfully
  *         content:
  *           application/json:
  *             schema:
@@ -709,7 +784,33 @@ router.patch(
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "Member removed"
+ *                   example: "3 member(s) removed successfully"
+ *                 removed:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       207:
+ *         description: Partial success (some members removed, some failed)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 successful:
+ *                   type: integer
+ *                 failed:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       userId:
+ *                         type: string
+ *                       reason:
+ *                         type: string
+ *       400:
+ *         description: Missing required parameters
  *       403:
  *         description: Insufficient permissions or cannot remove project creator
  *       404:

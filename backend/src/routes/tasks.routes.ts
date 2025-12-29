@@ -559,9 +559,12 @@ router.post(
  * @swagger
  * /api/tasks/{id}/assign/{userId}:
  *   delete:
- *     summary: Unassign user from task
+ *     summary: Unassign one or more users from task
  *     description: |
- *       Remove a user from task assignees.
+ *       Remove user(s) from task assignees. Supports single or bulk unassignment.
+ *       - **Single**: Provide userId in path parameter
+ *       - **Bulk**: Provide userIds array in request body (ignores path userId)
+ *
  *       If all assignees are removed, task reverts to DRAFT status.
  *       Requires ASSIGN_ISSUES permission.
  *     tags: [Tasks]
@@ -577,14 +580,28 @@ router.post(
  *         description: Task ID
  *       - in: path
  *         name: userId
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
  *           format: uuid
- *         description: User ID to unassign
+ *         description: User ID to unassign (for single removal, ignored if body has userIds)
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *                 description: Array of user IDs to unassign (for bulk removal)
+ *                 example: ["user-id-1", "user-id-2", "user-id-3"]
  *     responses:
  *       200:
- *         description: User unassigned successfully
+ *         description: All users unassigned successfully
  *         content:
  *           application/json:
  *             schema:
@@ -592,7 +609,33 @@ router.post(
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "User unassigned from task"
+ *                   example: "3 user(s) unassigned from task successfully"
+ *                 unassigned:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       207:
+ *         description: Partial success (some users unassigned, some failed)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 successful:
+ *                   type: integer
+ *                 failed:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       userId:
+ *                         type: string
+ *                       reason:
+ *                         type: string
+ *       400:
+ *         description: Missing required parameters
  *       403:
  *         description: Insufficient permissions
  *       404:
