@@ -421,6 +421,18 @@ export class ProjectService {
             role: true,
           },
         },
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
         tasks: {
           select: {
             id: true,
