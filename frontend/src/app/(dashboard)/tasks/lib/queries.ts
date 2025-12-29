@@ -73,5 +73,17 @@ export const useGetComments = (
 		meta: {
 			disableGlobalSuccess: options?.disableGlobalSuccess,
 		},
+		staleTime: 0,
+	});
+};
+
+export const useGetActivities = (taskId: string) => {
+	return useQuery({
+		queryKey: taskKeys.activities(taskId),
+		queryFn: () => TaskService.getTaskActivities(taskId),
+		enabled: !!taskId,
+		meta: {
+			disableGlobalSuccess: false,
+		},
 	});
 };

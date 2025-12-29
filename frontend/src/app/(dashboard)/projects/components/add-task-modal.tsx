@@ -18,7 +18,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useGetUsers } from "../../user-management/lib/queries";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import ReactSelect from "react-select";
@@ -34,6 +33,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateTaskProject } from "../../tasks/lib/mutation";
 import { Spinner } from "@/components/ui/spinner";
+import { useGetProjectsMembers } from "../lib/queries";
 
 interface AddTaskModalProps {
 	isOpen: boolean;
@@ -46,7 +46,7 @@ export function AddTaskModal({
 	onClose,
 	projectId,
 }: AddTaskModalProps) {
-	const users = useGetUsers({ disableSuccess: true });
+	const members = useGetProjectsMembers(projectId);
 
 	const form = useForm<createTaskPSchemaType>({
 		resolver: zodResolver(createTaskSchema),
@@ -56,17 +56,21 @@ export function AddTaskModal({
 			description: "",
 			issueType: "",
 			priority: "",
+			assigneeIds: [""],
 		},
 	});
 
-	type AssigneeOption = {
+	type MembersOption = {
 		value: string;
 		label: string;
 	};
-	const options = users.data?.users.map((u) => ({
-		value: u.id,
-		label: u.name,
-	}));
+
+	const options: { value: string; label: string }[] = members.data?.map(
+		(u: { user: { name: string; id: string } }) => ({
+			value: u?.user?.id,
+			label: u?.user?.name,
+		})
+	);
 
 	const taskMutation = useCreateTaskProject();
 	const onSubmit = (data: createTaskPSchemaType) => {
@@ -181,7 +185,7 @@ export function AddTaskModal({
 									<FormLabel> Assignee *</FormLabel>
 									<FormControl>
 										<div className="w-full">
-											<ReactSelect<AssigneeOption, true>
+											<ReactSelect<MembersOption, true>
 												isMulti
 												options={options}
 												value={options?.filter((o) =>
@@ -238,7 +242,7 @@ export function AddTaskModal({
 							)}
 						/>
 
-						<div className="flex justify-end">
+						<div className="flex justify-end gap-4">
 							<Button
 								type="button"
 								variant="outline"

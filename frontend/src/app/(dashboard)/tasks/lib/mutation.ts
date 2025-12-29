@@ -87,7 +87,7 @@ export const useDeleteAttachment = () => {
 			taskId: string;
 			attachmentId: string;
 		}) => TaskService.deleteAttachment({ taskId, attachmentId }),
-		onSuccess: (data, variables) => {
+		onSuccess: (_data, variables) => {
 			qc.invalidateQueries({
 				queryKey: taskKeys.attachments(variables.taskId),
 			});
@@ -98,10 +98,32 @@ export const useDeleteAttachment = () => {
 export const useCommentMutation = () => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: TaskService.addComment,
-		onSuccess: (variables) => {
+		mutationFn: ({
+			taskId,
+			comment,
+		}: {
+			taskId: string;
+			comment: string;
+		}) => TaskService.addComment({ comment, taskId }),
+		onSuccess: (_data, variables) => {
 			qc.invalidateQueries({
 				queryKey: taskKeys.comments(variables.taskId),
+				exact: false,
+				refetchType: "active",
+			});
+		},
+	});
+};
+
+export const useDeleteCommentMutation = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: TaskService.deleteComment,
+		onSuccess: (_data, variables) => {
+			qc.invalidateQueries({
+				queryKey: taskKeys.comments(variables.taskId),
+				exact: false,
+				refetchType: "active",
 			});
 		},
 	});

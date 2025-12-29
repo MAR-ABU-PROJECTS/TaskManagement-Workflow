@@ -26,11 +26,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Spinner } from "./ui/spinner";
 import { useCreateProject } from "@/app/(dashboard)/projects/lib/mutations";
+import ReactSelect from "react-select";
+import { useGetUsers } from "@/app/(dashboard)/user-management/lib/queries";
 
 export type createProjectType = z.infer<typeof CreateProjectSchema>;
 
 export default function NewProjectPage() {
 	const { mutate, isPending } = useCreateProject();
+	const users = useGetUsers({ disableSuccess: true });
 
 	const form = useForm<createProjectType>({
 		resolver: zodResolver(CreateProjectSchema),
@@ -50,6 +53,14 @@ export default function NewProjectPage() {
 			},
 		});
 	};
+	type MembersOption = {
+		value: string;
+		label: string;
+	};
+	const options = users.data?.users.map((u) => ({
+		value: u.id,
+		label: u.name,
+	}));
 
 	return (
 		<div className="flex flex-1 flex-col w-full h-full">
@@ -128,6 +139,47 @@ export default function NewProjectPage() {
 
 									<FormField
 										control={form.control}
+										name="members"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>
+													{" "}
+													Members *
+												</FormLabel>
+												<FormControl>
+													<div className="w-full">
+														<ReactSelect<
+															MembersOption,
+															true
+														>
+															isMulti
+															options={options}
+															value={options?.filter(
+																(o) =>
+																	field.value?.includes(
+																		o.value
+																	)
+															)}
+															onChange={(
+																selected
+															) =>
+																field.onChange(
+																	selected.map(
+																		(s) =>
+																			s.value
+																	)
+																)
+															}
+														/>
+													</div>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+									
+									<FormField
+										control={form.control}
 										name="description"
 										render={({ field }) => (
 											<FormItem>
@@ -178,4 +230,5 @@ export const CreateProjectSchema = z.object({
 	description: z.string().min(1, "project description is required"),
 	workflowType: z.enum(["AGILE", "KANBAN", "SCRUM", "WATERFALL"]),
 	workflowSchemeId: z.string().optional(),
+	members: z.array(z.string()),
 });

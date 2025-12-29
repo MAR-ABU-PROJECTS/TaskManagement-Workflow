@@ -6,7 +6,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import React, { useEffect } from "react";
 import { useAddProjectMembers } from "../lib/mutations";
 import { useGetUsers } from "../../user-management/lib/queries";
 import { Spinner } from "@/components/ui/spinner";
@@ -41,7 +40,7 @@ const AddMemberModal = ({
 					<div className="space-y-3">
 						{users.data?.users.map((u, i) => (
 							<Button
-								key={u.id}
+								key={i}
 								variant={"outline"}
 								className=" justify-between w-full items-center"
 							>

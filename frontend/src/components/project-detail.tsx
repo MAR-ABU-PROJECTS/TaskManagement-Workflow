@@ -30,9 +30,18 @@ export default function ProjectBoardPage({ projectId }: { projectId: string }) {
 						</TabsList>
 						<TabsContent value="board">
 							<div className="mt-4">
+								<div className="flex justify-end mb-4">
+									<Button
+										size={"sm"}
+										onClick={() => setOpenModal("add")}
+									>
+										<Plus />
+										Add Task
+									</Button>
+								</div>
 								<QueryStateHandler
 									query={boardQuery}
-									emptyMessage="Board Not found"
+									emptyMessage="No Tasks."
 									getItems={(res) => res}
 									render={(res) => {
 										const data = res.data as KanbanBoard;
@@ -47,17 +56,6 @@ export default function ProjectBoardPage({ projectId }: { projectId: string }) {
 
 										return (
 											<div className="">
-												<div className="flex justify-end mb-4">
-													<Button
-														size={"sm"}
-														onClick={() =>
-															setOpenModal("add")
-														}
-													>
-														<Plus />
-														Add Task
-													</Button>
-												</div>
 												<Kanbanboard
 													projectId={projectId}
 													columns={columns}

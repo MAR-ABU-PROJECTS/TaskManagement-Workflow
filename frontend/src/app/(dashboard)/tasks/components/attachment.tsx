@@ -49,7 +49,7 @@ const TaskAttachment = ({
 				attachmentId: id,
 			});
 
-			downloadFile(res.data, originalName);
+			downloadFile(res, originalName);
 		} catch (error) {
 			console.error("Download failed", error);
 			toast.error("Download failed");
@@ -81,11 +81,11 @@ const TaskAttachment = ({
 				</Button>
 				<Button
 					size="icon"
-					className="px-0 py-0 hover:bg-white"
+					className="px-0 py-0 rounded-full"
 					variant="ghost"
 					onClick={() => setAlert(true)}
 				>
-					<Trash2 className="text-destructive size-4" />
+					<Trash2 className="text-destructive" />
 				</Button>
 			</div>
 

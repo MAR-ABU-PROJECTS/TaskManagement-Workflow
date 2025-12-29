@@ -3,8 +3,10 @@ import { createProjectType } from "@/components/new-project";
 import { apiService } from "@/lib/apiService";
 
 export const projectService = {
-	createProject: (data: createProjectType) =>
-		apiService.post("/projects", data),
+	createProject: (data: createProjectType) => {
+		const members = data.members.map((m) => ({ userId: m }));
+		return apiService.post("/projects", { ...data, members });
+	},
 	getProjects: () => apiService.get("/projects"),
 	getProjectById: (id: string) => apiService.get(`/projects/${id}`),
 

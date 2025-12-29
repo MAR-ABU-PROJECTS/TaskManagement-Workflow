@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
+import { differenceInHours, format, formatDistanceToNowStrict } from "date-fns";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -36,4 +37,17 @@ export const getInitials = (name: string) => {
 	const last = initials?.[1]?.[0];
 
 	return { first, last };
+};
+
+export const formatTimeStamp = (date: string) => {
+	const createdAt = new Date(date);
+	const hoursDiff = differenceInHours(new Date(), createdAt);
+
+	if (hoursDiff < 24) {
+		return formatDistanceToNowStrict(createdAt, {
+			addSuffix: true,
+		});
+	}
+
+	return format(createdAt, "MMM d, yyyy · h:mm a");
 };

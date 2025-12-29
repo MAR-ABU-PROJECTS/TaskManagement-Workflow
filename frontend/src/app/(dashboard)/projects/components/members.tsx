@@ -126,7 +126,7 @@ const Members = ({ projectId }: { projectId: string }) => {
 															asChild
 														>
 															<Link
-																href={`/user-management/${member.id}`}
+																href={`/user-management/${member.userId}`}
 															>
 																View Profile
 															</Link>

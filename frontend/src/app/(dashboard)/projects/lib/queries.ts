@@ -35,10 +35,11 @@ export const useGetProjectsMembers = (id: string) => {
 	return useQuery({
 		queryKey: projectKeys.projectMembers({ projectId: id }),
 		queryFn: () => projectService.getProjectMembers(id),
+		meta: {
+			disableGlobalSuccess: true,
+		},
 	});
 };
-
-
 
 export const useGetTaskAttachments = (id: string) => {
 	return useQuery({
@@ -46,4 +47,3 @@ export const useGetTaskAttachments = (id: string) => {
 		queryFn: () => projectService.getProjectMembers(id),
 	});
 };
-

@@ -27,7 +27,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { BoardTask } from "../lib/type";
 import Link from "next/link";
 import { DeleteTaskModal } from "./delete-task-modal";
-import { AssignTaskModal } from "./assign-task-modal";
 import { EditTaskModal } from "./edit-task-modal";
 import { ChangeStatusModal } from "./change-status-modal";
 import { getInitials } from "@/lib/utils";
@@ -40,7 +39,7 @@ const TaskCard = ({
 	projectId: string;
 }) => {
 	const [openModal, setOpenModal] = useState<
-		"edit" | "status" | "assign" | "delete" | "add" | null
+		"edit" | "status" | "delete" | "add" | null
 	>(null);
 
 	const name = task?.assignee?.name ?? "";
@@ -97,11 +96,6 @@ const TaskCard = ({
 								>
 									Change Status
 								</DropdownMenuItem>
-								<DropdownMenuItem
-									onClick={() => setOpenModal("assign")}
-								>
-									Assign
-								</DropdownMenuItem>
 
 								<DropdownMenuItem>
 									<button
@@ -156,13 +150,7 @@ const TaskCard = ({
 				id={task.id}
 			/>
 
-			<AssignTaskModal
-				isOpen={openModal === "assign"}
-				onClose={() => setOpenModal(null)}
-				task={task}
-				onAssign={() => {}}
-				projectId={projectId}
-			/>
+		
 
 			<EditTaskModal
 				projectId={projectId}
@@ -176,7 +164,6 @@ const TaskCard = ({
 				onClose={() => setOpenModal(null)}
 				task={task}
 				projectId={projectId}
-				// onStatusChange={handleStatusChange}
 			/>
 		</div>
 	);

@@ -10,7 +10,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import TaskComments from "@/app/(dashboard)/tasks/components/comments";
-import Activity from "@/app/(dashboard)/tasks/components/activity";
+import Activity from "@/app/(dashboard)/tasks/components/activities";
 import Attachments from "@/app/(dashboard)/tasks/components/attachments";
 import Subtasks from "@/app/(dashboard)/tasks/components/subtasks";
 import { useState } from "react";
@@ -29,16 +29,6 @@ export default function TaskDetailPage() {
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const router = useRouter();
 	const { taskId } = useParams();
-	console.log({ taskId });
-
-	// const t = useQuery({
-	// 	queryKey: ["kjejbg"],
-	// 	queryFn: async () => {
-	// 		const res = await apiService.get(`/tasks/${taskId}`);
-	//     return res
-	// 	},
-	// });
-	// console.log(t.data)
 
 	return (
 		<div className="flex flex-1 flex-col px-4 p-6">

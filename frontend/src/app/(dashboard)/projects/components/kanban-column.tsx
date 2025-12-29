@@ -1,6 +1,7 @@
 import React from "react";
 import TaskCard from "./tasks-card";
 import { KanbanColumnProps } from "../lib/type";
+import { Dot } from "lucide-react";
 
 const KanbanColumn = ({ id, title, tasks, projectId }: KanbanColumnProps) => {
 	return (
@@ -13,6 +14,7 @@ const KanbanColumn = ({ id, title, tasks, projectId }: KanbanColumnProps) => {
 						{tasks.length}
 					</span>
 				</div>
+				<Dot />
 			</div>
 
 			<div className="space-y-3.5 mt-2">

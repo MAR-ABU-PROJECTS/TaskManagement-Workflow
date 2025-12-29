@@ -54,6 +54,15 @@ export const TaskService = {
 
 	addComment: ({ comment, taskId }: { comment: string; taskId: string }) =>
 		apiService.post(`/tasks/${taskId}/comments`, { content: comment }),
+	deleteComment: ({
+		commentId,
+		taskId,
+	}: {
+		commentId: string;
+		taskId: string;
+	}) => apiService.delete(`/tasks/${taskId}/comments/${commentId}`),
+	getTaskActivities: (taskId: string) =>
+		apiService.get(`/tasks/${taskId}/activity`),
 
 	// getProjectById: (id: string) => apiService.get(`/projects/${id}`),
 	// updateProject: (id: string, data: editProjectType) =>

@@ -29,10 +29,11 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { useGetUsers } from "../../user-management/lib/queries";
 import { z } from "zod";
 import { createTaskPSchemaType } from "./add-task-modal";
 import { useEditTaskProject } from "../../tasks/lib/mutation";
+import { useGetProjectsMembers } from "../lib/queries";
+import ReactSelect from "react-select";
 
 interface EditTaskModalProps {
 	isOpen: boolean;
@@ -47,8 +48,7 @@ export function EditTaskModal({
 	task,
 	projectId,
 }: EditTaskModalProps) {
-	const users = useGetUsers({ disableSuccess: true });
-
+	const members = useGetProjectsMembers(projectId);
 	const form = useForm<createTaskPSchemaType>({
 		resolver: zodResolver(createTaskSchema),
 		defaultValues: {
@@ -57,13 +57,14 @@ export function EditTaskModal({
 			description: "",
 			issueType: "",
 			priority: "",
+			assigneeIds: [],
 		},
 	});
 
 	useEffect(() => {
 		form.reset({
 			title: task.title,
-			assignee: task.assignee?.id,
+			assigneeIds: [""],
 			description: task.description,
 			issueType: task.issueType,
 			priority: task.priority,
@@ -84,6 +85,18 @@ export function EditTaskModal({
 			);
 		}
 	};
+
+	type MembersOption = {
+		value: string;
+		label: string;
+	};
+
+	const options: { value: string; label: string }[] = members.data?.map(
+		(u: { user: { name: string; id: string } }) => ({
+			value: u?.user?.id,
+			label: u?.user?.name,
+		})
+	);
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
@@ -136,80 +149,70 @@ export function EditTaskModal({
 							)}
 						/>
 
-						<div className="grid gap-4 md:grid-cols-2">
-							<FormField
-								control={form.control}
-								name="priority"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel> Priority *</FormLabel>
-										<FormControl>
-											<div className="w-full">
-												<Select
-													value={field.value}
-													onValueChange={
-														field.onChange
-													}
-												>
-													<SelectTrigger className="border-slate-200 dark:border-slate-800">
-														<SelectValue placeholder="Select priority" />
-													</SelectTrigger>
-													<SelectContent>
-														<SelectItem value="LOW">
-															Low
-														</SelectItem>
-														<SelectItem value="MEDIUM">
-															Medium
-														</SelectItem>
-														<SelectItem value="HIGH">
-															High
-														</SelectItem>
-													</SelectContent>
-												</Select>
-											</div>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
+						<FormField
+							control={form.control}
+							name="priority"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel> Priority *</FormLabel>
+									<FormControl>
+										<div className="w-full">
+											<Select
+												value={field.value}
+												onValueChange={field.onChange}
+											>
+												<SelectTrigger className="border-slate-200 dark:border-slate-800">
+													<SelectValue placeholder="Select priority" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="LOW">
+														Low
+													</SelectItem>
+													<SelectItem value="MEDIUM">
+														Medium
+													</SelectItem>
+													<SelectItem value="HIGH">
+														High
+													</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
-							<FormField
-								control={form.control}
-								name="assignee"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel> Assignee *</FormLabel>
-										<FormControl>
-											<div className="w-full">
-												<Select
-													value={field.value}
-													onValueChange={
-														field.onChange
-													}
-												>
-													<SelectTrigger className="border-slate-200 dark:border-slate-800">
-														<SelectValue placeholder="Assign to" />
-													</SelectTrigger>
-													<SelectContent>
-														{users.data?.users.map(
-															(u, i) => (
-																<SelectItem
-																	key={i}
-																	value={u.id}
-																>
-																	{u.name}
-																</SelectItem>
-															)
-														)}
-													</SelectContent>
-												</Select>
-											</div>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-						</div>
+						<FormField
+							control={form.control}
+							name="assigneeIds"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel> Assignee *</FormLabel>
+									<FormControl>
+										<div className="w-full">
+											<ReactSelect<MembersOption, true>
+												isMulti
+												options={options}
+												value={options?.filter((o) =>
+													field.value?.includes(
+														o.value
+													)
+												)}
+												onChange={(selected) =>
+													field.onChange(
+														selected.map(
+															(s) => s.value
+														)
+													)
+												}
+											/>
+										</div>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
 						<FormField
 							control={form.control}
@@ -279,5 +282,5 @@ export const createTaskSchema = z.object({
 	description: z.string().min(1, "description is required"),
 	issueType: z.string().min(1, "issue type is required"),
 	priority: z.string().min(1, "priority is required"),
-	assignee: z.string().optional(),
+	assigneeIds: z.array(z.string()),
 });

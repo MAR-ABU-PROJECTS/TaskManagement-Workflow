@@ -29,10 +29,13 @@ import { useGetProjectsById } from "@/app/(dashboard)/projects/lib/queries";
 import { QueryStateHandler } from "./QueryStateHandler";
 import { useEffect } from "react";
 import { Spinner } from "./ui/spinner";
+import { useGetUsers } from "@/app/(dashboard)/user-management/lib/queries";
+import ReactSelect from "react-select";
 
 export type editProjectType = z.infer<typeof EditProjectSchema>;
 
 export default function EditProjectPage({ id }: { id: string }) {
+	const users = useGetUsers({ disableSuccess: true });
 	const query = useGetProjectsById(id);
 	const { mutate, isPending } = useUpdateProject();
 
@@ -54,10 +57,20 @@ export default function EditProjectPage({ id }: { id: string }) {
 			});
 		}
 	}, [query.data, form]);
+	console.log(query.data?.data)
 
 	const onSubmit = (data: editProjectType) => {
 		mutate({ id, project: data });
 	};
+
+	type MembersOption = {
+		value: string;
+		label: string;
+	};
+	const options = users.data?.users.map((u) => ({
+		value: u.id,
+		label: u.name,
+	}));
 
 	return (
 		<div className="flex flex-1 flex-col w-full h-full">
@@ -145,6 +158,53 @@ export default function EditProjectPage({ id }: { id: string }) {
 															</FormItem>
 														)}
 													/>
+
+													{/* <FormField
+														control={form.control}
+														name="members"
+														render={({ field }) => (
+															<FormItem>
+																<FormLabel>
+																	{" "}
+																	Members *
+																</FormLabel>
+																<FormControl>
+																	<div className="w-full">
+																		<ReactSelect<
+																			MembersOption,
+																			true
+																		>
+																			isMulti
+																			options={
+																				options
+																			}
+																			value={options?.filter(
+																				(
+																					o
+																				) =>
+																					field.value?.includes(
+																						o.value
+																					)
+																			)}
+																			onChange={(
+																				selected
+																			) =>
+																				field.onChange(
+																					selected.map(
+																						(
+																							s
+																						) =>
+																							s.value
+																					)
+																				)
+																			}
+																		/>
+																	</div>
+																</FormControl>
+																<FormMessage />
+															</FormItem>
+														)}
+													/> */}
 
 													<FormField
 														control={form.control}
