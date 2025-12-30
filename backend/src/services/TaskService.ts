@@ -506,7 +506,75 @@ export class TaskService {
     // Check if user is assignee for auto-transition logic
     const isAssignee = task.assignees.some((a) => a.userId === userId);
 
-    const updated = await prisma.task.update({
+    // Handle assignee updates if provided
+    if (data.assigneeIds !== undefined) {
+      // Validate all assignees exist
+      const assignees = await prisma.user.findMany({
+        where: { id: { in: data.assigneeIds } },
+      });
+
+      if (assignees.length !== data.assigneeIds.length) {
+        throw new Error("One or more assignees not found");
+      }
+
+      // Validate assignees are not SUPER_ADMIN (audit-only role)
+      const invalidAssignees = assignees.filter(
+        (u) => u.role === UserRole.SUPER_ADMIN
+      );
+      if (invalidAssignees.length > 0) {
+        throw new Error(
+          "Cannot assign tasks to audit-only users (SUPER_ADMIN)"
+        );
+      }
+
+      // Validate assignees are project members if task belongs to a project
+      if (task.projectId) {
+        const members = await prisma.projectMember.findMany({
+          where: {
+            projectId: task.projectId,
+            userId: { in: data.assigneeIds },
+          },
+        });
+
+        if (members.length !== data.assigneeIds.length) {
+          throw new Error("All assignees must be project members");
+        }
+      }
+
+      // Delete existing assignees
+      await prisma.taskAssignee.deleteMany({
+        where: { taskId: id },
+      });
+
+      // Add new assignees
+      if (data.assigneeIds.length > 0) {
+        await prisma.taskAssignee.createMany({
+          data: data.assigneeIds.map((assigneeId) => ({
+            taskId: id,
+            userId: assigneeId,
+            assignedBy: userId,
+          })),
+        });
+
+        // Log assignment activity
+        await ActivityLogService.logActivity({
+          taskId: id,
+          userId,
+          action: ActivityAction.ASSIGN,
+          metadata: {
+            assigneeIds: data.assigneeIds,
+            assigneeNames: assignees.map((a) => a.name),
+          },
+        });
+
+        // Notify new assignees
+        for (const assignee of assignees) {
+          await NotificationService.notifyTaskAssigned(id, assignee.id, userId);
+        }
+      }
+    }
+
+    await prisma.task.update({
       where: { id },
       data: {
         title: data.title,
@@ -545,7 +613,35 @@ export class TaskService {
       metadata: { updates: data },
     });
 
-    return updated as Task;
+    // Refetch task with all relations to include updated assignees
+    const taskWithRelations = await prisma.task.findUnique({
+      where: { id },
+      include: {
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        project: true,
+      },
+    });
+
+    return taskWithRelations as Task;
   }
 
   /**
@@ -615,7 +711,7 @@ export class TaskService {
       );
     }
 
-    const updated = await prisma.task.update({
+    await prisma.task.update({
       where: { id },
       data: { status: newStatus },
     });
@@ -667,7 +763,35 @@ export class TaskService {
       newStatus
     );
 
-    return updated as Task;
+    // Fetch and return updated task with relations
+    const updatedTask = await prisma.task.findUnique({
+      where: { id },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+        project: true,
+      },
+    });
+
+    return updatedTask as Task;
   }
 
   /**
