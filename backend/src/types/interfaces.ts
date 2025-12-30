@@ -132,6 +132,7 @@ export interface UpdateTaskDTO {
   issueType?: IssueType;
   labels?: string[];
   dueDate?: Date;
+  assigneeIds?: string[]; // Array of user IDs to assign to the task
 }
 
 export interface AssignTaskDTO {
