@@ -70,7 +70,7 @@ export function ChangeStatusModal({
 					))}
 				</div>
 
-				<div className="flex justify-end mt-4">
+				<div className="flex justify-end mt-4 gap-4">
 					<Button
 						type="button"
 						variant="outline"

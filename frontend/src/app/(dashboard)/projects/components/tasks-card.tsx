@@ -13,13 +13,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-	ExternalLink,
-	GripVertical,
-	MessageSquare,
-	MoreVertical,
-	Paperclip,
-} from "lucide-react";
+import { ExternalLink, GripVertical, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getPriorityColor } from "../lib/utils";
@@ -30,6 +24,8 @@ import { DeleteTaskModal } from "./delete-task-modal";
 import { EditTaskModal } from "./edit-task-modal";
 import { ChangeStatusModal } from "./change-status-modal";
 import { getInitials } from "@/lib/utils";
+import { useSession } from "@/app/providers/session-provider";
+import { Role } from "@/lib/rolespermissions";
 
 const TaskCard = ({
 	task,
@@ -42,8 +38,18 @@ const TaskCard = ({
 		"edit" | "status" | "delete" | "add" | null
 	>(null);
 
-	const name = task?.assignee?.name ?? "";
-	const { first, last } = getInitials(name);
+	const { user } = useSession();
+	const isAuthor =
+		task.creatorId === user?.id ||
+		user?.role === Role.SUPER_ADMIN ||
+		user?.role === Role.CEO;
+
+	const taskMembers = task.assignees?.map((m) => ({
+		name: m.user.name,
+		id: m.user.id,
+	}));
+	const isMember =
+		(taskMembers?.some((t) => t.id === user?.id));
 
 	return (
 		<div>
@@ -56,16 +62,18 @@ const TaskCard = ({
 						<div className="flex items-start gap-2">
 							<GripVertical className="mt-0.5 h-4 w-4 text-muted-foreground" />
 							<div className="flex-1">
-								<CardTitle className="text-sm font-medium leading-tight ">
-									<Link
-										href={`/projects/${projectId}/task/${task.id}`}
-										className="inline-flex items-center gap-3"
-									>
-										{task.title}{" "}
-										<span>
+								<CardTitle className="text-sm font-medium leading-tight">
+									{isMember ? (
+										<Link
+											href={`/projects/${projectId}/task/${task.id}`}
+											className="inline-flex items-center gap-3"
+										>
+											{task.title}
 											<ExternalLink className="size-4" />
-										</span>
-									</Link>
+										</Link>
+									) : (
+										<span>{task.title}</span>
+									)}
 								</CardTitle>
 								{task.description && (
 									<CardDescription className="mt-1 text-xs line-clamp-3 text-wrap break-all">
@@ -85,25 +93,33 @@ const TaskCard = ({
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end">
-								<DropdownMenuItem
-									onClick={() => setOpenModal("edit")}
-								>
-									Edit Task
-								</DropdownMenuItem>
+								{isAuthor && (
+									<DropdownMenuItem
+										onClick={() => setOpenModal("edit")}
+									>
+										Edit Task
+									</DropdownMenuItem>
+								)}
 
-								<DropdownMenuItem
-									onClick={() => setOpenModal("status")}
-								>
-									Change Status
-								</DropdownMenuItem>
+								{isMember && (
+									<DropdownMenuItem
+										onClick={() => setOpenModal("status")}
+									>
+										Change Status
+									</DropdownMenuItem>
+								)}
 
 								<DropdownMenuItem>
-									<button
-										onClick={() => setOpenModal("delete")}
-										className="w-full text-left h-full outline-none focus:outline-none"
-									>
-										Delete
-									</button>
+									{isAuthor && (
+										<button
+											onClick={() =>
+												setOpenModal("delete")
+											}
+											className="w-full text-left h-full outline-none focus:outline-none"
+										>
+											Delete
+										</button>
+									)}
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
@@ -118,27 +134,24 @@ const TaskCard = ({
 							>
 								{task.priority.toLowerCase()}
 							</Badge>
-							{task.assignee && (
-								<Avatar className="h-5 w-5 flex justify-center items-center">
-									<AvatarFallback className="text-[14px] uppercase">
-										{first} {last}
-									</AvatarFallback>
-								</Avatar>
+
+							{taskMembers && taskMembers.length > 0 && (
+								<div className="flex -space-x-2">
+									{taskMembers.slice(0, 3).map((member) => (
+										<MembersInitials
+											key={member.id}
+											name={member.name}
+										/>
+									))}
+
+									{taskMembers.length > 3 && (
+										<div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-card bg-muted text-xs font-medium">
+											+{taskMembers.length - 3}
+										</div>
+									)}
+								</div>
 							)}
 						</div>
-						<Link href={`/tasks/${task.id}`}>
-							<div className="flex items-center gap-2 text-xs text-muted-foreground">
-								<div className="flex items-center gap-1">
-									<MessageSquare className="h-3 w-3" />
-									{/* <span>{comment}</span> */}
-								</div>
-
-								<div className="flex items-center gap-1">
-									<Paperclip className="h-3 w-3" />
-									{/* <span>{task.}</span> */}
-								</div>
-							</div>
-						</Link>
 					</div>
 				</CardContent>
 			</Card>
@@ -149,8 +162,6 @@ const TaskCard = ({
 				title={task.title}
 				id={task.id}
 			/>
-
-		
 
 			<EditTaskModal
 				projectId={projectId}
@@ -170,3 +181,17 @@ const TaskCard = ({
 };
 
 export default TaskCard;
+
+const MembersInitials = ({ name }: { name: string }) => {
+	const { first, last } = getInitials(name);
+	return (
+		<div>
+			<Avatar className="h-8 w-8 border-2 border-card">
+				<AvatarFallback className="text-xs uppercase">
+					{first}
+					{last}
+				</AvatarFallback>
+			</Avatar>
+		</div>
+	);
+};

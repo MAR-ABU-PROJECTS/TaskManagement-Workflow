@@ -100,12 +100,7 @@ export type BoardTask = {
 		role: string;
 	};
 
-	assignee: {
-		id: string;
-		name: string;
-		email: string;
-		role: string;
-	} | null;
+	assignees: { user: { name: string; id: string } }[] | null;
 
 	_count: {
 		comments: number;

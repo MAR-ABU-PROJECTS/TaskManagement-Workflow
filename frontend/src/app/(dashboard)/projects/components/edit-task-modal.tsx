@@ -49,6 +49,8 @@ export function EditTaskModal({
 	projectId,
 }: EditTaskModalProps) {
 	const members = useGetProjectsMembers(projectId);
+	console.log(task);
+
 	const form = useForm<createTaskPSchemaType>({
 		resolver: zodResolver(createTaskSchema),
 		defaultValues: {
@@ -57,20 +59,9 @@ export function EditTaskModal({
 			description: "",
 			issueType: "",
 			priority: "",
-			assigneeIds: [],
+			assigneeIds: [""],
 		},
 	});
-
-	useEffect(() => {
-		form.reset({
-			title: task.title,
-			assigneeIds: [""],
-			description: task.description,
-			issueType: task.issueType,
-			priority: task.priority,
-			projectId: projectId,
-		});
-	}, [task, form, projectId]);
 
 	const taskMutation = useEditTaskProject(projectId);
 	const onSubmit = (data: createTaskPSchemaType) => {
@@ -91,12 +82,56 @@ export function EditTaskModal({
 		label: string;
 	};
 
-	const options: { value: string; label: string }[] = members.data?.map(
-		(u: { user: { name: string; id: string } }) => ({
-			value: u?.user?.id,
-			label: u?.user?.name,
-		})
-	);
+	const taskMembers: Member[] =
+		task.assignees?.map((m) => ({
+			id: m.user.id,
+			name: m.user.name,
+		})) ?? [];
+
+	const options: Option[] =
+		members.data?.map((u: { user: { id: string; name: string } }) => ({
+			value: u.user.id,
+			label: u.user.name,
+		})) ?? [];
+
+	type Member = {
+		id: string;
+		name: string;
+	};
+
+	type Option = {
+		value: string;
+		label: string;
+	};
+
+	const mergeToOptions = (a: Option[] = [], b: Member[] = []): Option[] => {
+		return Array.from(
+			new Map(
+				[
+					...a,
+					...b.map((m) => ({
+						value: m.id,
+						label: m.name,
+					})),
+				].map((o) => [o.value, o])
+			).values()
+		);
+	};
+
+	const mergedOptions = mergeToOptions(options, taskMembers);
+
+
+	useEffect(() => {
+		const assignedMembers = taskMembers.map((m) => m.id);
+		form.reset({
+			title: task.title,
+			assigneeIds: [...assignedMembers],
+			description: task.description,
+			issueType: task.issueType,
+			priority: task.priority,
+			projectId: projectId,
+		});
+	}, [task, form, projectId]);
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
@@ -193,7 +228,7 @@ export function EditTaskModal({
 										<div className="w-full">
 											<ReactSelect<MembersOption, true>
 												isMulti
-												options={options}
+												options={mergedOptions}
 												value={options?.filter((o) =>
 													field.value?.includes(
 														o.value
@@ -248,7 +283,7 @@ export function EditTaskModal({
 							)}
 						/>
 
-						<div className="flex justify-end">
+						<div className="flex justify-end gap-4">
 							<Button
 								type="button"
 								variant="outline"
