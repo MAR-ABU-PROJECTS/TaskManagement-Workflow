@@ -54,6 +54,19 @@ export const useEditTaskProject = (projectId: string) => {
 	});
 };
 
+
+export const useDeleteTaskProject = (projectId: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: TaskService.deleteTaskProject,
+		onSuccess: () => {
+			qc.invalidateQueries({
+				queryKey: taskKeys.projectTasks(projectId),
+			});
+		},
+	});
+};
+
 export const useTransitionTask = (projectId: string) => {
 	const qc = useQueryClient();
 	return useMutation({

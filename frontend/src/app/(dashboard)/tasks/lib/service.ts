@@ -39,6 +39,7 @@ export const TaskService = {
 		taskId: string;
 		attachmentId: string;
 	}) => apiService.delete(`/tasks/${taskId}/attachments/${attachmentId}`),
+	deleteTaskProject: (taskId: string) => apiService.delete(`/tasks/${taskId}`),
 	downloadAttachment: ({
 		taskId,
 		attachmentId,

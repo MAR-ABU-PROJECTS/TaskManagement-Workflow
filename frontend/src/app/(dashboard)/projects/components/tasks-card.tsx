@@ -160,6 +160,7 @@ const TaskCard = ({
 				onClose={() => setOpenModal(null)}
 				title={task.title}
 				id={task.id}
+				projectId={projectId}
 			/>
 
 			<EditTaskModal

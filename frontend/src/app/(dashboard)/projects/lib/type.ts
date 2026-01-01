@@ -22,6 +22,7 @@ export interface ProjectType {
 	workflowSchemeId: string | null;
 	createdAt: string;
 	updatedAt: string;
+	members: { userId: string }[];
 }
 export interface Task {
 	id: number;

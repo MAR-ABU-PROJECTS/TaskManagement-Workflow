@@ -41,6 +41,7 @@ export default function NewProjectPage() {
 			description: "",
 			key: "",
 			name: "",
+			members: [""],
 			workflowType: "AGILE",
 			workflowSchemeId: "",
 		},
@@ -177,7 +178,7 @@ export default function NewProjectPage() {
 											</FormItem>
 										)}
 									/>
-									
+
 									<FormField
 										control={form.control}
 										name="description"

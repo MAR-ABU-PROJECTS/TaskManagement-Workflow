@@ -1,5 +1,4 @@
 "use client";
-
 import type React from "react";
 import {
 	Card,
@@ -45,19 +44,21 @@ export default function EditProjectPage({ id }: { id: string }) {
 			description: "",
 			key: "",
 			name: "",
+			members: [""],
 		},
 	});
 
 	useEffect(() => {
+		const assignedMembers = query.data?.data?.members?.map((m) => m.userId);
 		if (query.data?.data) {
 			form.reset({
 				description: query.data.data.description,
 				key: query.data.data.key,
 				name: query.data.data.name,
+				members: [...(assignedMembers as string[])],
 			});
 		}
 	}, [query.data, form]);
-	console.log(query.data?.data)
 
 	const onSubmit = (data: editProjectType) => {
 		mutate({ id, project: data });
@@ -74,9 +75,6 @@ export default function EditProjectPage({ id }: { id: string }) {
 
 	return (
 		<div className="flex flex-1 flex-col w-full h-full">
-			{/* Header */}
-
-			{/* Main Content */}
 			<main className="flex-1 overflow-auto px-4 p-6">
 				<div className="mx-auto">
 					<div className="flex items-center gap-2 mb-4">
@@ -159,7 +157,7 @@ export default function EditProjectPage({ id }: { id: string }) {
 														)}
 													/>
 
-													{/* <FormField
+													<FormField
 														control={form.control}
 														name="members"
 														render={({ field }) => (
@@ -204,7 +202,7 @@ export default function EditProjectPage({ id }: { id: string }) {
 																<FormMessage />
 															</FormItem>
 														)}
-													/> */}
+													/>
 
 													<FormField
 														control={form.control}
@@ -260,4 +258,5 @@ export const EditProjectSchema = z.object({
 	name: z.string().min(1, "project name is required"),
 	key: z.string().min(1, "project key is required"),
 	description: z.string().min(1, "project description is required"),
+	members: z.array(z.string()),
 });

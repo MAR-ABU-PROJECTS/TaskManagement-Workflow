@@ -1,21 +1,21 @@
 "use client";
 import {
 	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { BoardTask } from "../lib/type";
+import { useDeleteTaskProject } from "../../tasks/lib/mutation";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 interface DeleteTaskModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	title: string;
 	id: string;
-	// onConfirm: (taskId: number) => void;
+	projectId: string;
 }
 
 export function DeleteTaskModal({
@@ -23,8 +23,9 @@ export function DeleteTaskModal({
 	onClose,
 	title,
 	id,
-	// onConfirm,
+	projectId,
 }: DeleteTaskModalProps) {
+	const mutation = useDeleteTaskProject(projectId);
 	return (
 		<AlertDialog open={isOpen} onOpenChange={onClose}>
 			<AlertDialogContent>
@@ -35,17 +36,31 @@ export function DeleteTaskModal({
 						&quot;? This saction cannot be undone.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
-				<div className="flex gap-2 justify-end">
-					<AlertDialogCancel>Cancel</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={() => {
-							// onConfirm(id);
-							onClose();
-						}}
-						className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+				<div className="flex justify-end gap-4">
+					<Button
+						type="button"
+						variant="outline"
+						onClick={onClose}
+						disabled={mutation.isPending}
+						className="border-slate-200 dark:border-slate-800 bg-transparent"
 					>
+						Cancel
+					</Button>
+					<Button
+						type="submit"
+						disabled={mutation.isPending}
+						className="bg-primary hover:bg-primary/90 text-white"
+						onClick={() =>
+							mutation.mutate(id, {
+								onSuccess() {
+									onClose();
+								},
+							})
+						}
+					>
+						{mutation.isPending && <Spinner className="mr-1.5" />}
 						Delete
-					</AlertDialogAction>
+					</Button>
 				</div>
 			</AlertDialogContent>
 		</AlertDialog>
