@@ -39,19 +39,6 @@ export const useUpdateProject = () => {
 	});
 };
 
-export const useDeleteProjectMember = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: projectService.removeProjectMember,
-		onSuccess: (_data, variables) => {
-			qc.invalidateQueries({
-				queryKey: projectKeys.projectMembers({
-					projectId: variables.projectId,
-				}),
-			});
-		},
-	});
-};
 
 export const useRemoveProjectMembers = () => {
 	const qc = useQueryClient();
