@@ -49,7 +49,6 @@ export function EditTaskModal({
 	projectId,
 }: EditTaskModalProps) {
 	const members = useGetProjectsMembers(projectId);
-	console.log(task);
 
 	const form = useForm<createTaskPSchemaType>({
 		resolver: zodResolver(createTaskSchema),

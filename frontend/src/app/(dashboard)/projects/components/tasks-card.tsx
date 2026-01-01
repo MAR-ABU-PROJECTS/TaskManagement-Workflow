@@ -48,8 +48,7 @@ const TaskCard = ({
 		name: m.user.name,
 		id: m.user.id,
 	}));
-	const isMember =
-		(taskMembers?.some((t) => t.id === user?.id));
+	const isMember = taskMembers?.some((t) => t.id === user?.id);
 
 	return (
 		<div>

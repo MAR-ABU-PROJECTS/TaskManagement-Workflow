@@ -15,7 +15,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Minus, MoreVerticalIcon, Plus } from "lucide-react";
+import { Minus, MoreVerticalIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import AddMemberModal from "./add-member-modal";
@@ -49,13 +49,13 @@ const Members = ({ projectId }: { projectId: string }) => {
 						<p>Manage Project members</p>
 
 						<div className="flex justify-between items-center gap-4 flex-wrap">
-							<Button
+							{/* <Button
 								size={"sm"}
 								onClick={() => setOpenModal("add member")}
 							>
 								<Plus className="mr-1.5" />
 								Add Members to Project
-							</Button>
+							</Button> */}
 
 							{selectedusers.length > 0 && (
 								<Button
@@ -152,7 +152,6 @@ const Members = ({ projectId }: { projectId: string }) => {
 				}}
 				projectId={projectId}
 				selectedUsers={selectedusers}
-				// resetSelectedUsers={resetSelectedUsers}
 			/>
 
 			<RemoveMembers
@@ -163,7 +162,6 @@ const Members = ({ projectId }: { projectId: string }) => {
 				}}
 				projectId={projectId}
 				selectedUsers={selectedusers}
-				// resetSelectedUsers={resetSelectedUsers}
 			/>
 		</div>
 	);

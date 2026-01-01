@@ -2,6 +2,9 @@ import { editProjectType } from "@/components/EditProjects";
 import { createProjectType } from "@/components/new-project";
 import { apiService } from "@/lib/apiService";
 
+type RemoveMembersPayload =
+	| { projectId: string; userId: string }
+	| { projectId: string; userIds: string[] };
 export const projectService = {
 	createProject: (data: createProjectType) => {
 		const members = data.members.map((m) => ({ userId: m }));
@@ -16,7 +19,11 @@ export const projectService = {
 
 	getProjectMembers: (id: string) =>
 		apiService.get(`/projects/${id}/members`),
-	deleteProjectMember: ({
+
+	addProjectMembers: (projectId: string, members: string[]) =>
+		apiService.post(`/projects/${projectId}/members`, { ...members }),
+
+	removeProjectMember: ({
 		projectId,
 		userId,
 	}: {
@@ -24,6 +31,29 @@ export const projectService = {
 		userId: string;
 	}) => apiService.delete(`/projects/${projectId}/members/${userId}`),
 
-	addProjectMembers: (projectId: string, members: string[]) =>
-		apiService.post(`/projects/${projectId}/members`, { ...members }),
+	removeProjectMembers({
+		projectId,
+		userIds,
+	}: {
+		projectId: string;
+		userIds: string[];
+	}) {
+		return apiService.delete(`/projects/${projectId}/members/_`, {
+			data: { userIds },
+		});
+	},
+
+	removeMembers(payload: RemoveMembersPayload) {
+		const { projectId } = payload;
+
+		if ("userId" in payload) {
+			return apiService.delete(
+				`/projects/${projectId}/members/${payload.userId}`
+			);
+		}
+
+		return apiService.delete(`/projects/${projectId}/members/_`, {
+			data: { userIds: payload.userIds },
+		});
+	},
 };

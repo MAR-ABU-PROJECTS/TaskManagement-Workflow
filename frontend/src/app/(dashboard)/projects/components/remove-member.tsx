@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import React from "react";
+import { useRemoveProjectMembers } from "../lib/mutations";
+import { Spinner } from "@/components/ui/spinner";
 
 interface RemoveMemberModalProps {
 	isOpen: boolean;
@@ -19,7 +21,40 @@ const RemoveMembers = ({
 	isOpen,
 	onClose,
 	selectedUsers,
+	projectId,
 }: RemoveMemberModalProps) => {
+	const { mutate: removeMembers, isPending } = useRemoveProjectMembers();
+
+	const handleRemove = () => {
+		if (selectedUsers.length > 1) {
+			removeMembers(
+				{
+					projectId,
+					userIds: selectedUsers,
+				},
+				{
+					onSuccess() {
+						onClose();
+					},
+				}
+			);
+			return;
+		}
+
+		if (selectedUsers.length === 1) {
+			removeMembers(
+				{
+					projectId,
+					userId: selectedUsers[0],
+				},
+				{
+					onSuccess() {
+						onClose();
+					},
+				}
+			);
+		}
+	};
 	return (
 		<div>
 			<AlertDialog open={isOpen} onOpenChange={onClose}>
@@ -38,32 +73,18 @@ const RemoveMembers = ({
 							type="button"
 							variant="outline"
 							onClick={onClose}
-							// disabled={assignMutation.isPending}
+							disabled={isPending}
 							className="border-slate-200 dark:border-slate-800 bg-transparent"
 						>
 							Cancel
 						</Button>
 						<Button
 							type="submit"
-							// disabled={!selectedUser || assignMutation.isPending}
+							disabled={!selectedUsers || isPending}
 							className="bg-primary hover:bg-primary/90 text-white"
-							// onClick={() =>
-							// 	assignMutation.mutate(
-							// 		{
-							// 			taskId: task.id,
-							// 			assigneeId: selectedUser,
-							// 		},
-							// 		{
-							// 			onSuccess: () => {
-							// 				onClose();
-							// 			},
-							// 		}
-							// 	)
-							// }
+							onClick={handleRemove}
 						>
-							{/* {assignMutation.isPending && (
-								<Spinner className="mr-1.5" />
-							)} */}
+							{isPending && <Spinner className="mr-1.5" />}
 							Remove
 						</Button>
 					</div>
