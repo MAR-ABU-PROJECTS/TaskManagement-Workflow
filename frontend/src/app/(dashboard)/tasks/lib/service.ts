@@ -6,6 +6,7 @@ export const TaskService = {
 		apiService.post("/tasks", data),
 	getProjectTasks: (projectId: string) =>
 		apiService.get(`/tasks/board/${projectId}`),
+	getTaskDetail: (taskId: string) => apiService.get(`/tasks/${taskId}`),
 	assignProjectTasks: ({
 		taskId,
 		assigneeId,
@@ -39,7 +40,8 @@ export const TaskService = {
 		taskId: string;
 		attachmentId: string;
 	}) => apiService.delete(`/tasks/${taskId}/attachments/${attachmentId}`),
-	deleteTaskProject: (taskId: string) => apiService.delete(`/tasks/${taskId}`),
+	deleteTaskProject: (taskId: string) =>
+		apiService.delete(`/tasks/${taskId}`),
 	downloadAttachment: ({
 		taskId,
 		attachmentId,

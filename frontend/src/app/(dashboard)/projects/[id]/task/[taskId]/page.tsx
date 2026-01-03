@@ -1,10 +1,14 @@
 import TaskDetailPage from "../../../components/Task-detail";
 import React from "react";
 
-const page = () => {
+type Props = {
+	params: { taskId: string };
+};
+const page = ({ params }: Props) => {
+	const taskId = params.taskId;
 	return (
 		<div>
-			<TaskDetailPage />
+			<TaskDetailPage taskId={taskId} />
 		</div>
 	);
 };

@@ -7,34 +7,10 @@ import { useParams } from "next/navigation";
 import Activity, { TaskActivityType } from "./activity";
 
 const Activities = () => {
-	const activityLog = [
-		{
-			id: 1,
-			user: "John Doe",
-			action: "changed status to",
-			value: "In Progress",
-			timestamp: "3 hours ago",
-		},
-		{
-			id: 2,
-			user: "Jane Smith",
-			action: "added",
-			value: "Sarah Williams",
-			timestamp: "5 hours ago",
-		},
-		{
-			id: 3,
-			user: "John Doe",
-			action: "created this task",
-			value: "",
-			timestamp: "1 day ago",
-		},
-	];
-
 	const { taskId } = useParams();
 
 	const query = useGetActivities(taskId as string);
-	console.log(query.data);
+
 	return (
 		<Card>
 			<CardHeader>

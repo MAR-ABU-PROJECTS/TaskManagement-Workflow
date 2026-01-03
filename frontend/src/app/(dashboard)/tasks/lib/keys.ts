@@ -1,7 +1,7 @@
 export const taskKeys = {
 	all: ["tasks"] as const,
 
-	detail: (id: string) => [...taskKeys.all, id] as const,
+	detail: (id: string) => [...taskKeys.all, { taskId: id }] as const,
 
 	board: () => [...taskKeys.all, "board"] as const,
 

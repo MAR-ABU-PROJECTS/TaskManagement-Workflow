@@ -55,7 +55,7 @@ export default function EditProjectPage({ id }: { id: string }) {
 				description: query.data.data.description,
 				key: query.data.data.key,
 				name: query.data.data.name,
-				members: [...(assignedMembers as string[])],
+				members: Array.isArray(assignedMembers) ? assignedMembers : [],
 			});
 		}
 	}, [query.data, form]);
