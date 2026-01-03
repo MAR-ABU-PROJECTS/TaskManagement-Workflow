@@ -63,6 +63,7 @@ export class AuditLogService {
       | "LOGOUT"
       | "REGISTER"
       | "PASSWORD_CHANGE"
+      | "PASSWORD_RESET_REQUEST"
       | "TOKEN_REFRESH";
     success: boolean;
     ipAddress?: string;

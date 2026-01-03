@@ -22,6 +22,9 @@ CREATE INDEX "password_reset_tokens_token_idx" ON "password_reset_tokens"("token
 -- AddForeignKey
 ALTER TABLE "password_reset_tokens" ADD CONSTRAINT "password_reset_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- Add PASSWORD_RESET_REQUEST to AuditAction enum
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'PASSWORD_RESET_REQUEST';
+
 -- Add cascade deletes to existing foreign keys for user deletion
 -- Update ProjectMember user and addedBy relations to cascade delete
 ALTER TABLE "project_members" DROP CONSTRAINT IF EXISTS "project_members_user_id_fkey";
