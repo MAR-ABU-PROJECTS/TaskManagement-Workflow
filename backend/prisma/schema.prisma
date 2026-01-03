@@ -57,6 +57,7 @@ enum AuditAction {
   LOGOUT
   REGISTER
   PASSWORD_CHANGE
+  PASSWORD_RESET_REQUEST
   TOKEN_REFRESH
 
   // User Management
