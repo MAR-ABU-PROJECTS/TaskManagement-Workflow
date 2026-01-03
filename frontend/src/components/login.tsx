@@ -11,7 +11,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import Image from "next/image";
-import logo from "../assets/black-logo.png";
+import logo from "@/assets/black-logo.png";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -112,6 +112,7 @@ export default function LoginPage() {
 										<FormLabel>Password</FormLabel>
 										<FormControl>
 											<Input
+												placeholder="Password here"
 												id="password"
 												type="password"
 												className="h-[40px]"

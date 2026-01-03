@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Image from "next/image";
-import logo from "../../../src/assets/black-logo.png";
+import logo from "@/assets/black-logo.png";
 import { useSession } from "@/app/providers/session-provider";
 import { getInitials } from "@/lib/utils";
 

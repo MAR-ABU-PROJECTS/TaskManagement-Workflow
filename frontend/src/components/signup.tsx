@@ -11,7 +11,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import Image from "next/image";
-import logo from "../assets/black-logo.png";
+import logo from "@/assets/black-logo.png";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -114,6 +114,7 @@ export default function SignUpPage() {
 										<FormLabel>Password</FormLabel>
 										<FormControl>
 											<Input
+												placeholder="Password here"
 												type="password"
 												className="h-[40px]"
 												{...field}
