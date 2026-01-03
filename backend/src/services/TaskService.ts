@@ -1773,17 +1773,17 @@ export class TaskService {
       );
     }
 
-    // Delete task and related data
-    await prisma.task.delete({
-      where: { id },
-    });
-
-    // Log deletion
+    // Log deletion BEFORE deleting task to avoid FK constraint
     await ActivityLogService.logActivity({
       taskId: id,
       userId,
       action: ActivityAction.DELETE,
       metadata: { taskTitle: task.title },
+    });
+
+    // Delete task and related data (cascade deletes activity logs)
+    await prisma.task.delete({
+      where: { id },
     });
 
     return true;

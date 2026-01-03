@@ -71,6 +71,15 @@ interface DemotionEmailData {
   reason?: string;
 }
 
+interface PasswordResetEmailData {
+  userName: string;
+  resetUrl: string;
+}
+
+interface PasswordChangedEmailData {
+  userName: string;
+}
+
 export class EmailService {
   private resend: Resend | null;
   private isConfigured: boolean;
@@ -760,6 +769,114 @@ export class EmailService {
           <div class="footer">
             <p>This is an automated notification from Task Management System.</p>
             <p>For questions or concerns, please contact your manager or HR department.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.sendEmail({ to, subject, html });
+  }
+
+  /**
+   * Send password reset email
+   */
+  async sendPasswordResetEmail(
+    to: string,
+    data: PasswordResetEmailData
+  ): Promise<void> {
+    const subject = "Password Reset Request";
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #0052CC; color: white; padding: 20px; text-align: center; }
+          .content { background-color: #f4f5f7; padding: 20px; margin: 20px 0; }
+          .button { display: inline-block; padding: 12px 24px; background-color: #0052CC; color: white; text-decoration: none; border-radius: 4px; margin-top: 15px; }
+          .warning { background-color: #FFF4E5; border-left: 4px solid #FF991F; padding: 15px; margin: 15px 0; }
+          .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>Password Reset Request</h2>
+          </div>
+          <div class="content">
+            <p>Hi ${data.userName},</p>
+            <p>We received a request to reset your password for your Task Management System account.</p>
+            
+            <p>Click the button below to reset your password. This link will expire in 1 hour.</p>
+            
+            <a href="${data.resetUrl}" class="button">Reset Password</a>
+            
+            <div class="warning">
+              <strong>⚠️ Security Notice:</strong>
+              <p>If you didn't request a password reset, please ignore this email. Your password will remain unchanged.</p>
+              <p>Never share this link with anyone.</p>
+            </div>
+            
+            <p style="color: #666; font-size: 12px; margin-top: 20px;">
+              If the button doesn't work, copy and paste this link into your browser:<br>
+              <a href="${data.resetUrl}">${data.resetUrl}</a>
+            </p>
+          </div>
+          <div class="footer">
+            <p>This is an automated email from Task Management System. Please do not reply.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.sendEmail({ to, subject, html });
+  }
+
+  /**
+   * Send password changed confirmation email
+   */
+  async sendPasswordChangedEmail(
+    to: string,
+    data: PasswordChangedEmailData
+  ): Promise<void> {
+    const subject = "Password Changed Successfully";
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #36B37E; color: white; padding: 20px; text-align: center; }
+          .content { background-color: #f4f5f7; padding: 20px; margin: 20px 0; }
+          .success { background-color: #E3FCEF; border-left: 4px solid #36B37E; padding: 15px; margin: 15px 0; }
+          .warning { background-color: #FFF4E5; border-left: 4px solid #FF991F; padding: 15px; margin: 15px 0; }
+          .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>✓ Password Changed</h2>
+          </div>
+          <div class="content">
+            <p>Hi ${data.userName},</p>
+            
+            <div class="success">
+              <p><strong>Your password has been changed successfully.</strong></p>
+              <p>You can now use your new password to log in to your Task Management System account.</p>
+            </div>
+            
+            <div class="warning">
+              <strong>⚠️ Security Alert:</strong>
+              <p>If you didn't make this change, please contact your administrator immediately.</p>
+            </div>
+          </div>
+          <div class="footer">
+            <p>This is an automated email from Task Management System. Please do not reply.</p>
           </div>
         </div>
       </body>

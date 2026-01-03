@@ -206,6 +206,7 @@ export class ProjectService {
       );
     }
 
+    // Update project basic info
     const updated = await prisma.project.update({
       where: { id },
       data: {
@@ -225,6 +226,46 @@ export class ProjectService {
         },
       },
     });
+
+    // Handle adding new members
+    if (data.addMembers && data.addMembers.length > 0) {
+      // Verify all users exist
+      const userIds = data.addMembers.map((m) => m.userId);
+      const users = await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true },
+      });
+
+      if (users.length !== userIds.length) {
+        throw new Error("One or more users not found");
+      }
+
+      // Add members (skip duplicates)
+      await prisma.projectMember.createMany({
+        data: data.addMembers.map((member) => ({
+          projectId: id,
+          userId: member.userId,
+          role: ProjectRole.DEVELOPER,
+          addedById: userId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    // Handle removing members
+    if (data.removeMembers && data.removeMembers.length > 0) {
+      // Don't allow removing the creator
+      if (data.removeMembers.includes(project.creatorId)) {
+        throw new Error("Cannot remove project creator from project");
+      }
+
+      await prisma.projectMember.deleteMany({
+        where: {
+          projectId: id,
+          userId: { in: data.removeMembers },
+        },
+      });
+    }
 
     return updated as Project;
   }

@@ -100,6 +100,8 @@ export interface UpdateProjectDTO {
   description?: string;
   workflowType?: string;
   workflowSchemeId?: string;
+  addMembers?: Array<{ userId: string }>; // Array of members to add (will be assigned as DEVELOPER)
+  removeMembers?: string[]; // Array of user IDs to remove from project
 }
 
 export interface CreateTaskDTO {
