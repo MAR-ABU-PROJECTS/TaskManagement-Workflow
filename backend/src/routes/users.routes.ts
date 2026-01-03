@@ -357,6 +357,8 @@ router.delete(
         });
       }
 
+      // Note: Cascade deletes will handle related records
+      // Update schema to add onDelete: Cascade to user relations
       await prisma.user.delete({ where: { id } });
 
       return res.json({ message: "User deleted successfully" });

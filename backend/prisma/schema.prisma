@@ -203,24 +203,41 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  createdProjects Project[]         @relation("ProjectCreator")
-  projectMembers  ProjectMember[]
-  createdTasks    Task[]            @relation("TaskCreator")
-  taskAssignments TaskAssignee[] // Many-to-many relation for task assignments
-  approvedTasks   Task[]            @relation("TaskApprover")
-  comments        TaskComment[]
-  activityLogs    TaskActivityLog[]
-  notifications   Notification[]
-  watchedTasks    Task[]            @relation("TaskWatchers")
-  timeEntries     TimeEntry[]
-  activeTimer     ActiveTimer?
-  attachments     TaskAttachment[]  @relation("TaskAttachmentUploader")
-  addedMembers    ProjectMember[]   @relation("MemberAdder")
-  promotedBy      User?             @relation("UserPromoter", fields: [promotedById], references: [id])
-  promotedUsers   User[]            @relation("UserPromoter")
-  auditLogs       AuditLog[]
+  createdProjects   Project[]         @relation("ProjectCreator")
+  projectMembers    ProjectMember[]
+  createdTasks      Task[]            @relation("TaskCreator")
+  taskAssignments   TaskAssignee[] // Many-to-many relation for task assignments
+  approvedTasks     Task[]            @relation("TaskApprover")
+  comments          TaskComment[]
+  activityLogs      TaskActivityLog[]
+  notifications     Notification[]
+  watchedTasks      Task[]            @relation("TaskWatchers")
+  timeEntries       TimeEntry[]
+  activeTimer       ActiveTimer?
+  attachments       TaskAttachment[]  @relation("TaskAttachmentUploader")
+  addedMembers      ProjectMember[]   @relation("MemberAdder")
+  promotedBy        User?             @relation("UserPromoter", fields: [promotedById], references: [id])
+  promotedUsers     User[]            @relation("UserPromoter")
+  auditLogs         AuditLog[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("password_reset_tokens")
 }
 
 model Project {
@@ -477,8 +494,8 @@ model ProjectMember {
 
   // Relations
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id])
-  addedBy User    @relation("MemberAdder", fields: [addedById], references: [id])
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addedBy User    @relation("MemberAdder", fields: [addedById], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
   @@index([projectId])
