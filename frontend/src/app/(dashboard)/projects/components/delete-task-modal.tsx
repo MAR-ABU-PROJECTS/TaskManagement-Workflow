@@ -1,51 +1,68 @@
 "use client";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogHeader,
+	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Task } from "../type";
+import { useDeleteTaskProject } from "../../tasks/lib/mutation";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 interface DeleteTaskModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  task: Task;
-  onConfirm: (taskId: number) => void;
+	isOpen: boolean;
+	onClose: () => void;
+	title: string;
+	id: string;
+	projectId: string;
 }
 
 export function DeleteTaskModal({
-  isOpen,
-  onClose,
-  task,
-  onConfirm,
+	isOpen,
+	onClose,
+	title,
+	id,
+	projectId,
 }: DeleteTaskModalProps) {
-  return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete Task</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to delete &quot;{task?.title}
-            &quot;? This saction cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="flex gap-2 justify-end">
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => {
-              onConfirm(task?.id);
-              onClose();
-            }}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            Delete
-          </AlertDialogAction>
-        </div>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
+	const mutation = useDeleteTaskProject(projectId);
+	return (
+		<AlertDialog open={isOpen} onOpenChange={onClose}>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>Delete Task</AlertDialogTitle>
+					<AlertDialogDescription>
+						Are you sure you want to delete &quot;{title}
+						&quot;? This saction cannot be undone.
+					</AlertDialogDescription>
+				</AlertDialogHeader>
+				<div className="flex justify-end gap-4">
+					<Button
+						type="button"
+						variant="outline"
+						onClick={onClose}
+						disabled={mutation.isPending}
+						className="border-slate-200 dark:border-slate-800 bg-transparent"
+					>
+						Cancel
+					</Button>
+					<Button
+						type="submit"
+						disabled={mutation.isPending}
+						className="bg-primary hover:bg-primary/90 text-white"
+						onClick={() =>
+							mutation.mutate(id, {
+								onSuccess() {
+									onClose();
+								},
+							})
+						}
+					>
+						{mutation.isPending && <Spinner className="mr-1.5" />}
+						Delete
+					</Button>
+				</div>
+			</AlertDialogContent>
+		</AlertDialog>
+	);
 }
