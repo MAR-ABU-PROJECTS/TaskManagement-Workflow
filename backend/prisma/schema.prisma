@@ -203,22 +203,22 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  createdProjects   Project[]         @relation("ProjectCreator")
-  projectMembers    ProjectMember[]
-  createdTasks      Task[]            @relation("TaskCreator")
-  taskAssignments   TaskAssignee[] // Many-to-many relation for task assignments
-  approvedTasks     Task[]            @relation("TaskApprover")
-  comments          TaskComment[]
-  activityLogs      TaskActivityLog[]
-  notifications     Notification[]
-  watchedTasks      Task[]            @relation("TaskWatchers")
-  timeEntries       TimeEntry[]
-  activeTimer       ActiveTimer?
-  attachments       TaskAttachment[]  @relation("TaskAttachmentUploader")
-  addedMembers      ProjectMember[]   @relation("MemberAdder")
-  promotedBy        User?             @relation("UserPromoter", fields: [promotedById], references: [id])
-  promotedUsers     User[]            @relation("UserPromoter")
-  auditLogs         AuditLog[]
+  createdProjects     Project[]            @relation("ProjectCreator")
+  projectMembers      ProjectMember[]
+  createdTasks        Task[]               @relation("TaskCreator")
+  taskAssignments     TaskAssignee[] // Many-to-many relation for task assignments
+  approvedTasks       Task[]               @relation("TaskApprover")
+  comments            TaskComment[]
+  activityLogs        TaskActivityLog[]
+  notifications       Notification[]
+  watchedTasks        Task[]               @relation("TaskWatchers")
+  timeEntries         TimeEntry[]
+  activeTimer         ActiveTimer?
+  attachments         TaskAttachment[]     @relation("TaskAttachmentUploader")
+  addedMembers        ProjectMember[]      @relation("MemberAdder")
+  promotedBy          User?                @relation("UserPromoter", fields: [promotedById], references: [id])
+  promotedUsers       User[]               @relation("UserPromoter")
+  auditLogs           AuditLog[]
   passwordResetTokens PasswordResetToken[]
 
   @@map("users")

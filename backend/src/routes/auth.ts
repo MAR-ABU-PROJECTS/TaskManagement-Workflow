@@ -552,7 +552,9 @@ router.post("/forgot-password", async (req, res) => {
     });
 
     // Send reset email with the unhashed token
-    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password?token=${resetToken}`;
+    const resetUrl = `${
+      process.env.FRONTEND_URL || "http://localhost:5173"
+    }/reset-password?token=${resetToken}`;
 
     await emailService.sendPasswordResetEmail(user.email, {
       userName: user.name,
@@ -684,7 +686,8 @@ router.post("/reset-password", async (req, res) => {
       .catch((err) => console.error("Failed to send confirmation email:", err));
 
     return res.json({
-      message: "Password reset successful. You can now login with your new password.",
+      message:
+        "Password reset successful. You can now login with your new password.",
     });
   } catch (error: any) {
     console.error("Reset password error:", error);
