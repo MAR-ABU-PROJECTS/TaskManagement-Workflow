@@ -112,6 +112,7 @@ export default function LoginPage() {
 										<FormLabel>Password</FormLabel>
 										<FormControl>
 											<Input
+												placeholder="Password here"
 												id="password"
 												type="password"
 												className="h-[40px]"

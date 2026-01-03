@@ -114,6 +114,7 @@ export default function SignUpPage() {
 										<FormLabel>Password</FormLabel>
 										<FormControl>
 											<Input
+												placeholder="Password here"
 												type="password"
 												className="h-[40px]"
 												{...field}
