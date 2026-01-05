@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import prisma from "../db/prisma";
-import { TaskStatus, TaskPriority } from "../types/enums";
+import { TaskStatus, TaskPriority, UserRole } from "../types/enums";
 import ActivityLogService from "../services/ActivityLogService";
 import NotificationService from "../services/NotificationService";
+import TaskService from "../services/TaskService";
 
 class BulkOperationsController {
   /**
@@ -14,7 +15,9 @@ class BulkOperationsController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
@@ -82,7 +85,9 @@ class BulkOperationsController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
@@ -101,46 +106,22 @@ class BulkOperationsController {
         });
       }
 
-      // Update tasks
-      const result = await prisma.task.updateMany({
-        where: {
-          id: { in: taskIds },
-        },
-        data: {
-          status: status as TaskStatus,
-        },
-      });
+      // Use workflow-validated bulk transition
+      const result = await TaskService.bulkTransitionTasks(
+        taskIds,
+        status as TaskStatus,
+        userId,
+        req.user?.role as UserRole
+      );
 
-      // Log activity and send notifications
-      for (const taskId of taskIds) {
-        await ActivityLogService.logActivity({
-          taskId,
-          userId,
-          action: "STATUS_CHANGED" as any,
-        });
-
-        // Get task details for notification
-        const task = await prisma.task.findUnique({
-          where: { id: taskId },
-          include: { assignee: true },
-        });
-
-        if (task?.assignee) {
-          await NotificationService.createNotification(
-            task.assignee.id,
-            "TASK_STATUS_CHANGED" as any,
-            {
-              title: "Task Status Changed",
-              message: `Task "${task.title}" status changed to ${status}`,
-              taskId,
-            }
-          );
-        }
-      }
-
+      // Return detailed results
       return res.status(200).json({
-        message: `${result.count} tasks transitioned to ${status}`,
-        updated: result.count,
+        message: `${result.successful.length} of ${taskIds.length} tasks transitioned to ${status}`,
+        successful: result.successful,
+        failed: result.failed,
+        totalRequested: taskIds.length,
+        totalSuccessful: result.successful.length,
+        totalFailed: result.failed.length,
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -156,7 +137,9 @@ class BulkOperationsController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
@@ -176,15 +159,23 @@ class BulkOperationsController {
         return res.status(404).json({ message: "Assignee not found" });
       }
 
-      // Update tasks
-      const result = await prisma.task.updateMany({
-        where: {
-          id: { in: taskIds },
-        },
-        data: {
-          assigneeId,
-        },
-      });
+      // For bulk assign, use TaskService.assignTask for each task
+      let successCount = 0;
+      for (const taskId of taskIds) {
+        try {
+          if (assigneeId) {
+            await TaskService.assignTask(
+              taskId,
+              [assigneeId],
+              userId,
+              req.user!.role
+            );
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`Failed to assign task ${taskId}:`, error);
+        }
+      }
 
       // Log activity and send notifications
       for (const taskId of taskIds) {
@@ -212,14 +203,13 @@ class BulkOperationsController {
       }
 
       return res.status(200).json({
-        message: `${result.count} tasks assigned to ${assignee.name}`,
-        updated: result.count,
+        message: `${successCount} tasks assigned to ${assignee.name}`,
+        updated: successCount,
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
   }
-
   /**
    * Bulk delete tasks
    */
@@ -230,7 +220,9 @@ class BulkOperationsController {
       const userRole = req.user?.role;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
@@ -285,7 +277,9 @@ class BulkOperationsController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
@@ -346,7 +340,9 @@ class BulkOperationsController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {

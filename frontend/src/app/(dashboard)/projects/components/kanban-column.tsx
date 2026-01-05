@@ -1,50 +1,25 @@
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import React from "react";
 import TaskCard from "./tasks-card";
-import { KanbanColumnProps } from "../type";
+import { KanbanColumnProps } from "../lib/type";
+import { Dot } from "lucide-react";
 
-const KanbanColumn = ({
-	id,
-	title,
-	color,
-	tasks,
-	onAddTask,
-	onEditTask,
-	onChangeStatus,
-	onAssignTask,
-	onDeleteTask,
-}: KanbanColumnProps) => {
+const KanbanColumn = ({ id, title, tasks, projectId }: KanbanColumnProps) => {
 	return (
 		<div key={id} className="w-full max-w-[280px] shrink-0 h-svh">
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<div className={`h-2 w-2 rounded-full ${color}`} />
+					{/* <div className={`h-2 w-2 rounded-full ${color}`} /> */}
 					<h3 className="font-semibold">{title}</h3>
 					<span className="text-sm text-muted-foreground">
 						{tasks.length}
 					</span>
 				</div>
-				<Button
-					variant="ghost"
-					size="icon"
-					className="h-6 w-6"
-					onClick={onAddTask}
-				>
-					<Plus className="h-4 w-4" />
-				</Button>
+				<Dot />
 			</div>
 
-			<div className="space-y-3 mt-2">
+			<div className="space-y-3.5 mt-2">
 				{tasks.map((task) => (
-					<TaskCard
-						key={task.id}
-						{...task}
-						onEdit={onEditTask}
-						onChangeStatus={onChangeStatus}
-						onAssign={onAssignTask}
-						onDelete={onDeleteTask}
-					/>
+					<TaskCard projectId={projectId} key={task.id} task={task} />
 				))}
 			</div>
 		</div>

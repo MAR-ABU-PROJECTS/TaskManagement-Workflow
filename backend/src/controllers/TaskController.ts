@@ -1,16 +1,53 @@
 import { Request, Response } from "express";
 import TaskService from "../services/TaskService";
-import { CreateTaskDTO, UpdateTaskDTO } from "../types/interfaces";
+import {
+  CreateTaskDTO,
+  UpdateTaskDTO,
+  CreatePersonalTaskDTO,
+} from "../types/interfaces";
 import { UserRole, TaskStatus } from "../types/enums";
 
 export class TaskController {
+  /**
+   * POST /tasks/personal - Create a personal task
+   */
+  async createPersonalTask(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const data: CreatePersonalTaskDTO = req.body;
+
+      if (!data.title) {
+        return res.status(400).json({ message: "Task title is required" });
+      }
+
+      const task = await TaskService.createPersonalTask(data, req.user.id);
+
+      return res.status(201).json({
+        message: "Personal task created successfully",
+        data: task,
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        message: "Failed to create personal task",
+        error: error.message,
+      });
+    }
+  }
+
   /**
    * POST /tasks - Create a new task
    */
   async createTask(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const data: CreateTaskDTO = req.body;
@@ -43,7 +80,9 @@ export class TaskController {
   async getAllTasks(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const filters = {
@@ -78,7 +117,9 @@ export class TaskController {
   async getTaskById(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -116,7 +157,9 @@ export class TaskController {
   async updateTask(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -158,7 +201,9 @@ export class TaskController {
   async changeStatus(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -202,12 +247,14 @@ export class TaskController {
   }
 
   /**
-   * POST /tasks/:id/assign - Assign task to user
+   * POST /tasks/:id/assign - Assign task to multiple users
    */
   async assignTask(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -215,15 +262,21 @@ export class TaskController {
         return res.status(400).json({ message: "Task ID is required" });
       }
 
-      const { assigneeId } = req.body;
+      const { assigneeIds } = req.body;
 
-      if (!assigneeId) {
-        return res.status(400).json({ message: "Assignee ID is required" });
+      if (
+        !assigneeIds ||
+        !Array.isArray(assigneeIds) ||
+        assigneeIds.length === 0
+      ) {
+        return res
+          .status(400)
+          .json({ message: "At least one assignee ID is required" });
       }
 
       const task = await TaskService.assignTask(
         id,
-        assigneeId,
+        assigneeIds,
         req.user.id,
         req.user.role as UserRole
       );
@@ -251,12 +304,84 @@ export class TaskController {
   }
 
   /**
+   * DELETE /tasks/:id/assign/:userId - Unassign user(s) from task
+   */
+  async unassignTask(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const { id, userId } = req.params;
+      const { userIds } = req.body; // Optional: bulk unassignment via body
+
+      if (!id) {
+        return res.status(400).json({ message: "Task ID is required" });
+      }
+
+      // Determine if single or bulk unassignment
+      const idsToUnassign =
+        userIds && Array.isArray(userIds) && userIds.length > 0
+          ? userIds
+          : userId
+          ? [userId]
+          : [];
+
+      if (idsToUnassign.length === 0) {
+        return res.status(400).json({
+          message: "At least one User ID is required (via path or body)",
+        });
+      }
+
+      // Unassign each user
+      const results = await Promise.allSettled(
+        idsToUnassign.map((uid: string) =>
+          TaskService.unassignTask(
+            id,
+            uid,
+            req.user!.id,
+            req.user!.role as UserRole
+          )
+        )
+      );
+
+      const successful = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected");
+
+      if (failed.length === 0) {
+        return res.status(200).json({
+          message: `${successful} user(s) unassigned from task successfully`,
+          unassigned: idsToUnassign,
+        });
+      } else {
+        return res.status(207).json({
+          message: `${successful} of ${idsToUnassign.length} users unassigned`,
+          successful,
+          failed: failed.map((f: any) => ({
+            userId: idsToUnassign[results.findIndex((r) => r === f)],
+            reason: f.reason?.message || "Unknown error",
+          })),
+        });
+      }
+    } catch (error: any) {
+      return res.status(500).json({
+        message: "Failed to unassign user(s) from task",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
    * POST /tasks/:id/approve - Approve task
    */
   async approveTask(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -298,7 +423,9 @@ export class TaskController {
   async rejectTask(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -335,6 +462,204 @@ export class TaskController {
       }
       return res.status(500).json({
         message: "Failed to reject task",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * GET /tasks/board/:projectId - Get Kanban board view
+   */
+  async getKanbanBoard(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const { projectId } = req.params;
+      if (!projectId) {
+        return res.status(400).json({ message: "Project ID is required" });
+      }
+
+      const board = await TaskService.getKanbanBoard(projectId);
+
+      return res.status(200).json({
+        message: "Board retrieved successfully",
+        data: board,
+      });
+    } catch (error: any) {
+      if (error.message.includes("not found")) {
+        return res.status(404).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to retrieve board",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * POST /tasks/:id/move - Move task to different column/status
+   */
+  async moveTask(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ message: "Task ID is required" });
+      }
+
+      const { status, position } = req.body;
+
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+
+      if (position === undefined || position === null) {
+        return res.status(400).json({ message: "Position is required" });
+      }
+
+      const task = await TaskService.moveTask(
+        id,
+        status as TaskStatus,
+        position,
+        req.user.id,
+        req.user.role as UserRole
+      );
+
+      return res.status(200).json({
+        message: "Task moved successfully",
+        data: task,
+      });
+    } catch (error: any) {
+      if (
+        error.message.includes("Forbidden") ||
+        error.message.includes("Invalid") ||
+        error.message.includes("not found")
+      ) {
+        return res.status(403).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to move task",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * GET /tasks/:id/transitions - Get available workflow transitions for a task
+   */
+  async getAvailableTransitions(
+    req: Request,
+    res: Response
+  ): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ message: "Task ID is required" });
+      }
+
+      const transitions = await TaskService.getAvailableTransitions(
+        id,
+        req.user.id
+      );
+
+      return res.status(200).json({
+        message: "Available transitions retrieved successfully",
+        data: transitions,
+      });
+    } catch (error: any) {
+      if (error.message.includes("not found")) {
+        return res.status(404).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to get available transitions",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * GET /projects/:projectId/workflow - Get workflow configuration for a project
+   */
+  async getProjectWorkflow(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const { projectId } = req.params;
+      if (!projectId) {
+        return res.status(400).json({ message: "Project ID is required" });
+      }
+
+      const workflow = await TaskService.getProjectWorkflow(projectId);
+
+      return res.status(200).json({
+        message: "Workflow configuration retrieved successfully",
+        data: workflow,
+      });
+    } catch (error: any) {
+      if (error.message.includes("not found")) {
+        return res.status(404).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to get workflow configuration",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * DELETE /tasks/:id - Delete task
+   */
+  async deleteTask(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ message: "Task ID is required" });
+      }
+
+      const deleted = await TaskService.deleteTask(
+        id,
+        req.user.id,
+        req.user.role as UserRole
+      );
+
+      if (!deleted) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      return res.status(200).json({
+        message: "Task deleted successfully",
+      });
+    } catch (error: any) {
+      if (error.message.includes("Forbidden")) {
+        return res.status(403).json({ message: error.message });
+      }
+      return res.status(500).json({
+        message: "Failed to delete task",
         error: error.message,
       });
     }

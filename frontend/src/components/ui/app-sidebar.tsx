@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import {
 	Home,
@@ -7,6 +8,7 @@ import {
 	AlertCircle,
 	BarChart3,
 	Settings,
+	UsersRound,
 } from "lucide-react";
 import {
 	Sidebar,
@@ -22,7 +24,9 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Image from "next/image";
-import logo from '../../../src/assets/black-logo.png'
+import logo from "@/assets/black-logo.png";
+import { useSession } from "@/app/providers/session-provider";
+import { getInitials } from "@/lib/utils";
 
 const navigation = [
 	{ name: "Dashboard", href: "/dashboard", icon: Home },
@@ -31,9 +35,13 @@ const navigation = [
 	{ name: "Tasks", href: "/tasks", icon: CheckSquare },
 	{ name: "Issues", href: "/issues", icon: AlertCircle },
 	{ name: "Reports", href: "/reports", icon: BarChart3 },
+	{ name: "User Management", href: "/user-management", icon: UsersRound },
 ];
 
 export function AppSidebar() {
+	const { user } = useSession();
+	const name = user?.name ?? "";
+	const { first, last } = getInitials(name);
 	return (
 		<Sidebar>
 			<SidebarHeader className="border-b border-sidebar-border p-4">
@@ -42,7 +50,6 @@ export function AppSidebar() {
 						src={logo}
 						alt="marabu logo"
 						className="object-contain h-[50px]"
-						
 					/>
 				</Link>
 			</SidebarHeader>
@@ -71,14 +78,16 @@ export function AppSidebar() {
 			<SidebarFooter className="border-t border-sidebar-border p-4">
 				<div className="flex items-center gap-3">
 					<Avatar className="h-8 w-8">
-						<AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
-							JD
+						<AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground uppercase">
+							{first} {last}
 						</AvatarFallback>
 					</Avatar>
 					<div className="flex-1 overflow-hidden">
-						<p className="truncate text-sm font-medium">John Doe</p>
+						<p className="truncate text-sm font-medium">
+							{user?.name ?? ""}
+						</p>
 						<p className="truncate text-xs text-sidebar-foreground/60">
-							john@marprojects.com
+							{user?.email ?? ""}
 						</p>
 					</div>
 					<Link href="/settings">

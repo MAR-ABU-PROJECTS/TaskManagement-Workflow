@@ -1,0 +1,39 @@
+import { SessionOptions } from "iron-session";
+
+export interface SessionData {
+	user: {
+		id: string;
+		name: string;
+		email: string;
+		token: string;
+		isLoggedIn: boolean;
+		refreshToken: string;
+		role: string;
+	};
+}
+
+export const defaultSession: SessionData = {
+	user: {
+		id: "",
+		name: "",
+		email: "",
+		token: "",
+		isLoggedIn: false,
+		refreshToken: "",
+		role: "",
+	},
+};
+
+export const sessionOptions: SessionOptions = {
+	password: process.env.SECRET_KEY!,
+	cookieName: "marabu-taskmanagement-session",
+	ttl: 60 * 60 * 5,
+
+	cookieOptions: {
+		httpOnly: true,
+
+		// secure only works in `https` environments
+		// if your localhost is not on `https`, then use: `secure: process.env.NODE_ENV === "production"`
+		secure: process.env.NODE_ENV === "production",
+	},
+};

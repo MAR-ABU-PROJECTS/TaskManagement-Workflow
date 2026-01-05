@@ -12,13 +12,12 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:4000",
-        description: "Development server",
+        url: process.env.BASE_URL || "http://localhost:4000",
+        description:
+          process.env.NODE_ENV === "production"
+            ? "Production server"
+            : "Development server",
       },
-      // {
-      //   url: "https://api.taskmanagement.com",
-      //   description: "Production server",
-      // },
     ],
     tags: [
       {
@@ -26,68 +25,33 @@ const options = {
         description: "User registration and login endpoints",
       },
       {
+        name: "Users",
+        description: "User management and profile operations",
+      },
+      {
         name: "Projects",
-        description: "Project management operations",
+        description: "Project management, sprints, epics, backlog, and reports",
       },
       {
         name: "Tasks",
-        description: "Task CRUD operations, assignments, and approvals",
+        description:
+          "Task CRUD, comments, attachments, dependencies, and time tracking",
       },
       {
-        name: "Comments",
-        description: "Task comments and activity logs",
+        name: "Configuration",
+        description: "Workflow and permission scheme management",
       },
       {
-        name: "Sprints",
-        description: "Sprint planning and management",
-      },
-      {
-        name: "Epics",
-        description: "Epic creation and task grouping",
-      },
-      {
-        name: "Backlog",
-        description: "Backlog management and prioritization",
-      },
-      {
-        name: "Time Tracking",
-        description: "Time logging and timer management",
+        name: "Search",
+        description: "JQL search and saved filters",
       },
       {
         name: "Notifications",
         description: "User notifications and alerts",
       },
       {
-        name: "Search",
-        description: "Advanced search and JQL queries",
-      },
-      {
-        name: "Task Dependencies",
-        description: "Task relationships and blocking",
-      },
-      {
-        name: "Attachments",
-        description: "File upload and download",
-      },
-      {
         name: "Reports",
-        description: "Analytics and reporting endpoints",
-      },
-      {
-        name: "CEO",
-        description: "CEO-only endpoints (organization-wide control)",
-      },
-      {
-        name: "HR",
-        description: "HR endpoints (user management and team analytics)",
-      },
-      {
-        name: "Admin",
-        description: "Admin endpoints (project oversight and system settings)",
-      },
-      {
-        name: "Staff",
-        description: "Staff endpoints (personal tasks and profile)",
+        description: "Project analytics and reporting endpoints",
       },
     ],
     components: {
@@ -104,13 +68,6 @@ const options = {
           enum: ["CEO", "HOO", "HR", "ADMIN", "STAFF"],
           description:
             "User role in the system. CEO and HOO have highest privileges, HR manages personnel, ADMIN manages projects, STAFF are regular users.",
-        },
-        Department: {
-          type: "string",
-          enum: ["OPS", "HR"],
-          nullable: true,
-          description:
-            "Department assignment for users. OPS for operations team, HR for human resources.",
         },
         RegisterRequest: {
           type: "object",
@@ -138,10 +95,6 @@ const options = {
               $ref: "#/components/schemas/UserRole",
               default: "STAFF",
               description: "User role (defaults to STAFF if not specified)",
-            },
-            department: {
-              $ref: "#/components/schemas/Department",
-              description: "Optional department assignment",
             },
           },
         },
@@ -184,9 +137,6 @@ const options = {
             name: { type: "string" },
             role: {
               $ref: "#/components/schemas/UserRole",
-            },
-            department: {
-              $ref: "#/components/schemas/Department",
             },
             isActive: { type: "boolean" },
             createdAt: { type: "string", format: "date-time" },
@@ -272,7 +222,13 @@ const options = {
       },
     ],
   },
-  apis: ["./src/routes/*.ts", "./src/controllers/*.ts"],
+  apis: [
+    "./src/routes/*.ts",
+    "./src/routes/**/*.ts",
+    "./src/controllers/*.ts",
+    "./dist/routes/*.js",
+    "./dist/routes/**/*.js",
+  ],
 };
 
 const specs = swaggerJsdoc(options);

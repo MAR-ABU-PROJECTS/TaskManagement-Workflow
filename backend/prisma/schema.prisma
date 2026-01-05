@@ -2,402 +2,483 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-   provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-   provider = "postgresql"
-   url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum UserRole {
-   CEO
-   HOO
-   HR
-   ADMIN
-   STAFF
-}
-
-enum Department {
-   OPS
-   HR
+  SUPER_ADMIN
+  CEO
+  HOO
+  HR
+  ADMIN
+  STAFF
 }
 
 enum TaskStatus {
-   DRAFT
-   ASSIGNED
-   IN_PROGRESS
-   PAUSED
-   REVIEW
-   COMPLETED
-   REJECTED
+  DRAFT
+  ASSIGNED
+  IN_PROGRESS
+  PAUSED
+  REVIEW
+  COMPLETED
+  REJECTED
 }
 
 enum TaskPriority {
-   LOW
-   MEDIUM
-   HIGH
+  LOW
+  MEDIUM
+  HIGH
 }
 
 enum IssueType {
-   TASK
-   BUG
-   STORY
+  TASK
+  BUG
+  STORY
 }
 
 enum ActivityAction {
-   CREATE
-   ASSIGN
-   APPROVE
-   REJECT
-   STATUS_UPDATE
-   COMMENT
+  CREATE
+  ASSIGN
+  APPROVE
+  REJECT
+  STATUS_UPDATE
+  COMMENT
+  DELETE
+}
+
+enum AuditAction {
+  // Authentication
+  LOGIN
+  LOGOUT
+  REGISTER
+  PASSWORD_CHANGE
+  PASSWORD_RESET_REQUEST
+  TOKEN_REFRESH
+
+  // User Management
+  USER_CREATE
+  USER_UPDATE
+  USER_DELETE
+  USER_PROMOTE
+  USER_DEMOTE
+  USER_ACTIVATE
+  USER_DEACTIVATE
+
+  // Task Management
+  TASK_CREATE
+  TASK_UPDATE
+  TASK_DELETE
+  TASK_ASSIGN
+  TASK_STATUS_CHANGE
+  TASK_COMMENT
+
+  // Project Management
+  PROJECT_CREATE
+  PROJECT_UPDATE
+  PROJECT_DELETE
+  PROJECT_MEMBER_ADD
+  PROJECT_MEMBER_REMOVE
+
+  // Sprint Management
+  SPRINT_CREATE
+  SPRINT_UPDATE
+  SPRINT_DELETE
+  SPRINT_START
+  SPRINT_COMPLETE
+
+  // System
+  SETTINGS_UPDATE
+  PERMISSION_CHANGE
+  WORKFLOW_CHANGE
 }
 
 enum NotificationType {
-   TASK_ASSIGNED
-   STATUS_CHANGED
-   COMMENT
-   MENTION
-   APPROVAL_REQUIRED
-   APPROVED
-   REJECTED
+  TASK_ASSIGNED
+  STATUS_CHANGED
+  COMMENT
+  MENTION
+  APPROVAL_REQUIRED
+  APPROVED
+  REJECTED
 }
 
 enum DependencyType {
-   BLOCKS
-   IS_BLOCKED_BY
-   RELATES_TO
+  BLOCKS
+  IS_BLOCKED_BY
+  RELATES_TO
 }
 
 enum SprintStatus {
-   PLANNING
-   ACTIVE
-   COMPLETED
-   CANCELLED
+  PLANNING
+  ACTIVE
+  COMPLETED
+  CANCELLED
 }
 
 enum ProjectRole {
-   PROJECT_ADMIN // Can manage project settings, members, workflows
-   PROJECT_LEAD // Can manage sprints, epics, approve tasks
-   DEVELOPER // Can create, edit assigned tasks
-   REPORTER // Can create issues, add comments
-   VIEWER // Read-only access
+  PROJECT_ADMIN // Project creator - full project control, manage settings, members, workflows
+  DEVELOPER // Project members - can create, edit assigned tasks, work on issues
+}
+
+enum WorkflowType {
+  BASIC // Simple: DRAFT → ASSIGNED → IN_PROGRESS → COMPLETED
+  AGILE // Scrum/Kanban: BACKLOG → TO_DO → IN_PROGRESS → REVIEW → DONE
+  BUG_TRACKING // Bug workflow: NEW → CONFIRMED → IN_PROGRESS → TESTING → CLOSED
+  CUSTOM // Uses database WorkflowScheme for advanced customization
 }
 
 enum Permission {
-   // Project Permissions
-   ADMINISTER_PROJECT
-   BROWSE_PROJECT
-   EDIT_PROJECT
+  // Project Permissions
+  ADMINISTER_PROJECT
+  BROWSE_PROJECT
+  EDIT_PROJECT
 
-   // Issue Permissions
-   CREATE_ISSUES
-   EDIT_ISSUES
-   EDIT_OWN_ISSUES
-   DELETE_ISSUES
-   DELETE_OWN_ISSUES
-   ASSIGN_ISSUES
-   ASSIGNABLE_USER
-   CLOSE_ISSUES
-   TRANSITION_ISSUES
-   MOVE_ISSUES
+  // Issue Permissions
+  CREATE_ISSUES
+  EDIT_ISSUES
+  EDIT_OWN_ISSUES
+  DELETE_ISSUES
+  DELETE_OWN_ISSUES
+  ASSIGN_ISSUES
+  ASSIGNABLE_USER
+  CLOSE_ISSUES
+  TRANSITION_ISSUES
+  MOVE_ISSUES
 
-   // Comment Permissions
-   ADD_COMMENTS
-   EDIT_ALL_COMMENTS
-   EDIT_OWN_COMMENTS
-   DELETE_ALL_COMMENTS
-   DELETE_OWN_COMMENTS
+  // Comment Permissions
+  ADD_COMMENTS
+  EDIT_ALL_COMMENTS
+  EDIT_OWN_COMMENTS
+  DELETE_ALL_COMMENTS
+  DELETE_OWN_COMMENTS
 
-   // Attachment Permissions
-   CREATE_ATTACHMENTS
-   DELETE_ALL_ATTACHMENTS
-   DELETE_OWN_ATTACHMENTS
+  // Attachment Permissions
+  CREATE_ATTACHMENTS
+  DELETE_ALL_ATTACHMENTS
+  DELETE_OWN_ATTACHMENTS
 
-   // Time Tracking Permissions
-   WORK_ON_ISSUES
-   EDIT_OWN_WORKLOGS
-   EDIT_ALL_WORKLOGS
-   DELETE_OWN_WORKLOGS
-   DELETE_ALL_WORKLOGS
+  // Time Tracking Permissions
+  WORK_ON_ISSUES
+  EDIT_OWN_WORKLOGS
+  EDIT_ALL_WORKLOGS
+  DELETE_OWN_WORKLOGS
+  DELETE_ALL_WORKLOGS
 
-   // Sprint Permissions
-   MANAGE_SPRINTS
-   VIEW_SPRINTS
+  // Sprint Permissions
+  MANAGE_SPRINTS
+  VIEW_SPRINTS
 
-   // Epic Permissions
-   MANAGE_EPICS
-   VIEW_EPICS
+  // Epic Permissions
+  MANAGE_EPICS
+  VIEW_EPICS
 }
 
 enum BoardType {
-   SCRUM
-   KANBAN
+  SCRUM
+  KANBAN
 }
 
 enum WorkflowStatus {
-   TODO
-   IN_PROGRESS
-   DONE
-   CUSTOM
+  TODO
+  IN_PROGRESS
+  DONE
+  CUSTOM
 }
 
 model User {
-   id           String      @id @default(uuid())
-   email        String      @unique
-   passwordHash String      @map("password_hash")
-   name         String
-   role         UserRole    @default(STAFF)
-   department   Department?
-   isActive     Boolean     @default(true) @map("is_active")
-   createdAt    DateTime    @default(now()) @map("created_at")
-   updatedAt    DateTime    @updatedAt @map("updated_at")
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  name         String
+  role         UserRole  @default(STAFF)
+  isActive     Boolean   @default(true) @map("is_active")
+  isSuperAdmin Boolean   @default(false) @map("is_super_admin") // Immutable flag for 2 Super Admins
+  promotedById String?   @map("promoted_by_id") // Who promoted this user
+  promotedAt   DateTime? @map("promoted_at") // When they were last promoted
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
-   // Relations
-   createdProjects Project[]         @relation("ProjectCreator")
-   projectMembers  ProjectMember[]
-   createdTasks    Task[]            @relation("TaskCreator")
-   assignedTasks   Task[]            @relation("TaskAssignee")
-   approvedTasks   Task[]            @relation("TaskApprover")
-   comments        TaskComment[]
-   activityLogs    TaskActivityLog[]
-   notifications   Notification[]
-   watchedTasks    Task[]            @relation("TaskWatchers")
-   timeEntries     TimeEntry[]
-   activeTimer     ActiveTimer?
-   attachments     TaskAttachment[]  @relation("TaskAttachmentUploader")
-   addedMembers    ProjectMember[]   @relation("MemberAdder")
+  // Relations
+  createdProjects     Project[]            @relation("ProjectCreator")
+  projectMembers      ProjectMember[]
+  createdTasks        Task[]               @relation("TaskCreator")
+  taskAssignments     TaskAssignee[] // Many-to-many relation for task assignments
+  approvedTasks       Task[]               @relation("TaskApprover")
+  comments            TaskComment[]
+  activityLogs        TaskActivityLog[]
+  notifications       Notification[]
+  watchedTasks        Task[]               @relation("TaskWatchers")
+  timeEntries         TimeEntry[]
+  activeTimer         ActiveTimer?
+  attachments         TaskAttachment[]     @relation("TaskAttachmentUploader")
+  addedMembers        ProjectMember[]      @relation("MemberAdder")
+  promotedBy          User?                @relation("UserPromoter", fields: [promotedById], references: [id])
+  promotedUsers       User[]               @relation("UserPromoter")
+  auditLogs           AuditLog[]
+  passwordResetTokens PasswordResetToken[]
 
-   @@map("users")
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("password_reset_tokens")
 }
 
 model Project {
-   id                 String      @id @default(uuid())
-   name               String
-   key                String      @unique // Project key like "PROJ", "DEV"
-   description        String?
-   department         Department?
-   creatorId          String      @map("creator_id")
-   permissionSchemeId String?     @map("permission_scheme_id")
-   workflowSchemeId   String?     @map("workflow_scheme_id")
-   isPublic           Boolean     @default(false) @map("is_public")
-   createdAt          DateTime    @default(now()) @map("created_at")
-   updatedAt          DateTime    @updatedAt @map("updated_at")
+  id               String       @id @default(uuid())
+  name             String
+  key              String       @unique // Project key like "PROJ", "DEV"
+  description      String?
+  creatorId        String       @map("creator_id")
+  workflowType     WorkflowType @default(BASIC) @map("workflow_type")
+  workflowSchemeId String?      @map("workflow_scheme_id") // Only used when workflowType = CUSTOM
+  isPublic         Boolean      @default(false) @map("is_public")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
-   // Relations
-   creator          User               @relation("ProjectCreator", fields: [creatorId], references: [id])
-   members          ProjectMember[]
-   tasks            Task[]
-   epics            Epic[]
-   sprints          Sprint[]
-   components       ProjectComponent[]
-   versions         ProjectVersion[]
-   boards           Board[]
-   permissionScheme PermissionScheme?  @relation(fields: [permissionSchemeId], references: [id])
-   workflowScheme   WorkflowScheme?    @relation(fields: [workflowSchemeId], references: [id])
+  // Relations
+  creator        User               @relation("ProjectCreator", fields: [creatorId], references: [id])
+  members        ProjectMember[]
+  tasks          Task[]
+  epics          Epic[]
+  sprints        Sprint[]
+  components     ProjectComponent[]
+  versions       ProjectVersion[]
+  boards         Board[]
+  workflowScheme WorkflowScheme?    @relation(fields: [workflowSchemeId], references: [id])
 
-   @@map("projects")
+  @@map("projects")
 }
 
 model Task {
-   id               String       @id @default(uuid())
-   projectId        String?      @map("project_id")
-   componentId      String?      @map("component_id")
-   versionId        String?      @map("version_id")
-   title            String
-   description      String?
-   priority         TaskPriority @default(MEDIUM)
-   issueType        IssueType    @default(TASK) @map("issue_type")
-   status           TaskStatus   @default(DRAFT)
-   creatorId        String       @map("creator_id")
-   assigneeId       String?      @map("assignee_id")
-   reporterId       String?      @map("reporter_id")
-   parentTaskId     String?      @map("parent_task_id")
-   requiresApproval Boolean      @default(false) @map("requires_approval")
-   approvedById     String?      @map("approved_by_id")
-   rejectionReason  String?      @map("rejection_reason")
-   labels           String[]     @default([])
-   dueDate          DateTime?    @map("due_date")
-   estimatedHours   Float?       @map("estimated_hours")
-   loggedHours      Float        @default(0) @map("logged_hours")
-   storyPoints      Int?         @map("story_points")
-   epicId           String?      @map("epic_id")
-   sprintId         String?      @map("sprint_id")
-   boardColumnId    String?      @map("board_column_id")
-   position         Int          @default(0) // For ordering within columns
-   createdAt        DateTime     @default(now()) @map("created_at")
-   updatedAt        DateTime     @updatedAt @map("updated_at")
+  id               String       @id @default(uuid())
+  projectId        String?      @map("project_id")
+  componentId      String?      @map("component_id")
+  versionId        String?      @map("version_id")
+  title            String
+  description      String?
+  priority         TaskPriority @default(MEDIUM)
+  issueType        IssueType    @default(TASK) @map("issue_type")
+  status           TaskStatus   @default(DRAFT)
+  creatorId        String       @map("creator_id")
+  reporterId       String?      @map("reporter_id")
+  parentTaskId     String?      @map("parent_task_id")
+  requiresApproval Boolean      @default(false) @map("requires_approval")
+  approvedById     String?      @map("approved_by_id")
+  rejectionReason  String?      @map("rejection_reason")
+  labels           String[]     @default([])
+  dueDate          DateTime?    @map("due_date")
+  estimatedHours   Float?       @map("estimated_hours")
+  loggedHours      Float        @default(0) @map("logged_hours")
+  storyPoints      Int?         @map("story_points")
+  epicId           String?      @map("epic_id")
+  sprintId         String?      @map("sprint_id")
+  boardColumnId    String?      @map("board_column_id")
+  position         Int          @default(0) // For ordering within columns
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
-   // Relations
-   project      Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-   component    ProjectComponent? @relation(fields: [componentId], references: [id])
-   version      ProjectVersion?   @relation(fields: [versionId], references: [id])
-   creator      User              @relation("TaskCreator", fields: [creatorId], references: [id])
-   assignee     User?             @relation("TaskAssignee", fields: [assigneeId], references: [id])
-   approvedBy   User?             @relation("TaskApprover", fields: [approvedById], references: [id])
-   parentTask   Task?             @relation("SubTasks", fields: [parentTaskId], references: [id])
-   subTasks     Task[]            @relation("SubTasks")
-   comments     TaskComment[]
-   activityLogs TaskActivityLog[]
-   watchers     User[]            @relation("TaskWatchers")
-   dependentOn  TaskDependency[]  @relation("DependentTask")
-   blocking     TaskDependency[]  @relation("BlockingTask")
-   timeEntries  TimeEntry[]
-   activeTimers ActiveTimer[]
-   attachments  TaskAttachment[]
-   epic         Epic?             @relation(fields: [epicId], references: [id])
-   sprint       Sprint?           @relation(fields: [sprintId], references: [id])
-   boardColumn  BoardColumn?      @relation(fields: [boardColumnId], references: [id])
+  // Relations
+  project      Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  component    ProjectComponent? @relation(fields: [componentId], references: [id])
+  version      ProjectVersion?   @relation(fields: [versionId], references: [id])
+  creator      User              @relation("TaskCreator", fields: [creatorId], references: [id])
+  assignees    TaskAssignee[] // Many-to-many relation for multiple assignees
+  approvedBy   User?             @relation("TaskApprover", fields: [approvedById], references: [id])
+  parentTask   Task?             @relation("SubTasks", fields: [parentTaskId], references: [id])
+  subTasks     Task[]            @relation("SubTasks")
+  comments     TaskComment[]
+  activityLogs TaskActivityLog[]
+  watchers     User[]            @relation("TaskWatchers")
+  dependentOn  TaskDependency[]  @relation("DependentTask")
+  blocking     TaskDependency[]  @relation("BlockingTask")
+  timeEntries  TimeEntry[]
+  activeTimers ActiveTimer[]
+  attachments  TaskAttachment[]
+  epic         Epic?             @relation(fields: [epicId], references: [id])
+  sprint       Sprint?           @relation(fields: [sprintId], references: [id])
+  boardColumn  BoardColumn?      @relation(fields: [boardColumnId], references: [id])
 
-   @@map("tasks")
+  @@map("tasks")
+}
+
+model TaskAssignee {
+  id         String   @id @default(uuid())
+  taskId     String   @map("task_id")
+  userId     String   @map("user_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  assignedBy String?  @map("assigned_by") // Who assigned this user
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId]) // Prevent duplicate assignments
+  @@map("task_assignees")
 }
 
 model TaskComment {
-   id        String   @id @default(uuid())
-   taskId    String   @map("task_id")
-   userId    String   @map("user_id")
-   message   String
-   createdAt DateTime @default(now()) @map("created_at")
+  id        String   @id @default(uuid())
+  taskId    String   @map("task_id")
+  userId    String   @map("user_id")
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
 
-   // Relations
-   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-   user User @relation(fields: [userId], references: [id])
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 
-   @@map("task_comments")
+  @@map("task_comments")
 }
 
 model TaskActivityLog {
-   id             String         @id @default(uuid())
-   taskId         String         @map("task_id")
-   userId         String         @map("user_id")
-   action         ActivityAction
-   previousStatus TaskStatus?    @map("previous_status")
-   newStatus      TaskStatus?    @map("new_status")
-   metadata       Json?
-   timestamp      DateTime       @default(now())
+  id             String         @id @default(uuid())
+  taskId         String         @map("task_id")
+  userId         String         @map("user_id")
+  action         ActivityAction
+  previousStatus TaskStatus?    @map("previous_status")
+  newStatus      TaskStatus?    @map("new_status")
+  metadata       Json?
+  timestamp      DateTime       @default(now())
 
-   // Relations
-   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-   user User @relation(fields: [userId], references: [id])
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 
-   @@map("task_activity_logs")
+  @@map("task_activity_logs")
 }
 
 model Notification {
-   id        String           @id @default(uuid())
-   userId    String           @map("user_id")
-   type      NotificationType
-   payload   Json
-   read      Boolean          @default(false)
-   createdAt DateTime         @default(now()) @map("created_at")
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  type      NotificationType
+  payload   Json
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now()) @map("created_at")
 
-   // Relations
-   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-   @@map("notifications")
+  @@map("notifications")
 }
 
 model TaskDependency {
-   id              String         @id @default(uuid())
-   dependentTaskId String         @map("dependent_task_id")
-   blockingTaskId  String         @map("blocking_task_id")
-   type            DependencyType @default(BLOCKS)
-   createdAt       DateTime       @default(now()) @map("created_at")
+  id              String         @id @default(uuid())
+  dependentTaskId String         @map("dependent_task_id")
+  blockingTaskId  String         @map("blocking_task_id")
+  type            DependencyType @default(BLOCKS)
+  createdAt       DateTime       @default(now()) @map("created_at")
 
-   // Relations
-   dependentTask Task @relation("DependentTask", fields: [dependentTaskId], references: [id], onDelete: Cascade)
-   blockingTask  Task @relation("BlockingTask", fields: [blockingTaskId], references: [id], onDelete: Cascade)
+  // Relations
+  dependentTask Task @relation("DependentTask", fields: [dependentTaskId], references: [id], onDelete: Cascade)
+  blockingTask  Task @relation("BlockingTask", fields: [blockingTaskId], references: [id], onDelete: Cascade)
 
-   @@unique([dependentTaskId, blockingTaskId])
-   @@map("task_dependencies")
+  @@unique([dependentTaskId, blockingTaskId])
+  @@map("task_dependencies")
 }
 
 model TimeEntry {
-   id          String   @id @default(uuid())
-   taskId      String   @map("task_id")
-   userId      String   @map("user_id")
-   hours       Float
-   description String?
-   date        DateTime @default(now())
-   createdAt   DateTime @default(now()) @map("created_at")
-   updatedAt   DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  taskId      String   @map("task_id")
+  userId      String   @map("user_id")
+  hours       Float
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-   // Relations
-   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-   user User @relation(fields: [userId], references: [id])
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 
-   @@map("time_entries")
+  @@map("time_entries")
 }
 
 model ActiveTimer {
-   id          String   @id @default(uuid())
-   taskId      String   @map("task_id")
-   userId      String   @unique @map("user_id")
-   startTime   DateTime @map("start_time")
-   description String?
+  id          String   @id @default(uuid())
+  taskId      String   @map("task_id")
+  userId      String   @unique @map("user_id")
+  startTime   DateTime @map("start_time")
+  description String?
 
-   // Relations
-   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-   @@map("active_timers")
+  @@map("active_timers")
 }
 
 model TaskAttachment {
-   id           String   @id @default(uuid())
-   taskId       String   @map("task_id")
-   uploadedById String   @map("uploaded_by_id")
-   fileName     String   @map("file_name")
-   originalName String   @map("original_name")
-   filePath     String   @map("file_path")
-   mimeType     String   @map("mime_type")
-   fileSize     Int      @map("file_size")
-   createdAt    DateTime @default(now()) @map("created_at")
+  id           String   @id @default(uuid())
+  taskId       String   @map("task_id")
+  uploadedById String   @map("uploaded_by_id")
+  fileName     String   @map("file_name")
+  originalName String   @map("original_name")
+  filePath     String   @map("file_path")
+  mimeType     String   @map("mime_type")
+  fileSize     Int      @map("file_size")
+  createdAt    DateTime @default(now()) @map("created_at")
 
-   // Relations
-   task       Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-   uploadedBy User @relation("TaskAttachmentUploader", fields: [uploadedById], references: [id])
+  // Relations
+  task       Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy User @relation("TaskAttachmentUploader", fields: [uploadedById], references: [id])
 
-   @@map("task_attachments")
+  @@map("task_attachments")
 }
 
 model Epic {
-   id          String    @id @default(uuid())
-   projectId   String    @map("project_id")
-   name        String
-   description String?
-   color       String?
-   startDate   DateTime? @map("start_date")
-   endDate     DateTime? @map("end_date")
-   createdAt   DateTime  @default(now()) @map("created_at")
-   updatedAt   DateTime  @updatedAt @map("updated_at")
+  id          String    @id @default(uuid())
+  projectId   String    @map("project_id")
+  name        String
+  description String?
+  color       String?
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
-   // Relations
-   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-   tasks   Task[]
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
 
-   @@map("epics")
+  @@map("epics")
 }
 
 model Sprint {
-   id            String       @id @default(uuid())
-   projectId     String       @map("project_id")
-   name          String
-   goal          String?
-   status        SprintStatus @default(PLANNING)
-   startDate     DateTime?    @map("start_date")
-   endDate       DateTime?    @map("end_date")
-   capacityHours Float?       @map("capacity_hours")
-   completedAt   DateTime?    @map("completed_at")
-   createdAt     DateTime     @default(now()) @map("created_at")
-   updatedAt     DateTime     @updatedAt @map("updated_at")
+  id            String       @id @default(uuid())
+  projectId     String       @map("project_id")
+  name          String
+  goal          String?
+  status        SprintStatus @default(PLANNING)
+  startDate     DateTime?    @map("start_date")
+  endDate       DateTime?    @map("end_date")
+  capacityHours Float?       @map("capacity_hours")
+  completedAt   DateTime?    @map("completed_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
 
-   // Relations
-   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-   tasks   Task[]
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
 
-   @@map("sprints")
+  @@map("sprints")
 }
 
 // ============================================================================
@@ -405,92 +486,58 @@ model Sprint {
 // ============================================================================
 
 model ProjectMember {
-   id        String      @id @default(uuid())
-   projectId String      @map("project_id")
-   userId    String      @map("user_id")
-   role      ProjectRole @default(DEVELOPER)
-   addedAt   DateTime    @default(now()) @map("added_at")
-   addedById String      @map("added_by_id")
+  id        String      @id @default(uuid())
+  projectId String      @map("project_id")
+  userId    String      @map("user_id")
+  role      ProjectRole @default(DEVELOPER)
+  addedAt   DateTime    @default(now()) @map("added_at")
+  addedById String      @map("added_by_id")
 
-   // Relations
-   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-   user    User    @relation(fields: [userId], references: [id])
-   addedBy User    @relation("MemberAdder", fields: [addedById], references: [id])
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addedBy User    @relation("MemberAdder", fields: [addedById], references: [id], onDelete: Cascade)
 
-   @@unique([projectId, userId])
-   @@index([projectId])
-   @@index([userId])
-   @@map("project_members")
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_members")
 }
 
 // ============================================================================
-// PERMISSION SYSTEM - Granular Access Control
-// ============================================================================
-
-model PermissionScheme {
-   id          String   @id @default(uuid())
-   name        String   @unique
-   description String?
-   isDefault   Boolean  @default(false) @map("is_default")
-   createdAt   DateTime @default(now()) @map("created_at")
-   updatedAt   DateTime @updatedAt @map("updated_at")
-
-   // Relations
-   grants   PermissionGrant[]
-   projects Project[]
-
-   @@map("permission_schemes")
-}
-
-model PermissionGrant {
-   id                String       @id @default(uuid())
-   schemeId          String       @map("scheme_id")
-   permission        Permission
-   grantedToRole     ProjectRole? @map("granted_to_role")
-   grantedToUserRole UserRole?    @map("granted_to_user_role")
-   createdAt         DateTime     @default(now()) @map("created_at")
-
-   // Relations
-   scheme PermissionScheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-
-   @@index([schemeId])
-   @@map("permission_grants")
-}
-
-// ============================================================================
-// WORKFLOW SYSTEM - Custom Issue Workflows
+// WORKFLOW SYSTEM - Custom Issue Workflows (for CUSTOM workflow type only)
 // ============================================================================
 
 model WorkflowScheme {
-   id          String   @id @default(uuid())
-   name        String   @unique
-   description String?
-   isDefault   Boolean  @default(false) @map("is_default")
-   createdAt   DateTime @default(now()) @map("created_at")
-   updatedAt   DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-   // Relations
-   projects    Project[]
-   transitions WorkflowTransition[]
+  // Relations
+  projects    Project[]
+  transitions WorkflowTransition[]
 
-   @@map("workflow_schemes")
+  @@map("workflow_schemes")
 }
 
 model WorkflowTransition {
-   id           String       @id @default(uuid())
-   schemeId     String       @map("scheme_id")
-   name         String
-   fromStatus   TaskStatus   @map("from_status")
-   toStatus     TaskStatus   @map("to_status")
-   issueType    IssueType?   @map("issue_type")
-   requiredRole ProjectRole? @map("required_role")
-   createdAt    DateTime     @default(now()) @map("created_at")
+  id           String       @id @default(uuid())
+  schemeId     String       @map("scheme_id")
+  name         String
+  fromStatus   TaskStatus   @map("from_status")
+  toStatus     TaskStatus   @map("to_status")
+  issueType    IssueType?   @map("issue_type")
+  requiredRole ProjectRole? @map("required_role")
+  createdAt    DateTime     @default(now()) @map("created_at")
 
-   // Relations
-   scheme WorkflowScheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  // Relations
+  scheme WorkflowScheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
-   @@index([schemeId])
-   @@map("workflow_transitions")
+  @@index([schemeId])
+  @@map("workflow_transitions")
 }
 
 // ============================================================================
@@ -498,41 +545,41 @@ model WorkflowTransition {
 // ============================================================================
 
 model Board {
-   id          String    @id @default(uuid())
-   projectId   String    @map("project_id")
-   name        String
-   type        BoardType @default(KANBAN)
-   description String?
-   filterId    String?   @map("filter_id") // For advanced filtering
-   createdAt   DateTime  @default(now()) @map("created_at")
-   updatedAt   DateTime  @updatedAt @map("updated_at")
+  id          String    @id @default(uuid())
+  projectId   String    @map("project_id")
+  name        String
+  type        BoardType @default(KANBAN)
+  description String?
+  filterId    String?   @map("filter_id") // For advanced filtering
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
-   // Relations
-   project Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-   columns BoardColumn[]
-   filter  SavedFilter?  @relation(fields: [filterId], references: [id])
+  // Relations
+  project Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  columns BoardColumn[]
+  filter  SavedFilter?  @relation(fields: [filterId], references: [id])
 
-   @@index([projectId])
-   @@map("boards")
+  @@index([projectId])
+  @@map("boards")
 }
 
 model BoardColumn {
-   id             String         @id @default(uuid())
-   boardId        String         @map("board_id")
-   name           String
-   status         WorkflowStatus @default(TODO)
-   mappedStatuses TaskStatus[]   @map("mapped_statuses") // Which task statuses map to this column
-   position       Int            @default(0)
-   wipLimit       Int?           @map("wip_limit") // Work In Progress limit
-   createdAt      DateTime       @default(now()) @map("created_at")
-   updatedAt      DateTime       @updatedAt @map("updated_at")
+  id             String         @id @default(uuid())
+  boardId        String         @map("board_id")
+  name           String
+  status         WorkflowStatus @default(TODO)
+  mappedStatuses TaskStatus[]   @map("mapped_statuses") // Which task statuses map to this column
+  position       Int            @default(0)
+  wipLimit       Int?           @map("wip_limit") // Work In Progress limit
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
 
-   // Relations
-   board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
-   tasks Task[]
+  // Relations
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks Task[]
 
-   @@index([boardId])
-   @@map("board_columns")
+  @@index([boardId])
+  @@map("board_columns")
 }
 
 // ============================================================================
@@ -540,21 +587,21 @@ model BoardColumn {
 // ============================================================================
 
 model ProjectComponent {
-   id          String   @id @default(uuid())
-   projectId   String   @map("project_id")
-   name        String
-   description String?
-   leadId      String?  @map("lead_id") // Component lead user
-   createdAt   DateTime @default(now()) @map("created_at")
-   updatedAt   DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  name        String
+  description String?
+  leadId      String?  @map("lead_id") // Component lead user
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-   // Relations
-   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-   tasks   Task[]
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
 
-   @@unique([projectId, name])
-   @@index([projectId])
-   @@map("project_components")
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@map("project_components")
 }
 
 // ============================================================================
@@ -562,23 +609,23 @@ model ProjectComponent {
 // ============================================================================
 
 model ProjectVersion {
-   id          String    @id @default(uuid())
-   projectId   String    @map("project_id")
-   name        String
-   description String?
-   releaseDate DateTime? @map("release_date")
-   isReleased  Boolean   @default(false) @map("is_released")
-   isArchived  Boolean   @default(false) @map("is_archived")
-   createdAt   DateTime  @default(now()) @map("created_at")
-   updatedAt   DateTime  @updatedAt @map("updated_at")
+  id          String    @id @default(uuid())
+  projectId   String    @map("project_id")
+  name        String
+  description String?
+  releaseDate DateTime? @map("release_date")
+  isReleased  Boolean   @default(false) @map("is_released")
+  isArchived  Boolean   @default(false) @map("is_archived")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
-   // Relations
-   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-   tasks   Task[]
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
 
-   @@unique([projectId, name])
-   @@index([projectId])
-   @@map("project_versions")
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@map("project_versions")
 }
 
 // ============================================================================
@@ -586,19 +633,47 @@ model ProjectVersion {
 // ============================================================================
 
 model SavedFilter {
-   id          String   @id @default(uuid())
-   userId      String   @map("user_id")
-   name        String
-   description String?
-   jql         String // JQL query string
-   isPublic    Boolean  @default(false) @map("is_public")
-   isFavorite  Boolean  @default(false) @map("is_favorite")
-   createdAt   DateTime @default(now()) @map("created_at")
-   updatedAt   DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String
+  description String?
+  jql         String // JQL query string
+  isPublic    Boolean  @default(false) @map("is_public")
+  isFavorite  Boolean  @default(false) @map("is_favorite")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-   // Relations
-   boards Board[]
+  // Relations
+  boards Board[]
 
-   @@index([userId])
-   @@map("saved_filters")
+  @@index([userId])
+  @@map("saved_filters")
+}
+
+// ============================================================================
+// AUDIT LOGS - System-wide Activity Tracking
+// ============================================================================
+
+model AuditLog {
+  id           String      @id @default(uuid())
+  userId       String?     @map("user_id") // Nullable for system actions
+  action       AuditAction
+  entityType   String      @map("entity_type") // e.g., "User", "Task", "Project"
+  entityId     String?     @map("entity_id") // ID of the entity affected
+  changes      Json? // Before/after values for updates
+  metadata     Json? // Additional context (IP, user agent, etc.)
+  ipAddress    String?     @map("ip_address")
+  userAgent    String?     @map("user_agent")
+  success      Boolean     @default(true) // Track failed attempts too
+  errorMessage String?     @map("error_message")
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

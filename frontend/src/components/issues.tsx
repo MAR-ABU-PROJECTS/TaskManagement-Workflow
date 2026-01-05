@@ -1,18 +1,21 @@
-import { Card, CardContent } from "@/components/ui/card";
+"use client";
+// import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Filter, Search } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Plus, Search } from "lucide-react";
+// import { Badge } from "@/components/ui/badge";
+// import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
+// import Link from "next/link";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  getSeverityColor,
-  getSeverityIcon,
-  getStatusBadge,
-} from "@/app/(dashboard)/issues/lib/utils";
+// import {
+//   getSeverityColor,
+//   getSeverityIcon,
+//   getStatusBadge,
+// } from "@/app/(dashboard)/issues/lib/utils";
+// import { useState } from "react";
+// import { ReportIssueModal } from "@/app/(dashboard)/issues/components/report-issue-modal";
 
-const issues = [
+const initialIssues = [
   {
     id: 1,
     title: "Login button not responding on mobile",
@@ -70,8 +73,23 @@ const issues = [
     linkedTask: "Backend Optimization",
   },
 ];
+void initialIssues
 
 export default function IssuesPage() {
+  // const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
+  // const [issues, setIssues] = useState(initialIssues);
+
+  // const handleReportIssue = (issueData: any) => {
+  //   const newIssue = {
+  //     id: issues.length + 1,
+  //     ...issueData,
+  //     status: "Open",
+  //     assignee: { name: "Unassigned", avatar: "?" },
+  //     createdAt: new Date().toISOString().split("T")[0],
+  //   };
+  //   setIssues([newIssue, ...issues]);
+  // };
   return (
     <div className="flex flex-1 flex-col">
       {/* Header */}
@@ -85,11 +103,11 @@ export default function IssuesPage() {
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search issues..." className="w-64 pl-8" />
               </div>
-              <Button size="sm" variant="outline" className="bg-transparent">
-                <Filter className="mr-2 h-4 w-4" />
-                Filter
-              </Button>
-              <Button size="sm">
+
+              <Button size="sm" 
+              // onClick={() => setIsReportModalOpen(true)}
+              
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Report Issue
               </Button>
@@ -108,7 +126,7 @@ export default function IssuesPage() {
 
           {/* Issues List */}
           <div className="space-y-3">
-            {issues.map((issue) => (
+            {/* {issues.map((issue) => (
               <Link
                 key={issue.id}
                 href={`/issues/${issue.id}`}
@@ -161,10 +179,16 @@ export default function IssuesPage() {
                   </CardContent>
                 </Card>
               </Link>
-            ))}
+            ))} */}
           </div>
         </div>
       </main>
+
+      {/* <ReportIssueModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        onSubmit={handleReportIssue}
+      /> */}
     </div>
   );
 }

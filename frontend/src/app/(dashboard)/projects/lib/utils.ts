@@ -1,9 +1,16 @@
+// export const columns = [
+//   { id: "backlog", title: "Backlog", color: "bg-gray-500" },
+//   { id: "todo", title: "To Do", color: "bg-blue-500" },
+//   { id: "in-progress", title: "In Progress", color: "bg-yellow-500" },
+//   { id: "review", title: "Review", color: "bg-purple-500" },
+//   { id: "done", title: "Done", color: "bg-green-500" },
+// ];
 export const columns = [
-	{ id: "backlog", title: "Backlog", color: "bg-gray-500" },
-	{ id: "todo", title: "To Do", color: "bg-blue-500" },
-	{ id: "in-progress", title: "In Progress", color: "bg-yellow-500" },
-	{ id: "review", title: "Review", color: "bg-purple-500" },
-	{ id: "done", title: "Done", color: "bg-green-500" },
+	{ id: "backlog", title: "Backlog" },
+	{ id: "todo", title: "To Do" },
+	{ id: "in-progress", title: "In Progress" },
+	{ id: "review", title: "Review" },
+	{ id: "done", title: "Done" },
 ];
 
 export const initialTasks = [
@@ -78,20 +85,15 @@ export const initialTasks = [
 		comments: 1,
 		attachments: 4,
 	},
-
-	
-
-
-
 ];
 
 export function getPriorityColor(priority: string) {
-	switch (priority) {
-		case "Critical":
+	switch (priority.toLowerCase()) {
+		case "critical":
 			return "bg-red-500/10 text-red-500 border-red-500/20";
-		case "High":
+		case "high":
 			return "bg-orange-500/10 text-orange-500 border-orange-500/20";
-		case "Medium":
+		case "medium":
 			return "bg-blue-500/10 text-blue-500 border-blue-500/20";
 		default:
 			return "bg-gray-500/10 text-gray-500 border-gray-500/20";

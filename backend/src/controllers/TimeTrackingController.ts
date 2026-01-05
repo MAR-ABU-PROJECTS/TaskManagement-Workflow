@@ -9,7 +9,7 @@ export class TimeTrackingController {
   async logTime(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { taskId } = req.params;
@@ -55,7 +55,7 @@ export class TimeTrackingController {
   async getTaskTimeEntries(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { taskId } = req.params;
@@ -86,7 +86,7 @@ export class TimeTrackingController {
   async getUserTimeEntries(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { startDate, endDate, taskId, projectId } = req.query;
@@ -120,7 +120,7 @@ export class TimeTrackingController {
   async updateTimeEntry(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -166,7 +166,7 @@ export class TimeTrackingController {
   async deleteTimeEntry(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;
@@ -204,7 +204,7 @@ export class TimeTrackingController {
   async startTimer(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { taskId, description } = req.body;
@@ -243,7 +243,7 @@ export class TimeTrackingController {
   async stopTimer(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const timeEntry = await TimeTrackingService.stopTimer(req.user.id);
@@ -269,7 +269,7 @@ export class TimeTrackingController {
   async getActiveTimer(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const timer = await TimeTrackingService.getActiveTimer(req.user.id);
@@ -294,7 +294,7 @@ export class TimeTrackingController {
   async getProjectTimeSummary(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { projectId } = req.params;
@@ -324,7 +324,7 @@ export class TimeTrackingController {
   async getUserTimeSummary(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { startDate, endDate } = req.query;

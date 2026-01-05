@@ -102,11 +102,15 @@ class SprintService {
         project: true,
         tasks: {
           include: {
-            assignee: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
+            assignees: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
               },
             },
             epic: {

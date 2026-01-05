@@ -1,119 +1,84 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { useState } from "react";
-import { columns, initialTasks } from "@/app/(dashboard)/projects/lib/utils";
 import Kanbanboard from "@/app/(dashboard)/projects/components/kanban-board";
-import { DeleteTaskModal } from "@/app/(dashboard)/projects/components/delete-task-modal";
-import { AssignTaskModal } from "@/app/(dashboard)/projects/components/assign-task-modal";
-import { ChangeStatusModal } from "@/app/(dashboard)/projects/components/change-status-modal";
-import { EditTaskModal } from "@/app/(dashboard)/projects/components/edit-task-modal";
-import { Task } from "@/app/(dashboard)/projects/type";
+import { KanbanBoard } from "@/app/(dashboard)/projects/lib/type";
+import { AddTaskModal } from "@/app/(dashboard)/projects/components/add-task-modal";
+import { useGetProjectTasks } from "@/app/(dashboard)/tasks/lib/queries";
+import { QueryStateHandler } from "./QueryStateHandler";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Members from "@/app/(dashboard)/projects/components/members";
+import { Button } from "./ui/button";
+import { Plus } from "lucide-react";
 
-export default function ProjectDetailPage() {
-	const [tasks, setTasks] = useState(initialTasks);
-	const [selectedTask, setSelectedTask] = useState<Task | null>();
+export default function ProjectBoardPage({ projectId }: { projectId: string }) {
 	const [openModal, setOpenModal] = useState<
-		"edit" | "status" | "assign" | "delete" | null
+		"edit" | "status" | "assign" | "delete" | "add" | null
 	>(null);
 
-	const handleEditTask = (taskId: number) => {
-		const task = tasks.find((t) => t.id === taskId);
-		setSelectedTask(task);
-		setOpenModal("edit");
-	};
-
-	const handleChangeStatus = (taskId: number) => {
-		const task = tasks.find((t) => t.id === taskId);
-		setSelectedTask(task);
-		setOpenModal("status");
-	};
-
-	const handleAssignTask = (taskId: number) => {
-		const task = tasks.find((t) => t.id === taskId);
-		setSelectedTask(task);
-		setOpenModal("assign");
-	};
-
-	const handleDeleteTask = (taskId: number) => {
-		const task = tasks.find((t) => t.id === taskId);
-		setSelectedTask(task);
-		setOpenModal("delete");
-	};
-
-  const handleSaveTask = (updatedTask: Task) => {
-    setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)))
-    setOpenModal(null)
-  }
-
-	const handleStatusChange = (taskId: number, newStatus: string) => {
-		setTasks(
-			tasks.map((t) =>
-				t.id === taskId ? { ...t, status: newStatus } : t
-			)
-		);
-		setOpenModal(null);
-	};
-
-	const handleAssignChange = (taskId: number, assignee: string) => {
-		setTasks(tasks.map((t) => (t.id === taskId ? { ...t, assignee } : t)));
-		setOpenModal(null);
-	};
-
-	const handleConfirmDelete = (taskId: number) => {
-		setTasks(tasks.filter((t) => t.id !== taskId));
-		setOpenModal(null);
-	};
-
+	const boardQuery = useGetProjectTasks(projectId, {
+		disableGlobalSuccess: true,
+	});
 	return (
-		<div className="flex flex-1 flex-col  w-full">
+		<div className="flex flex-1 flex-col  w-full overflow-x-hidden">
 			{/* Main Content - Kanban Board */}
 			<main className=" py-6 px-4">
-				{/* Header */}
+				<div>
+					<Tabs defaultValue="board">
+						<TabsList>
+							<TabsTrigger value="board">Board</TabsTrigger>
+							<TabsTrigger value="members">Members</TabsTrigger>
+						</TabsList>
+						<TabsContent value="board">
+							<div className="mt-4">
+								<div className="flex justify-end mb-4">
+									<Button
+										size={"sm"}
+										onClick={() => setOpenModal("add")}
+									>
+										<Plus />
+										Add Task
+									</Button>
+								</div>
+								<QueryStateHandler
+									query={boardQuery}
+									emptyMessage="No Tasks."
+									getItems={(res) => res}
+									render={(res) => {
+										const data = res.data as KanbanBoard;
 
-				<div className="mb-4">
-					<Button size="sm">
-						<Plus className="mr-2 h-4 w-4" />
-						Add Task
-					</Button>
-				</div>
+										const columns = Object.entries(
+											data.columns
+										).map(([key, column]) => ({
+											id: key,
+											title: column.name,
+											tasks: column.tasks,
+										}));
 
-				<div className="">
-					<Kanbanboard
-						columns={columns}
-						tasks={tasks}
-						onAddTask={() => console.log("Add task to column")}
-						onEditTask={handleEditTask}
-						onChangeStatus={handleChangeStatus}
-						onAssignTask={handleAssignTask}
-						onDeleteTask={handleDeleteTask}
-					/>
+										return (
+											<div className="">
+												<Kanbanboard
+													projectId={projectId}
+													columns={columns}
+												/>
+											</div>
+										);
+									}}
+								/>
+							</div>
+						</TabsContent>
+						<TabsContent value="members">
+							<div className="mt-4">
+								<Members projectId={projectId} />
+							</div>
+						</TabsContent>
+					</Tabs>
 				</div>
 			</main>
 
-			<EditTaskModal
-				isOpen={openModal === "edit"}
+			<AddTaskModal
+				projectId={projectId}
+				isOpen={openModal === "add"}
 				onClose={() => setOpenModal(null)}
-				task={selectedTask as Task}
-				onSave={handleSaveTask}
-			/>
-			<ChangeStatusModal
-				isOpen={openModal === "status"}
-				onClose={() => setOpenModal(null)}
-				task={selectedTask as Task}
-				onStatusChange={handleStatusChange}
-			/>
-			<AssignTaskModal
-				isOpen={openModal === "assign"}
-				onClose={() => setOpenModal(null)}
-				task={selectedTask as Task}
-				onAssign={handleAssignChange}
-			/>
-			<DeleteTaskModal
-				isOpen={openModal === "delete"}
-				onClose={() => setOpenModal(null)}
-				task={selectedTask as Task}
-				onConfirm={handleConfirmDelete}
 			/>
 		</div>
 	);

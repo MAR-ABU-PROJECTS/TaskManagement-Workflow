@@ -1,3 +1,4 @@
+"use client";
 import {
 	Card,
 	CardContent,
@@ -14,8 +15,10 @@ import {
 	FolderKanban,
 } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "@/app/providers/session-provider";
 
 export default function DashboardPage() {
+	const { user } = useSession();
 	return (
 		<div className="flex flex-1 flex-col">
 			{/* Header */}
@@ -27,9 +30,9 @@ export default function DashboardPage() {
 					<div>
 						<div className="flex justify-between items-center mb-2 flex-wrap gap-2.5">
 							<h2 className="text-2xl font-bold tracking-tight">
-								Welcome back, John doe
+								Welcome back, {user?.name ?? ""}
 							</h2>
-							<Button size="lg" variant={"default"} asChild>
+							<Button size="sm" variant={"default"} asChild>
 								<Link href="/projects/new">
 									<Plus className="mr-2 h-4 w-4" />
 									New Project
@@ -226,9 +229,9 @@ export default function DashboardPage() {
 													task.priority === "High"
 														? "bg-destructive/10 text-destructive"
 														: task.priority ===
-														  "Medium"
-														? "bg-primary/10 text-primary"
-														: "bg-muted text-muted-foreground"
+															  "Medium"
+															? "bg-primary/10 text-primary"
+															: "bg-muted text-muted-foreground"
 												}`}
 											>
 												{task.priority}

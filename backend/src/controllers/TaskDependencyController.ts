@@ -10,7 +10,7 @@ export class TaskDependencyController {
   async createDependency(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { dependentTaskId, blockingTaskId, type } = req.body;
@@ -53,7 +53,7 @@ export class TaskDependencyController {
   async getAllDependencies(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { projectId, type } = req.query;
@@ -82,7 +82,7 @@ export class TaskDependencyController {
   async getTaskDependencies(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { taskId } = req.params;
@@ -112,7 +112,7 @@ export class TaskDependencyController {
   async getBlockingInfo(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { taskId } = req.params;
@@ -140,7 +140,7 @@ export class TaskDependencyController {
   async getSubtaskSummary(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { taskId } = req.params;
@@ -168,7 +168,7 @@ export class TaskDependencyController {
   async deleteDependency(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "Forbidden: Authentication required" });
       }
 
       const { id } = req.params;

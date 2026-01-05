@@ -2,7 +2,7 @@ import EditTeamPage from "@/components/EditTeam";
 import React from "react";
 
 const page = () => {
-	return <EditTeamPage />;
+  return <EditTeamPage />;
 };
 
 export default page;

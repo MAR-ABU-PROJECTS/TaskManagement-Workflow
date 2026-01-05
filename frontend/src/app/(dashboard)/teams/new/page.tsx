@@ -1,8 +1,8 @@
-import CreateTeamPage from "@/components/new-team";
+import CreateTeamPage from "@/components/CreateTeam";
 import React from "react";
 
 const page = () => {
-	return <CreateTeamPage />;
+  return <CreateTeamPage />;
 };
 
 export default page;

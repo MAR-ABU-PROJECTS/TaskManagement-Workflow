@@ -3,6 +3,7 @@ import { CreateCommentDTO } from "../types/interfaces";
 import NotificationService from "./NotificationService";
 import ActivityLogService from "./ActivityLogService";
 import { ActivityAction } from "../types/enums";
+import emailService from "./EmailService";
 
 export class CommentService {
   /**
@@ -13,9 +14,41 @@ export class CommentService {
     userId: string,
     data: CreateCommentDTO
   ): Promise<any> {
+    // Accept both 'message' and 'content' fields
+    const messageText = data.message || data.content || '';
+    
+    if (!messageText) {
+      throw new Error('Comment message/content is required');
+    }
+
     // Verify task exists
     const task = await prisma.task.findUnique({
       where: { id: taskId },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+        project: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
 
     if (!task) {
@@ -26,7 +59,7 @@ export class CommentService {
       data: {
         taskId,
         userId,
-        message: data.message,
+        message: messageText,
       },
       include: {
         user: {
@@ -48,8 +81,67 @@ export class CommentService {
       metadata: { commentId: comment.id },
     });
 
-    // Send notifications
-    await NotificationService.notifyComment(taskId, userId, data.message);
+    // AUTOMATION: Send email to task creator if they're not the commenter
+    if (task.creatorId && task.creatorId !== userId) {
+      const creator = task.creator;
+      if (creator) {
+        emailService
+          .sendCommentNotificationEmail(creator.email, {
+            recipientName: creator.name,
+            commenterName: comment.user?.name || 'Unknown',
+            taskTitle: task.title,
+            taskId: task.id,
+            commentText: messageText,
+            projectName: task.project?.name,
+          })
+          .catch((err) =>
+            console.error("Failed to send comment email to creator:", err)
+          );
+      }
+    }
+
+    // AUTOMATION: Send email to all assignees if they're not the commenter and not the creator
+    for (const assignment of task.assignees) {
+      if (
+        assignment.userId !== userId &&
+        assignment.userId !== task.creatorId
+      ) {
+        emailService
+          .sendCommentNotificationEmail(assignment.user.email, {
+            recipientName: assignment.user.name,
+            commenterName: comment.user?.name || 'Unknown',
+            taskTitle: task.title,
+            taskId: task.id,
+            commentText: messageText,
+            projectName: task.project?.name,
+          })
+          .catch((err) =>
+            console.error("Failed to send comment email to assignee:", err)
+          );
+      }
+    }
+
+    // AUTOMATION: @Mention notifications
+    const mentionRegex = /@(\w+)/g;
+    const mentions = messageText.match(mentionRegex);
+    if (mentions) {
+      const usernames = mentions.map((m) => m.substring(1));
+      const mentionedUsers = await prisma.user.findMany({
+        where: {
+          OR: [
+            { name: { in: usernames } },
+            { email: { in: usernames.map((u) => `${u}@example.com`) } },
+          ],
+        },
+      });
+
+      for (const user of mentionedUsers) {
+        await NotificationService.notifyComment(taskId, user.id, messageText);
+      }
+    }
+
+    // AUTOMATION: Notify all watchers
+    await NotificationService.notifyComment(taskId, userId, messageText);
 
     return comment;
   }

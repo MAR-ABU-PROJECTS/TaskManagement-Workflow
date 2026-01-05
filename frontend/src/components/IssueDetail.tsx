@@ -1,22 +1,49 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { AlertTriangle, User, Flag, CheckCircle2, MoreVertical, LinkIcon, Send, FileText } from 'lucide-react'
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useState } from "react"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import {
+  AlertTriangle,
+  User,
+  Flag,
+  CheckCircle2,
+  MoreVertical,
+  LinkIcon,
+  Send,
+  FileText,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 
 const comments = [
   {
     id: 1,
     author: { name: "John Doe", avatar: "JD" },
-    content: "I've identified the issue. The event listener is not properly attached on iOS Safari.",
+    content:
+      "I've identified the issue. The event listener is not properly attached on iOS Safari.",
     timestamp: "2 hours ago",
   },
   {
@@ -28,31 +55,60 @@ const comments = [
   {
     id: 3,
     author: { name: "John Doe", avatar: "JD" },
-    content: "Yes, exactly. I'm working on a fix now. Should have it ready for testing soon.",
+    content:
+      "Yes, exactly. I'm working on a fix now. Should have it ready for testing soon.",
     timestamp: "30 minutes ago",
   },
-]
+];
 
 const activityLog = [
-  { id: 1, user: "John Doe", action: "changed status to", value: "In Progress", timestamp: "2 hours ago" },
-  { id: 2, user: "Jane Smith", action: "changed severity to", value: "Critical", timestamp: "4 hours ago" },
-  { id: 3, user: "John Doe", action: "was assigned to this issue", value: "", timestamp: "5 hours ago" },
-  { id: 4, user: "Mike Johnson", action: "created this issue", value: "", timestamp: "1 day ago" },
-]
+  {
+    id: 1,
+    user: "John Doe",
+    action: "changed status to",
+    value: "In Progress",
+    timestamp: "2 hours ago",
+  },
+  {
+    id: 2,
+    user: "Jane Smith",
+    action: "changed severity to",
+    value: "Critical",
+    timestamp: "4 hours ago",
+  },
+  {
+    id: 3,
+    user: "John Doe",
+    action: "was assigned to this issue",
+    value: "",
+    timestamp: "5 hours ago",
+  },
+  {
+    id: 4,
+    user: "Mike Johnson",
+    action: "created this issue",
+    value: "",
+    timestamp: "1 day ago",
+  },
+];
 
 export default function IssueDetailPage() {
-  const [newComment, setNewComment] = useState("")
+  const [newComment, setNewComment] = useState("");
 
   return (
     <div className="flex flex-1 flex-col px-4 p-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-       
         <div className="flex items-center gap-3 flex-1">
           <AlertTriangle className="h-5 w-5 text-orange-500" />
-          <h1 className="text-lg font-semibold">Login button not responding on mobile</h1>
+          <h1 className="text-lg font-semibold">
+            Login button not responding on mobile
+          </h1>
           <Badge variant="default">Critical</Badge>
-          <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
+          <Badge
+            variant="outline"
+            className="bg-blue-500/10 text-blue-500 border-blue-500/20"
+          >
             Open
           </Badge>
         </div>
@@ -66,7 +122,9 @@ export default function IssueDetailPage() {
             <DropdownMenuItem>Convert to Task</DropdownMenuItem>
             <DropdownMenuItem>Duplicate Issue</DropdownMenuItem>
             <DropdownMenuItem>Move to Project</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">Delete Issue</DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive">
+              Delete Issue
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -83,9 +141,11 @@ export default function IssueDetailPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Multiple users have reported that the login button on the homepage is not responding when clicked on
-                  iOS Safari browsers. The issue appears to be specific to mobile devices and does not occur on desktop
-                  browsers. This is blocking users from accessing their accounts and needs immediate attention.
+                  Multiple users have reported that the login button on the
+                  homepage is not responding when clicked on iOS Safari
+                  browsers. The issue appears to be specific to mobile devices
+                  and does not occur on desktop browsers. This is blocking users
+                  from accessing their accounts and needs immediate attention.
                 </p>
               </CardContent>
             </Card>
@@ -109,22 +169,24 @@ export default function IssueDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Root Cause Analysis</CardTitle>
-                <CardDescription>Technical investigation and findings</CardDescription>
+                <CardDescription>
+                  Technical investigation and findings
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 space-y-2">
                     <h4 className="text-sm font-medium">Identified Cause</h4>
                     <p className="text-sm text-muted-foreground">
-                      The click event listener is not properly attached on iOS Safari due to touch event handling
-                      conflicts.
+                      The click event listener is not properly attached on iOS
+                      Safari due to touch event handling conflicts.
                     </p>
                   </div>
                   <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 space-y-2">
                     <h4 className="text-sm font-medium">Proposed Solution</h4>
                     <p className="text-sm text-muted-foreground">
-                      Update the event handling to use both click and touchstart events with proper preventDefault
-                      calls.
+                      Update the event handling to use both click and touchstart
+                      events with proper preventDefault calls.
                     </p>
                   </div>
                 </div>
@@ -144,10 +206,16 @@ export default function IssueDetailPage() {
                     </Avatar>
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{comment.author.name}</span>
-                        <span className="text-xs text-muted-foreground">{comment.timestamp}</span>
+                        <span className="text-sm font-medium">
+                          {comment.author.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {comment.timestamp}
+                        </span>
                       </div>
-                      <p className="text-sm text-muted-foreground">{comment.content}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {comment.content}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -188,10 +256,19 @@ export default function IssueDetailPage() {
                       </div>
                       <div className="flex-1">
                         <p className="text-muted-foreground">
-                          <span className="font-medium text-foreground">{activity.user}</span> {activity.action}{" "}
-                          {activity.value && <span className="font-medium text-foreground">{activity.value}</span>}
+                          <span className="font-medium text-foreground">
+                            {activity.user}
+                          </span>{" "}
+                          {activity.action}{" "}
+                          {activity.value && (
+                            <span className="font-medium text-foreground">
+                              {activity.value}
+                            </span>
+                          )}
                         </p>
-                        <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {activity.timestamp}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -270,7 +347,9 @@ export default function IssueDetailPage() {
                   </Label>
                   <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-3">
                     <p className="text-sm font-medium">Authentication Flow</p>
-                    <p className="text-xs text-muted-foreground">Website Redesign</p>
+                    <p className="text-xs text-muted-foreground">
+                      Website Redesign
+                    </p>
                   </div>
                 </div>
 
@@ -295,9 +374,15 @@ export default function IssueDetailPage() {
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Resolution Time</Label>
                   <div className="text-2xl font-bold">-</div>
-                  <p className="text-xs text-muted-foreground">Issue is still open</p>
+                  <p className="text-xs text-muted-foreground">
+                    Issue is still open
+                  </p>
                 </div>
-                <Button variant="outline" size="sm" className="w-full bg-transparent">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full bg-transparent"
+                >
                   Mark as Resolved
                 </Button>
               </CardContent>
@@ -306,5 +391,5 @@ export default function IssueDetailPage() {
         </div>
       </main>
     </div>
-  )
+  );
 }

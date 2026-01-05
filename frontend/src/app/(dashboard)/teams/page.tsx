@@ -2,7 +2,7 @@ import TeamsPage from "@/components/teams";
 import React from "react";
 
 function page() {
-	return <TeamsPage/>;
+  return <TeamsPage />;
 }
 
 export default page;

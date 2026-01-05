@@ -1,22 +1,45 @@
-import * as React from "react"
+"use client";
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
+import { Eye, EyeOff } from "lucide-react";
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
-    return (
-      <input
-        type={type}
-        className={cn(
-          "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          className
-        )}
-        ref={ref}
-        {...props}
-      />
-    )
-  }
-)
-Input.displayName = "Input"
+	({ className, type, ...props }, ref) => {
+		const [showPassword, setShowPassword] = React.useState(false);
+		const isPassword = type === "password";
+		const inputType = isPassword && showPassword ? "text" : type;
 
-export { Input }
+		return (
+			<div className="relative">
+				<input
+					type={inputType}
+					className={cn(
+						"flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+						isPassword && "pr-10",
+						className
+					)}
+					ref={ref}
+					{...props}
+				/>
+				{isPassword && (
+					<button
+						type="button"
+						onClick={() => setShowPassword((prev) => !prev)}
+						className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+						tabIndex={-1}
+					>
+						{showPassword ? (
+							<EyeOff className="h-4 w-4" />
+						) : (
+							<Eye className="h-4 w-4" />
+						)}
+					</button>
+				)}
+			</div>
+		);
+	}
+);
+Input.displayName = "Input";
+
+export { Input };

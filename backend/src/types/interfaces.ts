@@ -1,6 +1,5 @@
 import {
   UserRole,
-  Department,
   TaskStatus,
   TaskPriority,
   IssueType,
@@ -14,7 +13,6 @@ export interface User {
   passwordHash: string;
   name: string;
   role: UserRole;
-  department: Department | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -24,7 +22,6 @@ export interface Project {
   id: string;
   name: string;
   description: string | null;
-  department: Department | null;
   creatorId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -39,7 +36,18 @@ export interface Task {
   issueType: IssueType;
   status: TaskStatus;
   creatorId: string;
-  assigneeId: string | null;
+  assignees?: Array<{
+    id: string;
+    userId: string;
+    assignedAt: Date;
+    assignedBy: string | null;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: UserRole;
+    };
+  }>;
   parentTaskId: string | null;
   requiresApproval: boolean;
   approvedById: string | null;
@@ -82,13 +90,18 @@ export interface CreateProjectDTO {
   name: string;
   key: string; // Project key like "PROJ", "DEV"
   description?: string;
-  department?: Department;
+  workflowType?: string; // BASIC, AGILE, BUG_TRACKING, or CUSTOM
+  workflowSchemeId?: string; // Only used when workflowType = CUSTOM
+  members?: Array<{ userId: string }>; // Optional array of initial members (auto-assigned as DEVELOPER)
 }
 
 export interface UpdateProjectDTO {
   name?: string;
   description?: string;
-  department?: Department;
+  workflowType?: string;
+  workflowSchemeId?: string;
+  addMembers?: Array<{ userId: string }>; // Array of members to add (will be assigned as DEVELOPER)
+  removeMembers?: string[]; // Array of user IDs to remove from project
 }
 
 export interface CreateTaskDTO {
@@ -97,10 +110,21 @@ export interface CreateTaskDTO {
   description?: string;
   priority?: TaskPriority;
   issueType?: IssueType;
-  assigneeId?: string;
+  assigneeIds?: string[]; // Changed from assigneeId to support multiple assignees
   parentTaskId?: string;
   labels?: string[];
   dueDate?: Date;
+}
+
+export interface CreatePersonalTaskDTO {
+  title: string;
+  description?: string;
+  priority?: TaskPriority;
+  issueType?: IssueType;
+  labels?: string[];
+  dueDate?: Date;
+  estimatedHours?: number;
+  storyPoints?: number;
 }
 
 export interface UpdateTaskDTO {
@@ -110,6 +134,7 @@ export interface UpdateTaskDTO {
   issueType?: IssueType;
   labels?: string[];
   dueDate?: Date;
+  assigneeIds?: string[]; // Array of user IDs to assign to the task
 }
 
 export interface AssignTaskDTO {
@@ -129,5 +154,6 @@ export interface ChangeStatusDTO {
 }
 
 export interface CreateCommentDTO {
-  message: string;
+  message?: string;
+  content?: string;
 }

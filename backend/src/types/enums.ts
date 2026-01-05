@@ -1,16 +1,11 @@
 // User Roles
 export enum UserRole {
+  SUPER_ADMIN = "SUPER_ADMIN",
   CEO = "CEO",
   HOO = "HOO",
   HR = "HR",
   ADMIN = "ADMIN",
   STAFF = "STAFF",
-}
-
-// Departments
-export enum Department {
-  OPS = "OPS",
-  HR = "HR",
 }
 
 // Task Status
@@ -46,6 +41,7 @@ export enum ActivityAction {
   REJECT = "REJECT",
   STATUS_UPDATE = "STATUS_UPDATE",
   COMMENT = "COMMENT",
+  DELETE = "DELETE",
 }
 
 // Notification Types
@@ -65,11 +61,8 @@ export enum NotificationType {
 
 // Project-Level Roles (Jira-style)
 export enum ProjectRole {
-  PROJECT_ADMIN = "PROJECT_ADMIN", // Full project control
-  PROJECT_LEAD = "PROJECT_LEAD", // Manage sprints, epics, approve tasks
-  DEVELOPER = "DEVELOPER", // Create, edit assigned tasks
-  REPORTER = "REPORTER", // Create issues, add comments
-  VIEWER = "VIEWER", // Read-only access
+  PROJECT_ADMIN = "PROJECT_ADMIN", // Project creator - full project control
+  DEVELOPER = "DEVELOPER", // Project members - can create, edit assigned tasks, work on issues
 }
 
 // Granular Permissions (Jira-style)
@@ -149,6 +142,9 @@ export enum DependencyType {
 }
 
 // Status Transition Map
+// ⚠️ DEPRECATED: Use workflow-based transitions from config/workflows.ts instead
+// This hardcoded map is kept for backward compatibility only
+// @deprecated Use isTransitionAllowed() and getAvailableTransitions() from workflows.ts
 export const ALLOWED_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   [TaskStatus.DRAFT]: [TaskStatus.ASSIGNED],
   [TaskStatus.ASSIGNED]: [TaskStatus.IN_PROGRESS, TaskStatus.REJECTED],
@@ -169,18 +165,16 @@ export const ALLOWED_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
 
 // Role Hierarchy
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  [UserRole.CEO]: 5,
-  [UserRole.HOO]: 4,
-  [UserRole.HR]: 3,
-  [UserRole.ADMIN]: 2,
-  [UserRole.STAFF]: 1,
+  [UserRole.SUPER_ADMIN]: 100,
+  [UserRole.CEO]: 80,
+  [UserRole.HOO]: 60,
+  [UserRole.HR]: 60,
+  [UserRole.ADMIN]: 40,
+  [UserRole.STAFF]: 20,
 };
 
 // Project Role Hierarchy
 export const PROJECT_ROLE_HIERARCHY: Record<ProjectRole, number> = {
-  [ProjectRole.PROJECT_ADMIN]: 4,
-  [ProjectRole.PROJECT_LEAD]: 3,
-  [ProjectRole.DEVELOPER]: 2,
-  [ProjectRole.REPORTER]: 1,
-  [ProjectRole.VIEWER]: 0,
+  [ProjectRole.PROJECT_ADMIN]: 2,
+  [ProjectRole.DEVELOPER]: 1,
 };

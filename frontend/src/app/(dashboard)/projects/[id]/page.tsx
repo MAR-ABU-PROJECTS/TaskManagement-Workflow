@@ -1,10 +1,14 @@
-import ProjectDetailPage from "@/components/project-detail";
+import ProjectBoard from "@/components/project-detail";
 import React from "react";
 
-const page = () => {
+type Props = {
+	params: { id: string };
+};
+const page = ({ params }: Props) => {
+	const projectId = params.id;
 	return (
-		<div className="w-full h-full">
-			<ProjectDetailPage />
+		<div className="w-full h-full overflow-x-hidden">
+			<ProjectBoard projectId={projectId} />
 		</div>
 	);
 };
