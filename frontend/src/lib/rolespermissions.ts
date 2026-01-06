@@ -26,7 +26,7 @@ export const PromotionRules: Record<Role, Role[]> = {
 // } as const;
 
 export function canPromote(currentUserRole: Role, targetRole: Role) {
-	return PromotionRules[currentUserRole].includes(targetRole);
+	return PromotionRules[currentUserRole]?.includes(targetRole);
 }
 
 export enum Permission {
@@ -44,7 +44,7 @@ export enum Permission {
 }
 
 export const RolePermissions: Record<Role, Permission[]> = {
-	[Role.STAFF]: [Permission.VIEW_PROJECT, Permission.VIEW_USER],
+	[Role.STAFF]: [Permission.VIEW_PROJECT],
 
 	[Role.ADMIN]: [
 		Permission.CREATE_PROJECT,
@@ -57,13 +57,15 @@ export const RolePermissions: Record<Role, Permission[]> = {
 		Permission.CREATE_USER,
 		Permission.UPDATE_USER,
 		Permission.VIEW_USER,
-		Permission.MANAGE_ROLES, // HR can promote to ADMIN
+		Permission.MANAGE_ROLES,
+		Permission.VIEW_USER, // HR can promote to ADMIN
 	],
 
 	[Role.HOO]: [
 		Permission.UPDATE_PROJECT,
 		Permission.VIEW_PROJECT,
-		Permission.MANAGE_ROLES, // HOO can promote to ADMIN
+		Permission.MANAGE_ROLES,
+		Permission.VIEW_USER, // HOO can promote to ADMIN
 	],
 
 	[Role.CEO]: [
@@ -74,6 +76,7 @@ export const RolePermissions: Record<Role, Permission[]> = {
 		Permission.CREATE_USER,
 		Permission.UPDATE_USER,
 		Permission.DELETE_USER,
+		Permission.VIEW_USER,
 	],
 
 	[Role.SUPER_ADMIN]: [
@@ -84,6 +87,7 @@ export const RolePermissions: Record<Role, Permission[]> = {
 		Permission.CREATE_USER,
 		Permission.UPDATE_USER,
 		Permission.DELETE_USER,
+		Permission.VIEW_USER,
 		// system-level: gets everything
 	],
 };
@@ -111,4 +115,22 @@ export function hasPermission(userRole: Role, permission: Permission) {
 	return getPermissionsForRole(userRole).includes(permission);
 }
 
-// hasPermission(Role.ADMIN, Permission.CREATE_PROJECT);
+export const Can = ({
+	children,
+	role,
+	Permission,
+	fallback,
+}: {
+	children: React.ReactNode;
+	role: Role;
+	Permission: Permission;
+	fallback?: JSX.Element;
+}) => {
+	const isAllowed = hasPermission(role, Permission);
+
+	if (!isAllowed) {
+		return fallback ?? null;
+	}
+
+	return children;
+};
