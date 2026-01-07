@@ -1,6 +1,27 @@
 # MAR ABU Project Management System
 
+**Version:** 2.4.0  
+**Last Updated:** January 7, 2026
+
 A comprehensive, enterprise-grade project and task management application built for MAR ABU PROJECTS SERVICES LTD. This system provides JIRA-like functionality with support for multiple project methodologies (Agile, Waterfall, Kanban), advanced user management, reporting, and integration capabilities.
+
+## ✨ Latest Updates (v2.4.0)
+
+### 🎯 Dashboard System
+- **General User Dashboard**: Personalized metrics for all roles (CEO, HOO, HR, ADMIN, STAFF)
+- **Super Admin Dashboard**: System-wide statistics (Super Admin only)
+- Role-based data filtering and project visibility
+
+### 🔐 Password Reset Flow
+- Secure token-based password reset via email
+- 1-hour token expiration with single-use validation
+- Email notifications for reset requests and confirmations
+
+### 🐛 Critical Bug Fixes
+- ✅ Task deletion errors resolved
+- ✅ Project member addition in updates fixed
+- ✅ User deletion cascade deletes working
+- ✅ Activity logging improved
 
 ## Architecture
 
@@ -44,6 +65,8 @@ The system follows a clear hierarchical structure:
 ## Features
 
 ### Core Functionality
+- **User Dashboards**: Role-based personalized dashboards with project and task metrics
+- **Password Reset**: Secure email-based password reset functionality
 - **Team Management**: Create and manage development teams with role-based access
 - **Project Management**: Support for Agile, Waterfall, Kanban, and Hybrid methodologies
 - **Task Management**: Comprehensive task tracking with dependencies, subtasks, and custom fields
@@ -54,7 +77,7 @@ The system follows a clear hierarchical structure:
 - **Time Tracking**: Manual and timer-based time logging with reporting
 - **Reporting**: Advanced analytics, dashboards, and data export capabilities
 - **Bulk Operations**: Workflow-validated bulk task transitions with detailed error reporting
-- **Notifications**: Real-time notifications and communication features
+- **Notifications**: Real-time notifications and email communication
 - **Integration**: REST API, webhooks, and external tool integrations
 
 ### Technical Features
