@@ -8,6 +8,7 @@ export interface User {
   name: string;
   role: UserRole;
   isActive: boolean;
+  isSuperAdmin?: boolean;
   createdAt: Date;
 }
 

@@ -6,6 +6,7 @@ import tasksRoutes from "./tasks.routes";
 import notificationRoutes from "./notifications.routes";
 import searchRoutes from "./search.routes";
 import auditLogRoutes from "./audit-logs.routes";
+import dashboardRoutes from "./dashboard.routes";
 
 // Jira-like Project Management routes
 import configRoutes from "./config.routes";
@@ -17,6 +18,9 @@ const router = express.Router();
 
 // Auth routes (public)
 router.use("/auth", authRoutes);
+
+// Dashboard (general users)
+router.use("/dashboard", dashboardRoutes);
 
 // Consolidated user management
 router.use("/users", usersRoutes);

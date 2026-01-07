@@ -552,55 +552,68 @@ router.post(
  * @swagger
  * /api/users/dashboard/overview:
  *   get:
- *     summary: Get user management dashboard
- *     description: Dashboard with user statistics and metrics. CEO, HOO, HR, ADMIN only.
+ *     summary: Get user management dashboard (Super Admin Only)
+ *     description: |
+ *       Dashboard with sensitive user statistics and metrics.
+ *       **SUPER ADMIN ONLY** - Contains system-wide user management data.
+ *       Regular users should use /api/dashboard/overview instead.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Dashboard overview
+ *         description: Dashboard overview with user management stats
+ *       403:
+ *         description: Only Super Admins can access this endpoint
  */
-router.get(
-  "/dashboard/overview",
-  requireRoles(UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN),
-  async (_req, res) => {
-    try {
-      const [totalUsers, activeUsers, usersByRole, recentUsers] =
-        await Promise.all([
-          prisma.user.count({ where: { isSuperAdmin: false } }),
-          prisma.user.count({ where: { isActive: true, isSuperAdmin: false } }),
-          prisma.user.groupBy({
-            by: ["role"],
-            where: { isSuperAdmin: false },
-            _count: true,
-          }),
-          prisma.user.findMany({
-            where: { isSuperAdmin: false },
-            take: 10,
-            orderBy: { createdAt: "desc" },
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true,
-              createdAt: true,
-            },
-          }),
-        ]);
+router.get("/dashboard/overview", async (req, res) => {
+  try {
+    // Verify user is super admin by querying database
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { isSuperAdmin: true },
+    });
 
-      res.json({
-        totalUsers,
-        activeUsers,
-        inactiveUsers: totalUsers - activeUsers,
-        usersByRole,
-        recentUsers,
+    if (!user?.isSuperAdmin) {
+      return res.status(403).json({
+        message: "Access denied. Super Admin privileges required.",
       });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
     }
+
+    const [totalUsers, activeUsers, usersByRole, recentUsers] =
+      await Promise.all([
+        prisma.user.count({ where: { isSuperAdmin: false } }),
+        prisma.user.count({ where: { isActive: true, isSuperAdmin: false } }),
+        prisma.user.groupBy({
+          by: ["role"],
+          where: { isSuperAdmin: false },
+          _count: true,
+        }),
+        prisma.user.findMany({
+          where: { isSuperAdmin: false },
+          take: 10,
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        }),
+      ]);
+
+    return res.json({
+      totalUsers,
+      activeUsers,
+      inactiveUsers: totalUsers - activeUsers,
+      usersByRole,
+      recentUsers,
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
   }
-);
+});
 
 /**
  * @swagger

@@ -1,9 +1,10 @@
 # Task Management System - Endpoint Usage Guide
 
-**Version:** 2.3.0  
-**Last Updated:** December 23, 2025  
+**Version:** 2.4.0  
+**Last Updated:** January 7, 2026  
 **Base URL:** `http://localhost:4000/api`
 
+> 🎉 **Version 2.4.0:** Dashboard system + password reset flow + critical bug fixes!
 > 🎉 **Version 2.3.0:** Simplified project roles - only PROJECT_ADMIN (creator) and DEVELOPER (members).
 > ⚠️ **API Change:** No `projectRole` field needed when adding members. Roles auto-assigned.
 > 🔒 **Breaking:** PROJECT_LEAD, DEVELOPER, DEVELOPER roles removed. Role updates disabled.
@@ -13,35 +14,60 @@
 ## Table of Contents
 
 1. [Authentication](#1-authentication)
-2. [User Hierarchy Management](#2-user-hierarchy-management)
-3. [Projects](#3-projects)
-4. [Project Members](#4-project-members)
-5. [Tasks](#5-tasks)
-6. [Comments & Activity](#6-comments--activity)
-7. [Attachments](#7-attachments)
-8. [Sprints](#8-sprints)
-9. [Epics](#9-epics)
-10. [Backlog](#10-backlog)
-11. [Kanban Board](#11-kanban-board)
-12. [Task Dependencies](#12-task-dependencies)
-13. [Time Tracking](#13-time-tracking)
-14. [Reports](#14-reports)
-15. [Search & JQL](#15-search--jql)
-16. [Saved Filters](#16-saved-filters)
-17. [Bulk Operations](#16-bulk-operations)
-18. [Workflows](#17-workflows)
-19. [Permission Schemes](#18-permission-schemes)
-20. [Components & Versions](#20-components--versions)
-21. [Notifications](#21-notifications)
-22. [Admin Dashboards](#22-admin-dashboards)
-23. [Role-Specific Endpoints](#23-role-specific-endpoints)
-24. [Changelog](#24-changelog)
+2. [Dashboards](#2-dashboards)
+3. [User Hierarchy Management](#3-user-hierarchy-management)
+4. [Projects](#4-projects)
+5. [Project Members](#5-project-members)
+6. [Tasks](#6-tasks)
+7. [Comments & Activity](#7-comments--activity)
+8. [Attachments](#8-attachments)
+9. [Sprints](#9-sprints)
+10. [Epics](#10-epics)
+11. [Backlog](#11-backlog)
+12. [Kanban Board](#12-kanban-board)
+13. [Task Dependencies](#13-task-dependencies)
+14. [Time Tracking](#14-time-tracking)
+15. [Reports](#15-reports)
+16. [Search & JQL](#16-search--jql)
+17. [Saved Filters](#17-saved-filters)
+18. [Bulk Operations](#18-bulk-operations)
+19. [Workflows](#19-workflows)
+20. [Permission Schemes](#20-permission-schemes)
+21. [Components & Versions](#21-components--versions)
+22. [Notifications](#22-notifications)
+23. [Admin Dashboards](#23-admin-dashboards)
+24. [Role-Specific Endpoints](#24-role-specific-endpoints)
+25. [Changelog](#25-changelog)
 
 ---
 
-## Changelog - December 21, 2025
+## Changelog
 
-### Permission System Updates (v2.1.0)
+### Version 2.4.0 - January 7, 2026
+
+**🎯 Dashboard System:**
+- NEW: General user dashboard at `/api/dashboard/overview`
+  - Available for: CEO, HOO, HR, ADMIN, STAFF
+  - Shows: Active projects, tasks in progress, completed tasks, open issues, recent projects, my tasks
+- UPDATED: Super Admin dashboard restricted to `/api/users/dashboard/overview`
+  - Only Super Admins can access
+  - Contains sensitive system-wide user statistics
+
+**🔐 Password Reset Flow:**
+- NEW: `/api/auth/forgot-password` - Request password reset
+- NEW: `/api/auth/reset-password` - Reset password with token
+- Tokens expire after 1 hour
+- Email notifications included
+
+**🐛 Bug Fixes:**
+- ✅ Task deletion error resolved
+- ✅ Project member addition in update endpoint works
+- ✅ User deletion cascade deletes fixed
+- ✅ UpdateProjectDTO supports `addMembers` and `removeMembers`
+
+---
+
+### Version 2.3.0 - December 21, 2025
 
 **ADMIN Role Enhancements:**
 - ✅ Can create, update, and delete projects
@@ -289,7 +315,194 @@ curl -X POST http://localhost:4000/api/auth/logout \
 
 ---
 
-## 2. User Hierarchy Management
+### 1.5 Forgot Password
+
+**Endpoint:** `POST /api/auth/forgot-password`  
+**Auth Required:** ❌ No  
+**Description:** Request password reset email with token
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Example:**
+```bash
+curl -X POST http://localhost:4000/api/auth/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
+```
+
+**Response:**
+```json
+{
+  "message": "If the email exists, a password reset link has been sent"
+}
+```
+
+**Notes:**
+- Always returns success for security (doesn't reveal if email exists)
+- Reset link expires after 1 hour
+- Check email inbox for reset link
+- Tokens are hashed and stored securely
+
+---
+
+### 1.6 Reset Password
+
+**Endpoint:** `POST /api/auth/reset-password`  
+**Auth Required:** ❌ No  
+**Description:** Reset password using token from email
+
+**Request Body:**
+```json
+{
+  "token": "abc123def456",
+  "newPassword": "NewSecurePass123!"
+}
+```
+
+**Example:**
+```bash
+curl -X POST http://localhost:4000/api/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "abc123def456",
+    "newPassword": "NewSecurePass123!"
+  }'
+```
+
+**Response:**
+```json
+{
+  "message": "Password reset successful. You can now login with your new password."
+}
+```
+
+**Error Response:**
+```json
+{
+  "message": "Invalid or expired reset token"
+}
+```
+
+**Notes:**
+- Token must be valid and not expired
+- Token is single-use only
+- Password must be at least 8 characters
+- Confirmation email sent after successful reset
+
+---
+
+## 2. Dashboards
+
+### 2.1 General User Dashboard
+
+**Endpoint:** `GET /api/dashboard/overview`  
+**Auth Required:** ✅ Yes  
+**Roles:** CEO, HOO, HR, ADMIN, STAFF  
+**Description:** Get personalized dashboard with projects, tasks, and metrics
+
+**Example:**
+```bash
+curl http://localhost:4000/api/dashboard/overview \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "activeProjectsCount": 12,
+  "tasksInProgressCount": 48,
+  "completedTasksCount": 234,
+  "openIssuesCount": 7,
+  "recentProjects": [
+    {
+      "id": "proj123",
+      "name": "Website Redesign",
+      "key": "WR",
+      "description": "Redesign company website",
+      "creatorName": "John Doe",
+      "progress": 75,
+      "totalTasks": 20,
+      "completedTasks": 15,
+      "updatedAt": "2026-01-07T10:00:00Z"
+    }
+  ],
+  "myTasks": [
+    {
+      "id": "task123",
+      "title": "Update landing page design",
+      "priority": "HIGH",
+      "status": "IN_PROGRESS",
+      "dueDate": "2026-01-10",
+      "projectName": "Website Redesign",
+      "projectKey": "WR"
+    }
+  ],
+  "statistics": {
+    "tasksInProgressDelta": "+12 from last week",
+    "completedTasksDelta": "+18% from last month",
+    "openIssuesDelta": "+1 from yesterday"
+  }
+}
+```
+
+**Role-Based Filtering:**
+- **CEO**: Sees all projects
+- **HOO/HR**: Sees ADMIN/STAFF projects + projects they're members of
+- **ADMIN/STAFF**: Only projects they're members of
+
+---
+
+### 2.2 Super Admin Dashboard
+
+**Endpoint:** `GET /api/users/dashboard/overview`  
+**Auth Required:** ✅ Yes  
+**Roles:** Super Admin ONLY  
+**Description:** Get system-wide user management statistics
+
+**Example:**
+```bash
+curl http://localhost:4000/api/users/dashboard/overview \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "totalUsers": 150,
+  "activeUsers": 142,
+  "inactiveUsers": 8,
+  "usersByRole": [
+    { "role": "CEO", "_count": 1 },
+    { "role": "HOO", "_count": 2 },
+    { "role": "HR", "_count": 3 },
+    { "role": "ADMIN", "_count": 10 },
+    { "role": "STAFF", "_count": 134 }
+  ],
+  "recentUsers": [
+    {
+      "id": "user123",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "STAFF",
+      "createdAt": "2026-01-05T10:00:00Z"
+    }
+  ]
+}
+```
+
+**Notes:**
+- Only Super Admins can access this endpoint
+- Contains sensitive user management data
+- Regular users should use `/api/dashboard/overview`
+
+---
+
+## 3. User Hierarchy Management
 
 ### 2.1 Get User Hierarchy
 
