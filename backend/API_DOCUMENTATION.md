@@ -1,11 +1,12 @@
 # Task Management System - Complete API Documentation
 
-**Version:** 2.3.0  
-**Last Updated:** December 23, 2025  
+**Version:** 2.4.0  
+**Last Updated:** January 7, 2026  
 **Base URL:** `https://taskmanagement-workflow-production.up.railway.app`  
-**Total Endpoints:** 75+ (includes new workflow endpoints)  
+**Total Endpoints:** 80+ (includes dashboard and password reset endpoints)  
 **Documentation Coverage:** 100%
 
+> ⚡ **v2.4.0:** Dashboard system, password reset flow, and critical bug fixes.
 > ⚡ **v2.3.0:** Simplified project roles - PROJECT_ADMIN (creator only) + DEVELOPER (all members). Roles auto-assigned.
 > ⚡ **v2.2.0:** Hierarchical visibility model - HOO/HR cannot view CEO projects/tasks. Personal tasks are private.
 > ⚡ **v2.1.1:** Update permissions restricted to creators only.
@@ -27,6 +28,38 @@
 ---
 
 ## Changelog
+
+### Version 2.4.0 - January 7, 2026
+
+**🎯 Dashboard System:**
+- **NEW:** General user dashboard at `GET /api/dashboard/overview`
+  - For all roles: CEO, HOO, HR, ADMIN, STAFF
+  - Shows: Active projects, tasks in progress, completed tasks, open issues, recent projects, my tasks
+  - Role-based filtering: CEO sees all, HOO/HR see ADMIN/STAFF projects, others see their projects
+- **UPDATED:** Super Admin dashboard moved to `GET /api/users/dashboard/overview`
+  - Now restricted to Super Admin only
+  - Contains sensitive user management statistics
+
+**🔐 Password Reset Flow:**
+- **NEW:** `POST /api/auth/forgot-password` - Request password reset via email
+- **NEW:** `POST /api/auth/reset-password` - Reset password with token
+- Secure token-based system with 1-hour expiration
+- Email notifications with reset links
+
+**🐛 Critical Bug Fixes:**
+- ✅ Task deletion error fixed (activity log timing issue)
+- ✅ Project member addition now works in update endpoint
+- ✅ User deletion cascade deletes fixed (FK constraint)
+- ✅ UpdateProjectDTO enhanced with `addMembers` and `removeMembers` fields
+
+**New Database Tables:**
+- `password_reset_tokens` - Secure token storage for password resets
+
+**Breaking Changes:**
+- `/api/users/dashboard/overview` now requires Super Admin privileges
+- Regular users must use `/api/dashboard/overview` instead
+
+---
 
 ### Version 2.3.0 - December 23, 2025
 
@@ -358,19 +391,24 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 
 | Method | Endpoint | Description | Permissions | Roles |
 |--------|----------|-------------|-------------|-------|
-| POST | `/auth/register?interface=STAFF` | Register new user | Public | - |
-| POST | `/auth/login?interface=STAFF` | Login | Public | - |
+| POST | `/auth/register` | Register new user | Public | - |
+| POST | `/auth/login` | Login | Public | - |
 | GET | `/auth/me` | Get current user | Authenticated | All |
 | POST | `/auth/logout` | Logout and log to audit trail | Authenticated | All |
+| POST | `/auth/forgot-password` | Request password reset email | Public | - |
+| POST | `/auth/reset-password` | Reset password with token | Public | - |
+| POST | `/auth/refresh` | Refresh access token | Public (with refresh token) | - |
 
 **Notes:**
-- `interface` query parameter is required for register/login
 - All new registrations default to STAFF role
 - Super Admins cannot be created through registration
+- Password reset tokens expire after 1 hour
+- Reset tokens are single-use only
+- Email notifications sent for password reset requests and confirmations
 
 ---
 
-### 2. User Hierarchy Management (`/api/users`)
+### 2. User Hierarchy Management & Dashboards (`/api/users` & `/api/dashboard`)
 
 | Method | Endpoint | Description | Permissions | Roles |
 |--------|----------|-------------|-------------|-------|
@@ -379,16 +417,21 @@ Blocked: [COMPLETED] - Must go through REVIEW first
 | GET | `/users/available-roles` | Get assignable roles | User management | CEO, HOO, HR, Super Admin |
 | POST | `/users/:userId/promote` | Promote user to higher role | User management | CEO, HOO, HR, Super Admin |
 | POST | `/users/:userId/demote` | Demote user to lower role | User management | CEO, HOO, HR, Super Admin |
-| DELETE | `/users/:userId` | Remove user from system | User management | CEO, HOO, HR, Super Admin |
+| DELETE | `/users/:userId` | Remove user from system (cascade deletes) | User management | CEO, HOO, HR |
 | GET | `/users/super-admin/verify` | Verify Super Admin count | Super Admin only | Super Admin |
+| **GET** | **`/users/dashboard/overview`** | **Super Admin dashboard with user stats** | **Super Admin only** | **Super Admin** |
+| **GET** | **`/dashboard/overview`** | **General user dashboard** | **Authenticated** | **CEO, HOO, HR, ADMIN, STAFF** |
 
 **Notes:**
 - Super Admin can manage all users
 - CEO can manage HOO, HR, ADMIN, STAFF
 - HOO can manage ADMIN/STAFF in OPS department
 - HR can manage ADMIN/STAFF in HR department
-- User removal requires task reassignment if user has tasks
+- User deletion includes cascade deletes for project memberships and related data
 - Super Admins cannot be removed
+- **Dashboard Separation:**
+  - `/users/dashboard/overview`: Sensitive user management data (Super Admin only)
+  - `/dashboard/overview`: Personalized project/task metrics (All users except Super Admin)
 
 ---
 

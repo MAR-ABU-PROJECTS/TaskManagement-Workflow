@@ -1,16 +1,43 @@
 # Task Management System - Complete User Documentation
 
-**Version:** 2.3.0  
-**Last Updated:** December 23, 2025  
+**Version:** 2.4.0  
+**Last Updated:** January 7, 2026  
 **Production URL:** https://taskmanagement-workflow-production.up.railway.app  
 **Documentation Type:** Complete System Guide
 
+> 🎉 **Version 2.4.0 Updates:** Dashboard system, password reset flow, and critical bug fixes!
 > 🎉 **Version 2.3.0 Updates:** Simplified project roles! Only PROJECT_ADMIN (creator) and DEVELOPER (members). Roles auto-assigned, no selection needed.
 > 🔒 **Breaking Change:** PROJECT_LEAD, DEVELOPER, DEVELOPER roles removed. All members now DEVELOPER.
 
 ---
 
 ## What's New
+
+### v2.4.0 (January 7, 2026) - Dashboard & Password Reset
+
+**🎯 Dashboard System:**
+- **NEW:** General User Dashboard at `/api/dashboard/overview`
+  - Shows your active projects, tasks, and team activity
+  - Available for: CEO, HOO, HR, ADMIN, STAFF
+  - Data filtered based on your role
+- **UPDATED:** Super Admin Dashboard restricted to `/api/users/dashboard/overview`
+  - Contains sensitive system-wide statistics
+  - Only Super Admins can access
+
+**🔐 Password Reset Flow:**
+- **NEW:** Forgot password functionality
+  - Request reset link via email
+  - Secure token-based reset (expires in 1 hour)
+  - Email notifications for reset requests and confirmations
+- Endpoints: `/api/auth/forgot-password` and `/api/auth/reset-password`
+
+**🐛 Bug Fixes:**
+- ✅ Task deletion now works without errors
+- ✅ Project member addition via update endpoint fixed
+- ✅ User deletion with cascade deletes working properly
+- ✅ Activity logging improved to prevent FK constraint errors
+
+---
 
 ### v2.2.0 (December 21, 2025) - Hierarchical Visibility
 
