@@ -23,8 +23,6 @@ const UserDashboard = () => {
 		},
 		meta: { disableGlobalSuccess: true },
 	});
-
-	console.log(query.data);
 	return (
 		<div>
 			<QueryStateHandler
@@ -33,7 +31,6 @@ const UserDashboard = () => {
 				getItems={(res) => res}
 				render={(res) => {
 					const data = res;
-					// const pages = res.data?.pagination?.pages ?? 0;
 
 					return (
 						<div>
@@ -49,12 +46,12 @@ const UserDashboard = () => {
 										<div className="text-2xl font-bold">
 											{data.activeProjectsCount}
 										</div>
-										<p className="text-xs text-muted-foreground">
+										{/* <p className="text-xs text-muted-foreground">
 											<span className="text-primary">
 												+2
 											</span>{" "}
 											from last month
-										</p>
+										</p> */}
 									</CardContent>
 								</Card>
 
@@ -69,12 +66,12 @@ const UserDashboard = () => {
 										<div className="text-2xl font-bold">
 											{data.myTasks.length}
 										</div>
-										<p className="text-xs text-muted-foreground">
+										{/* <p className="text-xs text-muted-foreground">
 											<span className="text-primary">
 												+12
 											</span>{" "}
 											from last week
-										</p>
+										</p> */}
 									</CardContent>
 								</Card>
 
@@ -89,12 +86,12 @@ const UserDashboard = () => {
 										<div className="text-2xl font-bold">
 											{data.completedTasksCount}
 										</div>
-										<p className="text-xs text-muted-foreground">
+										{/* <p className="text-xs text-muted-foreground">
 											<span className="text-primary">
 												+18%
 											</span>{" "}
 											from last month
-										</p>
+										</p> */}
 									</CardContent>
 								</Card>
 
@@ -109,12 +106,12 @@ const UserDashboard = () => {
 										<div className="text-2xl font-bold">
 											{data.openIssuesCount}
 										</div>
-										<p className="text-xs text-muted-foreground">
+										{/* <p className="text-xs text-muted-foreground">
 											<span className="text-destructive">
 												+3
 											</span>{" "}
 											from yesterday
-										</p>
+										</p> */}
 									</CardContent>
 								</Card>
 							</div>
@@ -199,7 +196,7 @@ const UserDashboard = () => {
 													<div className="text-right">
 														<Badge
 															variant="outline"
-															className={`text-[11px]! ${getPriorityColor(task?.priority ?? '')} capitalize`}
+															className={`text-[11px]! ${getPriorityColor(task?.priority ?? "")} capitalize`}
 														>
 															{task?.priority?.toLowerCase()}
 														</Badge>
