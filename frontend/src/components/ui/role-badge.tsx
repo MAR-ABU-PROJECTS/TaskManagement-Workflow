@@ -31,7 +31,7 @@ export const RoleBadge = ({ role }: RoleBadgeProps) => {
 
 
 	return (
-		<Badge className={cn(`${getBadgeVariants(role)}`)}>
+		<Badge className={cn(`${getBadgeVariants(role)} `)}>
 			{role && role.replace("_", " ")}
 		</Badge>
 	

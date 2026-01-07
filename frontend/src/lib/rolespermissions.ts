@@ -56,16 +56,13 @@ export const RolePermissions: Record<Role, Permission[]> = {
 	[Role.HR]: [
 		Permission.CREATE_USER,
 		Permission.UPDATE_USER,
-		Permission.VIEW_USER,
-		Permission.MANAGE_ROLES,
-		Permission.VIEW_USER, // HR can promote to ADMIN
+		Permission.MANAGE_ROLES, // HR can promote to ADMIN
 	],
 
 	[Role.HOO]: [
 		Permission.UPDATE_PROJECT,
 		Permission.VIEW_PROJECT,
-		Permission.MANAGE_ROLES,
-		Permission.VIEW_USER, // HOO can promote to ADMIN
+		Permission.MANAGE_ROLES, // HOO can promote to ADMIN
 	],
 
 	[Role.CEO]: [
@@ -87,7 +84,6 @@ export const RolePermissions: Record<Role, Permission[]> = {
 		Permission.CREATE_USER,
 		Permission.UPDATE_USER,
 		Permission.DELETE_USER,
-		Permission.VIEW_USER,
 		// system-level: gets everything
 	],
 };
@@ -126,7 +122,7 @@ export const Can = ({
 	Permission: Permission;
 	fallback?: JSX.Element;
 }) => {
-	const isAllowed = hasPermission(role, Permission);
+	const isAllowed = role ? hasPermission(role, Permission) : false;
 
 	if (!isAllowed) {
 		return fallback ?? null;
