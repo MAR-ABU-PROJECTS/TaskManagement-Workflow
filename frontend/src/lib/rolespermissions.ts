@@ -26,7 +26,7 @@ export const PromotionRules: Record<Role, Role[]> = {
 // } as const;
 
 export function canPromote(currentUserRole: Role, targetRole: Role) {
-	return PromotionRules[currentUserRole].includes(targetRole);
+	return PromotionRules[currentUserRole]?.includes(targetRole);
 }
 
 export enum Permission {
@@ -44,7 +44,7 @@ export enum Permission {
 }
 
 export const RolePermissions: Record<Role, Permission[]> = {
-	[Role.STAFF]: [Permission.VIEW_PROJECT, Permission.VIEW_USER],
+	[Role.STAFF]: [Permission.VIEW_PROJECT],
 
 	[Role.ADMIN]: [
 		Permission.CREATE_PROJECT,
@@ -56,7 +56,6 @@ export const RolePermissions: Record<Role, Permission[]> = {
 	[Role.HR]: [
 		Permission.CREATE_USER,
 		Permission.UPDATE_USER,
-		Permission.VIEW_USER,
 		Permission.MANAGE_ROLES, // HR can promote to ADMIN
 	],
 
@@ -74,6 +73,7 @@ export const RolePermissions: Record<Role, Permission[]> = {
 		Permission.CREATE_USER,
 		Permission.UPDATE_USER,
 		Permission.DELETE_USER,
+		Permission.VIEW_USER,
 	],
 
 	[Role.SUPER_ADMIN]: [
@@ -111,4 +111,22 @@ export function hasPermission(userRole: Role, permission: Permission) {
 	return getPermissionsForRole(userRole).includes(permission);
 }
 
-// hasPermission(Role.ADMIN, Permission.CREATE_PROJECT);
+export const Can = ({
+	children,
+	role,
+	Permission,
+	fallback,
+}: {
+	children: React.ReactNode;
+	role: Role;
+	Permission: Permission;
+	fallback?: JSX.Element;
+}) => {
+	const isAllowed = role ? hasPermission(role, Permission) : false;
+
+	if (!isAllowed) {
+		return fallback ?? null;
+	}
+
+	return children;
+};

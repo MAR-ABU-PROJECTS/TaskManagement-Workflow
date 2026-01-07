@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/card";
 import Image from "next/image";
 import logo from "@/assets/black-logo.png";
-import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,7 +29,6 @@ import { setSession } from "@/lib/action";
 import Routes from "@/constants/routes";
 
 export default function LoginPage() {
-	const router = useRouter();
 	type LoginType = z.infer<typeof loginSchema>;
 	const form = useForm<LoginType>({
 		resolver: zodResolver(loginSchema),
@@ -52,7 +50,7 @@ export default function LoginPage() {
 				role: res.user.role,
 			});
 
-			router.push(Routes.dashboard);
+			window.location.href = Routes.dashboard;
 		},
 	});
 

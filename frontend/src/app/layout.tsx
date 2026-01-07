@@ -24,7 +24,7 @@ export default async function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body className={`${roboto.className} antialiased`}>
-				<SessionProvider initialUser={session?.user ?? null}>
+				<SessionProvider initialUser={session?.user}>
 					<AppProviders>{children}</AppProviders>
 				</SessionProvider>
 			</body>
