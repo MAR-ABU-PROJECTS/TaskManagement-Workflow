@@ -1,8 +1,9 @@
 import React from "react";
 import UserDetails from "./component/UserDetails";
 import { Can, Permission, Role } from "@/lib/rolespermissions";
-import { NotAuthorized } from "../page";
+
 import { getSessionUser } from "@/lib/action";
+import NotAuthorized from "@/components/NotAuthorized";
 
 type Props = {
 	params: {
@@ -13,13 +14,15 @@ const page = async ({ params }: Props) => {
 	const user = await getSessionUser();
 	const userId = params.userId;
 	return (
-		<Can
-			role={user?.user.role as Role}
-			Permission={Permission["VIEW_USER"]}
-			fallback={<NotAuthorized />}
-		>
-			<UserDetails userId={userId} />
-		</Can>
+		<div>
+			<Can
+				role={user?.user.role as Role}
+				Permission={Permission["VIEW_USER"]}
+				fallback={<NotAuthorized />}
+			>
+				<UserDetails userId={userId} />
+			</Can>
+		</div>
 	);
 };
 
