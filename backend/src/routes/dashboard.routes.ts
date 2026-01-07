@@ -93,6 +93,13 @@ router.get("/overview", async (req, res) => {
       };
     }
 
+    // Calculate date ranges for historical comparison
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
     // Get dashboard metrics in parallel
     const [
       activeProjectsCount,
@@ -101,6 +108,10 @@ router.get("/overview", async (req, res) => {
       openIssues,
       recentProjects,
       myTasks,
+      // Historical data for deltas
+      tasksInProgressLastWeek,
+      completedTasksLastMonth,
+      openIssuesYesterday,
     ] = await Promise.all([
       // Active projects count
       prisma.project.count({ where: projectFilter }),
@@ -121,7 +132,7 @@ router.get("/overview", async (req, res) => {
         where: {
           status: TaskStatus.COMPLETED,
           updatedAt: {
-            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+            gte: oneMonthAgo,
           },
           OR: [
             { project: projectFilter },
@@ -188,6 +199,51 @@ router.get("/overview", async (req, res) => {
           },
         },
       }),
+
+      // Historical: Count tasks that transitioned TO in-progress in the last week
+      prisma.auditLog.count({
+        where: {
+          action: "TASK_STATUS_CHANGE",
+          entityType: "Task",
+          createdAt: {
+            gte: oneWeekAgo,
+          },
+          changes: {
+            path: ["to"],
+            equals: TaskStatus.IN_PROGRESS,
+          },
+        },
+      }),
+
+      // Historical: Completed tasks from previous month (for delta calculation)
+      prisma.task.count({
+        where: {
+          status: TaskStatus.COMPLETED,
+          updatedAt: {
+            gte: twoMonthsAgo,
+            lt: oneMonthAgo,
+          },
+          OR: [
+            { project: projectFilter },
+            { projectId: null, creatorId: userId },
+          ],
+        },
+      }),
+
+      // Historical: Open issues that existed yesterday
+      prisma.task.count({
+        where: {
+          status: { notIn: [TaskStatus.COMPLETED, TaskStatus.REJECTED] },
+          priority: { in: ["HIGH"] },
+          createdAt: {
+            lt: oneDayAgo,
+          },
+          OR: [
+            { project: projectFilter },
+            { projectId: null, creatorId: userId },
+          ],
+        },
+      }),
     ]);
 
     // Calculate project completion percentages
@@ -220,6 +276,27 @@ router.get("/overview", async (req, res) => {
       projectKey: task.project?.key,
     }));
 
+    // Calculate dynamic deltas
+    const tasksInProgressDelta = tasksInProgress - tasksInProgressLastWeek;
+    const completedTasksDelta =
+      completedTasksLastMonth > 0
+        ? Math.round(
+            ((completedTasks - completedTasksLastMonth) /
+              completedTasksLastMonth) *
+              100
+          )
+        : completedTasks > 0
+        ? 100
+        : 0;
+    const openIssuesDelta = openIssues - openIssuesYesterday;
+
+    // Format delta strings
+    const formatDelta = (value: number, suffix: string) => {
+      if (value > 0) return `+${value} ${suffix}`;
+      if (value < 0) return `${value} ${suffix}`;
+      return `No change ${suffix}`;
+    };
+
     return res.json({
       activeProjectsCount,
       tasksInProgressCount: tasksInProgress,
@@ -228,9 +305,14 @@ router.get("/overview", async (req, res) => {
       recentProjects: projectsWithProgress,
       myTasks: formattedMyTasks,
       statistics: {
-        tasksInProgressDelta: "+12 from last week", // This would require historical data
-        completedTasksDelta: "+18% from last month",
-        openIssuesDelta: "+1 from yesterday",
+        tasksInProgressDelta: formatDelta(
+          tasksInProgressDelta,
+          "from last week"
+        ),
+        completedTasksDelta: `${
+          completedTasksDelta > 0 ? "+" : ""
+        }${completedTasksDelta}% from last month`,
+        openIssuesDelta: formatDelta(openIssuesDelta, "from yesterday"),
       },
     });
   } catch (error: any) {
