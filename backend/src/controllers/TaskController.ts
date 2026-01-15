@@ -32,6 +32,21 @@ export class TaskController {
         data: task,
       });
     } catch (error: any) {
+      console.error("Error creating personal task:", error);
+
+      // Handle specific error cases
+      if (error.message.includes("SUPER_ADMIN")) {
+        return res.status(403).json({
+          message: error.message,
+        });
+      }
+
+      if (error.message.includes("not found")) {
+        return res.status(404).json({
+          message: error.message,
+        });
+      }
+
       return res.status(500).json({
         message: "Failed to create personal task",
         error: error.message,
