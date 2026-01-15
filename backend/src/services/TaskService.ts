@@ -211,6 +211,22 @@ export class TaskService {
     // - No approval required
     // - Private to the creator
 
+    // Validate that the creator is not a SUPER_ADMIN
+    const creator = await prisma.user.findUnique({
+      where: { id: creatorId },
+      select: { role: true },
+    });
+
+    if (!creator) {
+      throw new Error("User not found");
+    }
+
+    if (creator.role === UserRole.SUPER_ADMIN) {
+      throw new Error(
+        "SUPER_ADMIN users cannot create personal tasks. Personal tasks are for operational users only."
+      );
+    }
+
     // Calculate position for personal task
     const position = await this.getNextPositionForStatus(
       null,
