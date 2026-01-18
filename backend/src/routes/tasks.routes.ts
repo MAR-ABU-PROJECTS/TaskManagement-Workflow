@@ -33,6 +33,43 @@ router.use(authenticate);
 /**
  * @swagger
  * /api/tasks/personal:
+ *   get:
+ *     summary: Get all personal tasks
+ *     description: |
+ *       Retrieve all personal tasks for the authenticated user.
+ *       Personal tasks are private and only visible to their creator (and SUPER_ADMIN for audit).
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Personal tasks retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Personal tasks retrieved successfully
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Task'
+ *                 count:
+ *                   type: integer
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get("/personal", (req, res) =>
+  TaskController.getPersonalTasks(req, res),
+);
+
+/**
+ * @swagger
+ * /api/tasks/personal:
  *   post:
  *     summary: Create a personal task
  *     description: |
@@ -112,7 +149,7 @@ router.use(authenticate);
  *         description: Server error
  */
 router.post("/personal", (req, res) =>
-  TaskController.createPersonalTask(req, res)
+  TaskController.createPersonalTask(req, res),
 );
 
 // ==================== TASK CRUD ====================
@@ -214,7 +251,7 @@ router.post("/personal", (req, res) =>
  *         description: Server error
  */
 router.post("/", hasProjectPermission(Permission.CREATE_ISSUES), (req, res) =>
-  TaskController.createTask(req, res)
+  TaskController.createTask(req, res),
 );
 
 /**
@@ -295,9 +332,7 @@ router.post("/", hasProjectPermission(Permission.CREATE_ISSUES), (req, res) =>
  *       500:
  *         description: Server error
  */
-router.get("/", hasProjectPermission(Permission.BROWSE_PROJECT), (req, res) =>
-  TaskController.getAllTasks(req, res)
-);
+router.get("/", (req, res) => TaskController.getAllTasks(req, res));
 
 /**
  * @swagger
@@ -375,7 +410,7 @@ router.post(
     } catch (error: any) {
       return res.status(500).json({ error: error.message });
     }
-  }
+  },
 );
 
 /**
@@ -415,7 +450,7 @@ router.post(
 router.get(
   "/:id",
   hasProjectPermission(Permission.BROWSE_PROJECT),
-  (req, res) => TaskController.getTaskById(req, res)
+  (req, res) => TaskController.getTaskById(req, res),
 );
 
 /**
@@ -473,7 +508,7 @@ router.get(
  *         description: Task not found
  */
 router.patch("/:id", canEditIssue, (req, res) =>
-  TaskController.updateTask(req, res)
+  TaskController.updateTask(req, res),
 );
 
 /**
@@ -504,7 +539,7 @@ router.patch("/:id", canEditIssue, (req, res) =>
  *         description: Server error
  */
 router.delete("/:id", canDeleteIssue, (req, res) =>
-  TaskController.deleteTask(req, res)
+  TaskController.deleteTask(req, res),
 );
 
 // ==================== TASK ACTIONS ====================
@@ -552,7 +587,7 @@ router.delete("/:id", canDeleteIssue, (req, res) =>
 router.post(
   "/:id/assign",
   hasProjectPermission(Permission.ASSIGN_ISSUES),
-  (req, res) => TaskController.assignTask(req, res)
+  (req, res) => TaskController.assignTask(req, res),
 );
 
 /**
@@ -646,7 +681,7 @@ router.post(
 router.delete(
   "/:id/assign/:userId",
   hasProjectPermission(Permission.ASSIGN_ISSUES),
-  (req, res) => TaskController.unassignTask(req, res)
+  (req, res) => TaskController.unassignTask(req, res),
 );
 
 /**
@@ -697,7 +732,7 @@ router.delete(
 router.post(
   "/:id/transition",
   hasProjectPermission(Permission.TRANSITION_ISSUES),
-  (req, res) => TaskController.changeStatus(req, res)
+  (req, res) => TaskController.changeStatus(req, res),
 );
 
 /**
@@ -737,7 +772,7 @@ router.post(
  *         description: Task not found
  */
 router.post("/:id/approve", canApproveTask, (req, res) =>
-  TaskController.approveTask(req, res)
+  TaskController.approveTask(req, res),
 );
 
 /**
@@ -783,7 +818,7 @@ router.post("/:id/approve", canApproveTask, (req, res) =>
  *         description: Task not found
  */
 router.post("/:id/reject", canApproveTask, (req, res) =>
-  TaskController.rejectTask(req, res)
+  TaskController.rejectTask(req, res),
 );
 
 // ==================== COMMENTS ====================
@@ -841,7 +876,7 @@ router.post("/:id/reject", canApproveTask, (req, res) =>
  *         description: Server error
  */
 router.get("/:id/comments", (req, res) =>
-  commentController.getTaskComments(req, res)
+  commentController.getTaskComments(req, res),
 );
 
 /**
@@ -900,7 +935,7 @@ router.get("/:id/comments", (req, res) =>
  *         description: Task not found
  */
 router.post("/:id/comments", (req, res) =>
-  commentController.createComment(req, res)
+  commentController.createComment(req, res),
 );
 
 /**
@@ -938,7 +973,7 @@ router.post("/:id/comments", (req, res) =>
  *         description: Server error
  */
 router.delete("/:taskId/comments/:commentId", (req, res) =>
-  commentController.deleteComment(req, res)
+  commentController.deleteComment(req, res),
 );
 
 // ==================== ATTACHMENTS ====================
@@ -991,7 +1026,7 @@ router.delete("/:taskId/comments/:commentId", (req, res) =>
  *         description: Server error
  */
 router.get("/:taskId/attachments", authenticate, (req, res) =>
-  TaskAttachmentController.getTaskAttachments(req, res)
+  TaskAttachmentController.getTaskAttachments(req, res),
 );
 
 /**
@@ -1058,7 +1093,7 @@ router.post(
   "/:taskId/attachments",
   authenticate,
   upload.single("file"),
-  (req, res) => TaskAttachmentController.uploadAttachment(req, res)
+  (req, res) => TaskAttachmentController.uploadAttachment(req, res),
 );
 
 /**
@@ -1099,7 +1134,7 @@ router.post(
  *         description: Server error
  */
 router.get("/:taskId/attachments/:attachmentId", authenticate, (req, res) =>
-  TaskAttachmentController.downloadAttachment(req, res)
+  TaskAttachmentController.downloadAttachment(req, res),
 );
 
 /**
@@ -1137,7 +1172,7 @@ router.get("/:taskId/attachments/:attachmentId", authenticate, (req, res) =>
  *         description: Server error
  */
 router.delete("/:taskId/attachments/:attachmentId", authenticate, (req, res) =>
-  TaskAttachmentController.deleteAttachment(req, res)
+  TaskAttachmentController.deleteAttachment(req, res),
 );
 
 // ==================== DEPENDENCIES ====================
@@ -1190,7 +1225,7 @@ router.delete("/:taskId/attachments/:attachmentId", authenticate, (req, res) =>
  *         description: Server error
  */
 router.get("/:id/dependencies", (req, res) =>
-  TaskDependencyController.getTaskDependencies(req, res)
+  TaskDependencyController.getTaskDependencies(req, res),
 );
 
 /**
@@ -1241,7 +1276,7 @@ router.get("/:id/dependencies", (req, res) =>
  *         description: Task not found
  */
 router.post("/:id/dependencies", (req, res) =>
-  TaskDependencyController.createDependency(req, res)
+  TaskDependencyController.createDependency(req, res),
 );
 
 /**
@@ -1277,7 +1312,7 @@ router.post("/:id/dependencies", (req, res) =>
  *         description: Server error
  */
 router.delete("/:taskId/dependencies/:dependencyId", (req, res) =>
-  TaskDependencyController.deleteDependency(req, res)
+  TaskDependencyController.deleteDependency(req, res),
 );
 
 // ==================== TIME TRACKING ====================
@@ -1336,7 +1371,7 @@ router.delete("/:taskId/dependencies/:dependencyId", (req, res) =>
  *         description: Server error
  */
 router.get("/:taskId/time-entries", (req, res) =>
-  TimeTrackingController.getTaskTimeEntries(req, res)
+  TimeTrackingController.getTaskTimeEntries(req, res),
 );
 
 /**
@@ -1402,7 +1437,7 @@ router.get("/:taskId/time-entries", (req, res) =>
  *         description: Task not found
  */
 router.post("/:taskId/time-entries", (req, res) =>
-  TimeTrackingController.logTime(req, res)
+  TimeTrackingController.logTime(req, res),
 );
 
 /**
@@ -1450,7 +1485,7 @@ router.post("/:taskId/time-entries", (req, res) =>
  *         description: Time entry not found
  */
 router.patch("/:taskId/time-entries/:entryId", (req, res) =>
-  TimeTrackingController.updateTimeEntry(req, res)
+  TimeTrackingController.updateTimeEntry(req, res),
 );
 
 /**
@@ -1489,7 +1524,7 @@ router.patch("/:taskId/time-entries/:entryId", (req, res) =>
  *         description: Server error
  */
 router.delete("/:taskId/time-entries/:entryId", (req, res) =>
-  TimeTrackingController.deleteTimeEntry(req, res)
+  TimeTrackingController.deleteTimeEntry(req, res),
 );
 
 // ==================== ACTIVITY LOG ====================
@@ -1546,7 +1581,7 @@ router.delete("/:taskId/time-entries/:entryId", (req, res) =>
  *         description: Server error
  */
 router.get("/:id/activity", (req, res) =>
-  activityLogController.getTaskLogs(req, res)
+  activityLogController.getTaskLogs(req, res),
 );
 
 // ==================== KANBAN BOARD ====================
@@ -1611,7 +1646,7 @@ router.get("/:id/activity", (req, res) =>
  *         description: Server error
  */
 router.get("/board/:projectId", (req, res) =>
-  TaskController.getKanbanBoard(req, res)
+  TaskController.getKanbanBoard(req, res),
 );
 
 /**
@@ -1744,7 +1779,7 @@ router.post("/:id/move", (req, res) => TaskController.moveTask(req, res));
  *         description: Server error
  */
 router.get("/:id/transitions", (req, res) =>
-  TaskController.getAvailableTransitions(req, res)
+  TaskController.getAvailableTransitions(req, res),
 );
 
 export default router;
