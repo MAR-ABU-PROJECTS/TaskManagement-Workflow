@@ -49,7 +49,7 @@ export class TaskService {
   async createTask(
     data: CreateTaskDTO,
     creatorId: string,
-    creatorRole: UserRole
+    creatorRole: UserRole,
   ): Promise<Task> {
     // Validate project exists if projectId provided
     if (data.projectId) {
@@ -88,11 +88,11 @@ export class TaskService {
       } else {
         // For personal tasks, validate assignees are operational users (not SUPER_ADMIN)
         const invalidAssignees = users.filter(
-          (u) => u.role === UserRole.SUPER_ADMIN
+          (u) => u.role === UserRole.SUPER_ADMIN,
         );
         if (invalidAssignees.length > 0) {
           throw new Error(
-            "Cannot assign personal tasks to audit-only users (SUPER_ADMIN)"
+            "Cannot assign personal tasks to audit-only users (SUPER_ADMIN)",
           );
         }
       }
@@ -104,13 +104,13 @@ export class TaskService {
     // - ADMIN, HOO, HR, CEO tasks are auto-approved
     const requiresApproval = await this.checkIfRequiresApproval(
       creatorId,
-      creatorRole
+      creatorRole,
     );
 
     // Calculate position for new task (place at end of status column)
     const position = await this.getNextPositionForStatus(
       data.projectId || null,
-      TaskStatus.DRAFT
+      TaskStatus.DRAFT,
     );
 
     const task = await prisma.task.create({
@@ -166,7 +166,7 @@ export class TaskService {
         await NotificationService.notifyTaskAssigned(
           task.id,
           assigneeId,
-          creatorId
+          creatorId,
         );
       }
     }
@@ -203,7 +203,7 @@ export class TaskService {
       estimatedHours?: number;
       storyPoints?: number;
     },
-    creatorId: string
+    creatorId: string,
   ): Promise<Task> {
     // Personal tasks:
     // - No project required
@@ -223,14 +223,14 @@ export class TaskService {
 
     if (creator.role === UserRole.SUPER_ADMIN) {
       throw new Error(
-        "SUPER_ADMIN users cannot create personal tasks. Personal tasks are for operational users only."
+        "SUPER_ADMIN users cannot create personal tasks. Personal tasks are for operational users only.",
       );
     }
 
     // Calculate position for personal task
     const position = await this.getNextPositionForStatus(
       null,
-      TaskStatus.DRAFT
+      TaskStatus.DRAFT,
     );
 
     const task = await prisma.task.create({
@@ -318,7 +318,7 @@ export class TaskService {
       assigneeId?: string;
       creatorId?: string;
       includePersonal?: boolean;
-    }
+    },
   ): Promise<Task[]> {
     const where: any = {};
 
@@ -415,12 +415,62 @@ export class TaskService {
   }
 
   /**
+   * Get personal tasks for a user
+   */
+  async getPersonalTasks(userId: string, userRole: UserRole): Promise<Task[]> {
+    const where: any = {
+      projectId: null, // Personal tasks have no project
+    };
+
+    // Only creator can see their personal tasks (except SUPER_ADMIN who sees all)
+    if (userRole !== UserRole.SUPER_ADMIN) {
+      where.creatorId = userId;
+    }
+
+    const tasks = await prisma.task.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            key: true,
+          },
+        },
+      },
+    });
+
+    return tasks as any;
+  }
+
+  /**
    * Get task by ID
    */
   async getTaskById(
     id: string,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<Task | null> {
     const task = await prisma.task.findUnique({
       where: { id },
@@ -499,7 +549,7 @@ export class TaskService {
     id: string,
     data: UpdateTaskDTO,
     userId: string,
-    _userRole: UserRole
+    _userRole: UserRole,
   ): Promise<Task | null> {
     const task = await prisma.task.findUnique({
       where: { id },
@@ -535,11 +585,11 @@ export class TaskService {
 
       // Validate assignees are not SUPER_ADMIN (audit-only role)
       const invalidAssignees = assignees.filter(
-        (u) => u.role === UserRole.SUPER_ADMIN
+        (u) => u.role === UserRole.SUPER_ADMIN,
       );
       if (invalidAssignees.length > 0) {
         throw new Error(
-          "Cannot assign tasks to audit-only users (SUPER_ADMIN)"
+          "Cannot assign tasks to audit-only users (SUPER_ADMIN)",
         );
       }
 
@@ -668,7 +718,7 @@ export class TaskService {
     id: string,
     newStatus: TaskStatus,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<Task | null> {
     const task = await prisma.task.findUnique({
       where: { id },
@@ -688,12 +738,12 @@ export class TaskService {
       task.creatorId === userId ||
       isAssignee ||
       [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
-        userRole
+        userRole,
       );
 
     if (!canChange) {
       throw new Error(
-        "Forbidden: You do not have permission to change this task status"
+        "Forbidden: You do not have permission to change this task status",
       );
     }
 
@@ -718,12 +768,12 @@ export class TaskService {
       workflowType,
       task.status as TaskStatus,
       newStatus,
-      projectRole
+      projectRole,
     );
 
     if (!isAllowed) {
       throw new Error(
-        `Invalid status transition from ${task.status} to ${newStatus} in ${workflowType} workflow`
+        `Invalid status transition from ${task.status} to ${newStatus} in ${workflowType} workflow`,
       );
     }
 
@@ -757,7 +807,7 @@ export class TaskService {
         await NotificationService.notifyTaskAssigned(
           id,
           task.creatorId,
-          userId
+          userId,
         );
       }
     }
@@ -776,7 +826,7 @@ export class TaskService {
     await NotificationService.notifyStatusChanged(
       id,
       task.status as TaskStatus,
-      newStatus
+      newStatus,
     );
 
     // Fetch and return updated task with relations
@@ -817,7 +867,7 @@ export class TaskService {
     id: string,
     assigneeIds: string[],
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<Task | null> {
     const task = await prisma.task.findUnique({
       where: { id },
@@ -834,12 +884,12 @@ export class TaskService {
     const canAssign =
       task.creatorId === userId ||
       [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
-        userRole
+        userRole,
       );
 
     if (!canAssign) {
       throw new Error(
-        "Forbidden: You do not have permission to assign this task"
+        "Forbidden: You do not have permission to assign this task",
       );
     }
 
@@ -854,7 +904,7 @@ export class TaskService {
 
     // Validate assignees are not SUPER_ADMIN (audit-only role)
     const invalidAssignees = assignees.filter(
-      (u) => u.role === UserRole.SUPER_ADMIN
+      (u) => u.role === UserRole.SUPER_ADMIN,
     );
     if (invalidAssignees.length > 0) {
       throw new Error("Cannot assign tasks to audit-only users (SUPER_ADMIN)");
@@ -878,7 +928,7 @@ export class TaskService {
     // Filter out assignees who are already assigned
     const existingAssigneeIds = task.assignees.map((a) => a.userId);
     const newAssigneeIds = assigneeIds.filter(
-      (id) => !existingAssigneeIds.includes(id)
+      (id) => !existingAssigneeIds.includes(id),
     );
 
     if (newAssigneeIds.length === 0) {
@@ -950,7 +1000,7 @@ export class TaskService {
           dueDate: updated.dueDate?.toISOString(),
         })
         .catch((err) =>
-          console.error("Failed to send task assignment email:", err)
+          console.error("Failed to send task assignment email:", err),
         );
     }
 
@@ -976,7 +1026,7 @@ export class TaskService {
     taskId: string,
     userIdToRemove: string,
     requesterId: string,
-    requesterRole: UserRole
+    requesterRole: UserRole,
   ): Promise<Task> {
     const task = await prisma.task.findUnique({
       where: { id: taskId },
@@ -1000,12 +1050,12 @@ export class TaskService {
       UserRole.ADMIN,
     ].includes(requesterRole);
     const isProjectAdmin = task.project?.members.some(
-      (m) => m.userId === requesterId && m.role === "PROJECT_ADMIN"
+      (m) => m.userId === requesterId && m.role === "PROJECT_ADMIN",
     );
 
     if (!isCreator && !isAssignee && !isManagement && !isProjectAdmin) {
       throw new Error(
-        "Forbidden: You do not have permission to unassign this task"
+        "Forbidden: You do not have permission to unassign this task",
       );
     }
 
@@ -1027,7 +1077,7 @@ export class TaskService {
       // If still in early stages, keep as DRAFT or ASSIGNED
       if (
         [TaskStatus.IN_PROGRESS, TaskStatus.PAUSED, TaskStatus.REVIEW].includes(
-          task.status as TaskStatus
+          task.status as TaskStatus,
         )
       ) {
         await prisma.task.update({
@@ -1073,7 +1123,7 @@ export class TaskService {
   async approveTask(
     id: string,
     approverId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<Task | null> {
     const task = await prisma.task.findUnique({ where: { id } });
 
@@ -1092,11 +1142,11 @@ export class TaskService {
     // CEO, HOO, HR, ADMIN can approve (ADMIN approves STAFF tasks)
     if (
       ![UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
-        userRole
+        userRole,
       )
     ) {
       throw new Error(
-        "Forbidden: Only CEO, HOO, HR, or ADMIN can approve tasks"
+        "Forbidden: Only CEO, HOO, HR, or ADMIN can approve tasks",
       );
     }
 
@@ -1146,7 +1196,7 @@ export class TaskService {
     id: string,
     rejectionReason: string,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<Task | null> {
     const task = await prisma.task.findUnique({ where: { id } });
 
@@ -1157,11 +1207,11 @@ export class TaskService {
     // Only CEO, HOO, HR, ADMIN can reject
     if (
       ![UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
-        userRole
+        userRole,
       )
     ) {
       throw new Error(
-        "Forbidden: Only CEO, HOO, HR, and ADMIN can reject tasks"
+        "Forbidden: Only CEO, HOO, HR, and ADMIN can reject tasks",
       );
     }
 
@@ -1197,14 +1247,14 @@ export class TaskService {
    */
   private async checkIfRequiresApproval(
     _creatorId: string,
-    creatorRole: UserRole
+    creatorRole: UserRole,
   ): Promise<boolean> {
     // Approval based on creator's authority:
     // - STAFF tasks require approval (lower authority)
     // - ADMIN, HOO, HR, CEO tasks are auto-approved (have authority)
     if (
       [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
-        creatorRole
+        creatorRole,
       )
     ) {
       return false;
@@ -1220,7 +1270,7 @@ export class TaskService {
   private checkTaskAccess(
     task: any,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): boolean {
     // Personal task privacy: Only creator + SUPER_ADMIN can see
     if (!task.projectId) {
@@ -1312,7 +1362,7 @@ export class TaskService {
    */
   private async getNextPositionForStatus(
     projectId: string | null,
-    status: TaskStatus
+    status: TaskStatus,
   ): Promise<number> {
     const lastTask = await prisma.task.findFirst({
       where: {
@@ -1382,12 +1432,12 @@ export class TaskService {
           description: category.description,
           statuses: category.statuses,
           tasks: tasks.filter((t) =>
-            category.statuses.includes(t.status as TaskStatus)
+            category.statuses.includes(t.status as TaskStatus),
           ),
         };
         return acc;
       },
-      {} as any
+      {} as any,
     );
 
     return {
@@ -1409,7 +1459,7 @@ export class TaskService {
     newStatus: TaskStatus,
     newPosition: number,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<Task> {
     const task = await prisma.task.findUnique({
       where: { id: taskId },
@@ -1429,12 +1479,12 @@ export class TaskService {
       task.creatorId === userId ||
       isAssignee ||
       [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
-        userRole
+        userRole,
       );
 
     if (!canMove) {
       throw new Error(
-        "Forbidden: You do not have permission to move this task"
+        "Forbidden: You do not have permission to move this task",
       );
     }
 
@@ -1459,12 +1509,12 @@ export class TaskService {
       workflowType,
       task.status as TaskStatus,
       newStatus,
-      projectRole
+      projectRole,
     );
 
     if (!isAllowed) {
       throw new Error(
-        `Invalid status transition from ${task.status} to ${newStatus} in ${workflowType} workflow`
+        `Invalid status transition from ${task.status} to ${newStatus} in ${workflowType} workflow`,
       );
     }
 
@@ -1519,7 +1569,7 @@ export class TaskService {
     await NotificationService.notifyStatusChanged(
       taskId,
       task.status as TaskStatus,
-      newStatus
+      newStatus,
     );
 
     return updated as Task;
@@ -1531,7 +1581,7 @@ export class TaskService {
    */
   async getAvailableTransitions(
     taskId: string,
-    userId: string
+    userId: string,
   ): Promise<{
     currentStatus: TaskStatus;
     availableTransitions: Array<{
@@ -1575,7 +1625,7 @@ export class TaskService {
     const transitions = getWorkflowTransitions(
       workflowType,
       task.status as TaskStatus,
-      projectRole
+      projectRole,
     );
 
     // Convert WorkflowTransitionRule to expected format
@@ -1624,7 +1674,7 @@ export class TaskService {
     taskIds: string[],
     newStatus: TaskStatus,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<{
     successful: string[];
     failed: Array<{ taskId: string; reason: string }>;
@@ -1654,7 +1704,7 @@ export class TaskService {
           task.creatorId === userId ||
           isAssignee ||
           [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
-            userRole
+            userRole,
           );
 
         if (!canChange) {
@@ -1685,7 +1735,7 @@ export class TaskService {
           workflowType,
           task.status as TaskStatus,
           newStatus,
-          projectRole
+          projectRole,
         );
 
         if (!isAllowed) {
@@ -1716,7 +1766,7 @@ export class TaskService {
         await NotificationService.notifyStatusChanged(
           taskId,
           task.status as TaskStatus,
-          newStatus
+          newStatus,
         );
 
         successful.push(taskId);
@@ -1737,7 +1787,7 @@ export class TaskService {
   async deleteTask(
     id: string,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<boolean> {
     const task = await prisma.task.findUnique({
       where: { id },
@@ -1785,7 +1835,7 @@ export class TaskService {
 
     if (!canDelete) {
       throw new Error(
-        "Forbidden: You do not have permission to delete this task"
+        "Forbidden: You do not have permission to delete this task",
       );
     }
 
