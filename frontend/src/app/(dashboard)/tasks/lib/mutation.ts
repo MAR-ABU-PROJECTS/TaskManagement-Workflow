@@ -2,6 +2,21 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { TaskService } from "./service";
 import { createTaskPSchemaType } from "../../projects/components/add-task-modal";
 import { taskKeys } from "./keys";
+import { createPTaskSchemaType } from "@/components/NewTaskPage";
+
+export const useCreatePersonalTask = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (task: createPTaskSchemaType) =>
+			TaskService.createPersonalTask(task),
+
+		onSuccess: () => {
+			qc.invalidateQueries({
+				queryKey: taskKeys.allPersonal,
+			});
+		},
+	});
+};
 
 export const useCreateTaskProject = () => {
 	const qc = useQueryClient();
@@ -53,7 +68,6 @@ export const useEditTaskProject = (projectId: string) => {
 		},
 	});
 };
-
 
 export const useDeleteTaskProject = (projectId: string) => {
 	const qc = useQueryClient();

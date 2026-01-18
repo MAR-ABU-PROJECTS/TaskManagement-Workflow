@@ -21,7 +21,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import TaskDetails from "@/app/(dashboard)/tasks/components/task-details";
+import TaskDetails from "./Task-details";
 import { useRouter } from "next/navigation";
 import { QueryStateHandler } from "@/components/QueryStateHandler";
 import { useGetTaskDetails } from "../../tasks/lib/queries";
@@ -49,6 +49,13 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 				getItems={(res) => res}
 				render={(res) => {
 					const data = res.data;
+
+					const assignees = data.assignees.map((u) => ({
+						id: u?.user?.id,
+						name: u?.user?.name,
+					}));
+
+					console.log({ assignees, data });
 
 					return (
 						<div className="flex flex-1 flex-col">
@@ -114,7 +121,11 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 										<Activity />
 									</div>
 
-									<TaskDetails />
+									<TaskDetails
+										assignees={assignees}
+										priority={data.priority}
+										status={data.status}
+									/>
 								</div>
 							</main>
 							<Dialog
