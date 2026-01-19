@@ -12,13 +12,13 @@ export class CommentService {
   async createComment(
     taskId: string,
     userId: string,
-    data: CreateCommentDTO
+    data: CreateCommentDTO,
   ): Promise<any> {
     // Accept both 'message' and 'content' fields
-    const messageText = data.message || data.content || '';
-    
+    const messageText = data.message || data.content || "";
+
     if (!messageText) {
-      throw new Error('Comment message/content is required');
+      throw new Error("Comment message/content is required");
     }
 
     // Verify task exists
@@ -88,14 +88,14 @@ export class CommentService {
         emailService
           .sendCommentNotificationEmail(creator.email, {
             recipientName: creator.name,
-            commenterName: comment.user?.name || 'Unknown',
+            commenterName: comment.user?.name || "Unknown",
             taskTitle: task.title,
             taskId: task.id,
             commentText: messageText,
             projectName: task.project?.name,
           })
           .catch((err) =>
-            console.error("Failed to send comment email to creator:", err)
+            console.error("Failed to send comment email to creator:", err),
           );
       }
     }
@@ -109,14 +109,14 @@ export class CommentService {
         emailService
           .sendCommentNotificationEmail(assignment.user.email, {
             recipientName: assignment.user.name,
-            commenterName: comment.user?.name || 'Unknown',
+            commenterName: comment.user?.name || "Unknown",
             taskTitle: task.title,
             taskId: task.id,
             commentText: messageText,
             projectName: task.project?.name,
           })
           .catch((err) =>
-            console.error("Failed to send comment email to assignee:", err)
+            console.error("Failed to send comment email to assignee:", err),
           );
       }
     }
@@ -137,6 +137,17 @@ export class CommentService {
 
       for (const user of mentionedUsers) {
         await NotificationService.notifyComment(taskId, user.id, messageText);
+
+        // Send mention email
+        emailService
+          .sendMentionEmail(user.email, {
+            mentionedUserName: user.name,
+            commenterName: comment.user?.name || "Unknown",
+            taskTitle: task.title,
+            taskId: task.id,
+            commentText: messageText,
+          })
+          .catch((err) => console.error("Failed to send mention email:", err));
       }
     }
 
@@ -174,7 +185,7 @@ export class CommentService {
   async deleteComment(
     commentId: string,
     userId: string,
-    userRole: string
+    userRole: string,
   ): Promise<boolean> {
     const comment = await prisma.taskComment.findUnique({
       where: { id: commentId },
