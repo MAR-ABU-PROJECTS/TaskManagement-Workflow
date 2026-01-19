@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, CheckCircle2, Clock, Flag, User } from "lucide-react";
+import { CheckCircle2, Flag, User } from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -9,24 +9,28 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 // import { Button } from "@/components/ui/button";
-import { Task } from "../lib/queries";
 import ReactSelect from "react-select";
 
-const TaskDetails = ({ data }: { data: Task }) => {
+const TaskDetails = ({
+	assignees,
+	priority,
+	status,
+}: {
+	assignees: { name: string; id: string }[];
+	priority: string;
+	status: string;
+}) => {
 	type MembersOption = {
 		value: string;
 		label: string;
 	};
 
-	const options: { value: string; label: string }[] = data.assignees.map(
-		(u) => ({
-			value: u?.user.id,
-			label: u?.user.name,
-		})
-	);
-	
+	const options: { value: string; label: string }[] = assignees.map((u) => ({
+		value: u?.id,
+		label: u?.name,
+	}));
+
 	return (
 		<div className="space-y-6">
 			<Card>
@@ -39,12 +43,14 @@ const TaskDetails = ({ data }: { data: Task }) => {
 							<User className="h-4 w-4" />
 							Assignee
 						</Label>
-						<div className="w-full">
-							<ReactSelect<MembersOption, true>
-								isMulti
-								value={options}
-								isDisabled={true}
-							/>
+						<div>
+							<div className="w-full">
+								<ReactSelect<MembersOption, true>
+									isMulti
+									value={options}
+									isDisabled={true}
+								/>
+							</div>
 						</div>
 					</div>
 
@@ -53,14 +59,17 @@ const TaskDetails = ({ data }: { data: Task }) => {
 							<Flag className="h-4 w-4" />
 							Priority
 						</Label>
-						<Select defaultValue={data.priority} disabled>
+						<Select defaultValue={priority.toLowerCase()} disabled>
 							<SelectTrigger>
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="HIGH">High</SelectItem>
-								<SelectItem value="MEDIUM">Medium</SelectItem>
-								<SelectItem value="LOW">Low</SelectItem>
+								<SelectItem value="critical">
+									Critical
+								</SelectItem>
+								<SelectItem value="high">High</SelectItem>
+								<SelectItem value="medium">Medium</SelectItem>
+								<SelectItem value="low">Low</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
@@ -70,10 +79,7 @@ const TaskDetails = ({ data }: { data: Task }) => {
 							<CheckCircle2 className="h-4 w-4" />
 							Status
 						</Label>
-						<Select
-							defaultValue={data.status.toLowerCase()}
-							disabled
-						>
+						<Select defaultValue={status.toLowerCase()} disabled>
 							<SelectTrigger>
 								<SelectValue />
 							</SelectTrigger>
@@ -91,34 +97,6 @@ const TaskDetails = ({ data }: { data: Task }) => {
 							</SelectContent>
 						</Select>
 					</div>
-
-					<div className="space-y-2">
-						<Label className="flex items-center gap-2 text-sm font-medium">
-							<Calendar className="h-4 w-4" />
-							Due Date
-						</Label>
-						<input
-							disabled
-							type="date"
-							defaultValue={data.dueDate ?? ""}
-							className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-						/>
-					</div>
-
-					<div className="space-y-2">
-						<Label className="flex items-center gap-2 text-sm font-medium">
-							<Clock className="h-4 w-4" />
-							Time Estimate
-						</Label>
-						<input
-							disabled
-							type="text"
-							defaultValue={data.estimatedHours ?? ""}
-							className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-						/>
-					</div>
-
-					<Separator />
 				</CardContent>
 			</Card>
 

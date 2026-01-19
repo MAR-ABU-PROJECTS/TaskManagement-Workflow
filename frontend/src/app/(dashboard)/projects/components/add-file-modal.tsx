@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { useState, useRef, useEffect } from "react";
 import { Upload } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useAttachmentMutation } from "../lib/mutation";
+import { useAttachmentMutation } from "../../tasks/lib/mutation";
 import { Spinner } from "@/components/ui/spinner";
 
 interface AddFileModalProps {
@@ -34,8 +34,8 @@ export function AddFileModal({ open, onOpenChange }: AddFileModalProps) {
 		}
 	};
 
-	const { id } = useParams();
-	const mutation = useAttachmentMutation(id as string);
+	const { taskId } = useParams();
+	const mutation = useAttachmentMutation(taskId as string);
 
 	const handleSubmit = () => {
 		// if (selectedFile) {
@@ -48,7 +48,7 @@ export function AddFileModal({ open, onOpenChange }: AddFileModalProps) {
 		formData.append("file", selectedFile);
 
 		mutation.mutate(
-			{ formData, taskId: id as string },
+			{ formData, taskId: taskId as string },
 			{
 				onSuccess: () => {
 					setSelectedFile(null);

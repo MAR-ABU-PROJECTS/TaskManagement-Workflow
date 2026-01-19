@@ -2,7 +2,6 @@
 import Link from "next/link";
 import {
 	Home,
-	Users,
 	FolderKanban,
 	CheckSquare,
 	AlertCircle,
@@ -39,7 +38,7 @@ export function AppSidebar() {
 		() => [
 			{ name: "Dashboard", href: "/dashboard", icon: Home },
 			{ name: "Projects", href: "/projects", icon: FolderKanban },
-			{ name: "Teams", href: "/teams", icon: Users },
+			// { name: "Teams", href: "/teams", icon: Users },
 			{ name: "Tasks", href: "/tasks", icon: CheckSquare },
 			{ name: "Issues", href: "/issues", icon: AlertCircle },
 			{ name: "Reports", href: "/reports", icon: BarChart3 },

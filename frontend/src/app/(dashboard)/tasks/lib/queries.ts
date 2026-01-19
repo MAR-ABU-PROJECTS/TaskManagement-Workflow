@@ -2,6 +2,18 @@ import { useQuery } from "@tanstack/react-query";
 import { taskKeys } from "./keys";
 import { TaskService } from "./service";
 
+export const useGetPersonalTasks = (options?: {
+	disableGlobalSuccess?: boolean;
+}) => {
+	return useQuery({
+		queryKey: taskKeys.allPersonal,
+		queryFn: TaskService.getPersonalTasks,
+		meta: {
+			disableGlobalSuccess: options?.disableGlobalSuccess,
+		},
+	});
+};
+
 export const useGetProjectTasks = (
 	id: string,
 	options?: { disableGlobalSuccess?: boolean }
@@ -35,6 +47,10 @@ export type Assignee = {
 	name: string;
 	email?: string;
 	role?: string;
+	user: {
+		id: string;
+		name: string;
+	};
 };
 
 export type Task = {
@@ -86,7 +102,7 @@ export type Task = {
 };
 
 export const useGetTaskDetails = (taskId: string) => {
-	return useQuery<{data: Task}>({
+	return useQuery<{ data: Task }>({
 		queryKey: taskKeys.detail(taskId),
 		queryFn: () => TaskService.getTaskDetail(taskId),
 		enabled: !!taskId,

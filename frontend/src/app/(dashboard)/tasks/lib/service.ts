@@ -1,7 +1,18 @@
 import { apiService } from "@/lib/apiService";
 import { createTaskPSchemaType } from "../../projects/components/add-task-modal";
+import { createPTaskSchemaType } from "@/components/NewTaskPage";
 
 export const TaskService = {
+	editPersonalTask: ({
+		taskId,
+		data,
+	}: {
+		data: createPTaskSchemaType;
+		taskId: string;
+	}) => apiService.patch(`/tasks/${taskId}`, data),
+	getPersonalTasks: () => apiService.get(`/tasks`),
+	createPersonalTask: (data: createPTaskSchemaType) =>
+		apiService.post("/tasks/personal", data),
 	createProjectTask: (data: createTaskPSchemaType) =>
 		apiService.post("/tasks", data),
 	getProjectTasks: (projectId: string) =>

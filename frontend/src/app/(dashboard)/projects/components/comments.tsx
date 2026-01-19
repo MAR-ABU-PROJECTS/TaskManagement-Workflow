@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useGetComments } from "../lib/queries";
+import { useGetComments } from "../../tasks/lib/queries";
 import { useParams } from "next/navigation";
-import { useCommentMutation } from "../lib/mutation";
+import { useCommentMutation } from "../../tasks/lib/mutation";
 import { Spinner } from "@/components/ui/spinner";
 import { useSession } from "@/app/providers/session-provider";
 import { QueryStateHandler } from "@/components/QueryStateHandler";
@@ -14,10 +14,10 @@ import { getInitials } from "@/lib/utils";
 import Comment, { CommentType } from "./comment";
 
 const TaskComments = () => {
-	const { id } = useParams();
+	const { taskId } = useParams();
 	const user = useSession();
 
-	const query = useGetComments(id as string);
+	const query = useGetComments(taskId as string);
 	const [newComment, setNewComment] = useState("");
 	const mutation = useCommentMutation();
 
@@ -68,7 +68,7 @@ const TaskComments = () => {
 									mutation.mutate(
 										{
 											comment: newComment,
-											taskId: id as string,
+											taskId: taskId as string,
 										},
 										{
 											onSuccess: () => {

@@ -2,14 +2,14 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QueryStateHandler } from "@/components/QueryStateHandler";
-import { useGetActivities } from "../lib/queries";
+import { useGetActivities } from "../../tasks/lib/queries";
 import { useParams } from "next/navigation";
 import Activity, { TaskActivityType } from "./activity";
 
 const Activities = () => {
-	const { id } = useParams();
+	const { taskId } = useParams();
 
-	const query = useGetActivities(id as string);
+	const query = useGetActivities(taskId as string);
 
 	return (
 		<Card>
