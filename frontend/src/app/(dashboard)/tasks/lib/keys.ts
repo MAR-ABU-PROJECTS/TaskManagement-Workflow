@@ -1,5 +1,6 @@
 export const taskKeys = {
 	all: ["tasks"] as const,
+	allPersonal: ["personal-tasks"] as const,
 
 	detail: (id: string) => [...taskKeys.all, { taskId: id }] as const,
 

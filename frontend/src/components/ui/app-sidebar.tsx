@@ -2,7 +2,6 @@
 import Link from "next/link";
 import {
 	Home,
-	Users,
 	FolderKanban,
 	CheckSquare,
 	AlertCircle,
@@ -27,21 +26,40 @@ import Image from "next/image";
 import logo from "@/assets/black-logo.png";
 import { useSession } from "@/app/providers/session-provider";
 import { getInitials } from "@/lib/utils";
-
-const navigation = [
-	{ name: "Dashboard", href: "/dashboard", icon: Home },
-	{ name: "Projects", href: "/projects", icon: FolderKanban },
-	{ name: "Teams", href: "/teams", icon: Users },
-	{ name: "Tasks", href: "/tasks", icon: CheckSquare },
-	{ name: "Issues", href: "/issues", icon: AlertCircle },
-	{ name: "Reports", href: "/reports", icon: BarChart3 },
-	{ name: "User Management", href: "/user-management", icon: UsersRound },
-];
+import { useMemo } from "react";
+import { hasPermission, Permission, Role } from "@/lib/rolespermissions";
 
 export function AppSidebar() {
 	const { user } = useSession();
 	const name = user?.name ?? "";
 	const { first, last } = getInitials(name);
+
+	const NAV_ITEMS = useMemo(
+		() => [
+			{ name: "Dashboard", href: "/dashboard", icon: Home },
+			{ name: "Projects", href: "/projects", icon: FolderKanban },
+			// { name: "Teams", href: "/teams", icon: Users },
+			{ name: "Tasks", href: "/tasks", icon: CheckSquare },
+			{ name: "Issues", href: "/issues", icon: AlertCircle },
+			{ name: "Reports", href: "/reports", icon: BarChart3 },
+			{
+				name: "User Management",
+				href: "/user-management",
+				icon: UsersRound,
+				permission: Permission.VIEW_USER,
+			},
+		],
+		[]
+	);
+
+	const navLinks = useMemo(() => {
+		return NAV_ITEMS.filter((item) => {
+			// No permission required → visible
+			if (!item.permission) return true;
+
+			return hasPermission(user?.role as Role, item.permission);
+		});
+	}, [user?.role, NAV_ITEMS]);
 	return (
 		<Sidebar>
 			<SidebarHeader className="border-b border-sidebar-border p-4">
@@ -58,7 +76,7 @@ export function AppSidebar() {
 					<SidebarGroupLabel>Navigation</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{navigation.map((item) => (
+							{navLinks.map((item) => (
 								<SidebarMenuItem key={item.name}>
 									<SidebarMenuButton asChild>
 										<Link
@@ -78,7 +96,7 @@ export function AppSidebar() {
 			<SidebarFooter className="border-t border-sidebar-border p-4">
 				<div className="flex items-center gap-3">
 					<Avatar className="h-8 w-8">
-						<AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground uppercase">
+						<AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground uppercase text-sm">
 							{first} {last}
 						</AvatarFallback>
 					</Avatar>

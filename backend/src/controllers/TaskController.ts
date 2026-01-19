@@ -9,7 +9,36 @@ import { UserRole, TaskStatus } from "../types/enums";
 
 export class TaskController {
   /**
-   * POST /tasks/personal - Create a personal task
+   * GET /tasks/personal - Get all personal tasks
+   */
+  async getPersonalTasks(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.user) {
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Authentication required" });
+      }
+
+      const tasks = await TaskService.getPersonalTasks(
+        req.user.id,
+        req.user.role as UserRole,
+      );
+
+      return res.status(200).json({
+        message: "Personal tasks retrieved successfully",
+        data: tasks,
+        count: tasks.length,
+      });
+    } catch (error: any) {
+      console.error("Error fetching personal tasks:", error);
+      return res.status(500).json({
+        message: "Failed to retrieve personal tasks",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
    */
   async createPersonalTask(req: Request, res: Response): Promise<Response> {
     try {
@@ -32,6 +61,21 @@ export class TaskController {
         data: task,
       });
     } catch (error: any) {
+      console.error("Error creating personal task:", error);
+
+      // Handle specific error cases
+      if (error.message.includes("SUPER_ADMIN")) {
+        return res.status(403).json({
+          message: error.message,
+        });
+      }
+
+      if (error.message.includes("not found")) {
+        return res.status(404).json({
+          message: error.message,
+        });
+      }
+
       return res.status(500).json({
         message: "Failed to create personal task",
         error: error.message,
@@ -59,7 +103,7 @@ export class TaskController {
       const task = await TaskService.createTask(
         data,
         req.user.id,
-        req.user.role as UserRole
+        req.user.role as UserRole,
       );
 
       return res.status(201).json({
@@ -95,7 +139,7 @@ export class TaskController {
       const tasks = await TaskService.getAllTasks(
         req.user.id,
         req.user.role as UserRole,
-        filters
+        filters,
       );
 
       return res.status(200).json({
@@ -130,7 +174,7 @@ export class TaskController {
       const task = await TaskService.getTaskById(
         id,
         req.user.id,
-        req.user.role as UserRole
+        req.user.role as UserRole,
       );
 
       if (!task) {
@@ -173,7 +217,7 @@ export class TaskController {
         id,
         data,
         req.user.id,
-        req.user.role as UserRole
+        req.user.role as UserRole,
       );
 
       if (!task) {
@@ -221,7 +265,7 @@ export class TaskController {
         id,
         status as TaskStatus,
         req.user.id,
-        req.user.role as UserRole
+        req.user.role as UserRole,
       );
 
       if (!task) {
@@ -278,7 +322,7 @@ export class TaskController {
         id,
         assigneeIds,
         req.user.id,
-        req.user.role as UserRole
+        req.user.role as UserRole,
       );
 
       if (!task) {
@@ -326,8 +370,8 @@ export class TaskController {
         userIds && Array.isArray(userIds) && userIds.length > 0
           ? userIds
           : userId
-          ? [userId]
-          : [];
+            ? [userId]
+            : [];
 
       if (idsToUnassign.length === 0) {
         return res.status(400).json({
@@ -342,9 +386,9 @@ export class TaskController {
             id,
             uid,
             req.user!.id,
-            req.user!.role as UserRole
-          )
-        )
+            req.user!.role as UserRole,
+          ),
+        ),
       );
 
       const successful = results.filter((r) => r.status === "fulfilled").length;
@@ -392,7 +436,7 @@ export class TaskController {
       const task = await TaskService.approveTask(
         id,
         req.user.id,
-        req.user.role as UserRole
+        req.user.role as UserRole,
       );
 
       if (!task) {
@@ -445,7 +489,7 @@ export class TaskController {
         id,
         rejectionReason,
         req.user.id,
-        req.user.role as UserRole
+        req.user.role as UserRole,
       );
 
       if (!task) {
@@ -531,7 +575,7 @@ export class TaskController {
         status as TaskStatus,
         position,
         req.user.id,
-        req.user.role as UserRole
+        req.user.role as UserRole,
       );
 
       return res.status(200).json({
@@ -558,7 +602,7 @@ export class TaskController {
    */
   async getAvailableTransitions(
     req: Request,
-    res: Response
+    res: Response,
   ): Promise<Response> {
     try {
       if (!req.user) {
@@ -574,7 +618,7 @@ export class TaskController {
 
       const transitions = await TaskService.getAvailableTransitions(
         id,
-        req.user.id
+        req.user.id,
       );
 
       return res.status(200).json({
@@ -644,7 +688,7 @@ export class TaskController {
       const deleted = await TaskService.deleteTask(
         id,
         req.user.id,
-        req.user.role as UserRole
+        req.user.role as UserRole,
       );
 
       if (!deleted) {

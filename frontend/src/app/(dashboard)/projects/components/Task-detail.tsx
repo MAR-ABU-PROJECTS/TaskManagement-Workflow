@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import TaskComments from "@/app/(dashboard)/tasks/components/comments";
 import Activity from "@/app/(dashboard)/tasks/components/activities";
-import Attachments from "@/app/(dashboard)/tasks/components/attachments";
+// import Attachments from "@/app/(dashboard)/tasks/components/attachments";
 import Subtasks from "@/app/(dashboard)/tasks/components/subtasks";
 import { useState } from "react";
 import {
@@ -21,12 +21,13 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import TaskDetails from "@/app/(dashboard)/tasks/components/task-details";
+import TaskDetails from "./Task-details";
 import { useRouter } from "next/navigation";
 import { QueryStateHandler } from "@/components/QueryStateHandler";
 import { useGetTaskDetails } from "../../tasks/lib/queries";
 import { Spinner } from "@/components/ui/spinner";
 import { useDeleteTaskProject } from "../../tasks/lib/mutation";
+import Attachments from "./attachments";
 
 export default function TaskDetailPage({ taskId }: { taskId: string }) {
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -49,6 +50,11 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 				getItems={(res) => res}
 				render={(res) => {
 					const data = res.data;
+
+					const assignees = data.assignees.map((u) => ({
+						id: u?.user?.id,
+						name: u?.user?.name,
+					}));
 
 					return (
 						<div className="flex flex-1 flex-col">
@@ -114,7 +120,11 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 										<Activity />
 									</div>
 
-									<TaskDetails />
+									<TaskDetails
+										assignees={assignees}
+										priority={data.priority}
+										status={data.status}
+									/>
 								</div>
 							</main>
 							<Dialog
@@ -134,7 +144,7 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 											type="button"
 											variant="outline"
 											onClick={() =>
-												setShowDeleteModal(true)
+												setShowDeleteModal(false)
 											}
 											disabled={mutation.isPending}
 											className="border-slate-200 dark:border-slate-800 bg-transparent"
@@ -149,7 +159,7 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 												mutation.mutate(taskId, {
 													onSuccess() {
 														setShowDeleteModal(
-															false
+															true
 														);
 													},
 												})
