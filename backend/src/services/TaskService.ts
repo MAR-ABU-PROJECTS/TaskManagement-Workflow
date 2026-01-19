@@ -829,7 +829,7 @@ export class TaskService {
       newStatus,
     );
 
-    // Fetch and return updated task with relations
+    // AUTOMATION: Send status change email to assignees and creator
     const updatedTask = await prisma.task.findUnique({
       where: { id },
       include: {
@@ -856,6 +856,54 @@ export class TaskService {
         project: true,
       },
     });
+
+    // Send status change emails
+    if (updatedTask) {
+      const changedByUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      });
+
+      // Email all assignees (except the person who made the change)
+      for (const assignment of updatedTask.assignees) {
+        if (assignment.user.id !== userId) {
+          emailService
+            .sendStatusChangeEmail(assignment.user.email, {
+              userName: assignment.user.name,
+              taskTitle: updatedTask.title,
+              taskId: updatedTask.id,
+              oldStatus: task.status,
+              newStatus: newStatus,
+              changedBy: changedByUser?.name || "Unknown",
+            })
+            .catch((err) =>
+              console.error("Failed to send status change email:", err),
+            );
+        }
+      }
+
+      // Email creator if they're not the one who made the change and not an assignee
+      if (
+        updatedTask.creator &&
+        updatedTask.creator.id !== userId &&
+        !updatedTask.assignees.some(
+          (a) => a.user.id === updatedTask.creator!.id,
+        )
+      ) {
+        emailService
+          .sendStatusChangeEmail(updatedTask.creator.email, {
+            userName: updatedTask.creator.name,
+            taskTitle: updatedTask.title,
+            taskId: updatedTask.id,
+            oldStatus: task.status,
+            newStatus: newStatus,
+            changedBy: changedByUser?.name || "Unknown",
+          })
+          .catch((err) =>
+            console.error("Failed to send status change email:", err),
+          );
+      }
+    }
 
     return updatedTask as Task;
   }

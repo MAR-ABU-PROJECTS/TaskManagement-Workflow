@@ -25,7 +25,7 @@ class SprintService {
       startDate: Date;
       endDate: Date;
       capacityHours?: number;
-    }
+    },
   ) {
     // Ensure no other active sprint exists
     const activeSprint = await prisma.sprint.findFirst({
@@ -147,7 +147,7 @@ class SprintService {
       startDate?: Date;
       endDate?: Date;
       capacityHours?: number;
-    }
+    },
   ) {
     const sprint = await prisma.sprint.update({
       where: { id: sprintId },
@@ -199,8 +199,48 @@ class SprintService {
       data: { status: "ACTIVE" },
       include: {
         tasks: true,
+        project: {
+          include: {
+            members: {
+              include: {
+                user: {
+                  select: {
+                    email: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
+
+    // AUTOMATION: Send sprint started email to all project members
+    if (
+      updatedSprint.project &&
+      updatedSprint.project.members.length > 0 &&
+      updatedSprint.startDate &&
+      updatedSprint.endDate
+    ) {
+      const emailService = require("./EmailService").default;
+      const memberEmails = updatedSprint.project.members.map(
+        (m) => m.user.email,
+      );
+
+      emailService
+        .sendSprintStartedEmail(memberEmails, {
+          teamMembers: updatedSprint.project.members.map((m) => m.user.name),
+          sprintName: updatedSprint.name,
+          sprintGoal: updatedSprint.goal || undefined,
+          startDate: updatedSprint.startDate.toISOString(),
+          endDate: updatedSprint.endDate.toISOString(),
+          taskCount: updatedSprint.tasks.length,
+        })
+        .catch((err: any) =>
+          console.error("Failed to send sprint started email:", err),
+        );
+    }
 
     return updatedSprint;
   }
@@ -227,7 +267,7 @@ class SprintService {
     // Move incomplete tasks if specified
     if (moveIncompleteTo) {
       const incompleteTasks = sprint.tasks.filter(
-        (t: any) => t.status !== "COMPLETED"
+        (t: any) => t.status !== "COMPLETED",
       );
 
       await prisma.task.updateMany({
@@ -252,8 +292,53 @@ class SprintService {
       data: { status: "COMPLETED" },
       include: {
         tasks: true,
+        project: {
+          include: {
+            members: {
+              include: {
+                user: {
+                  select: {
+                    email: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
+
+    // AUTOMATION: Send sprint completed email to all project members
+    if (
+      completedSprint.project &&
+      completedSprint.project.members.length > 0 &&
+      completedSprint.startDate &&
+      completedSprint.endDate
+    ) {
+      const emailService = require("./EmailService").default;
+      const memberEmails = completedSprint.project.members.map(
+        (m) => m.user.email,
+      );
+      const completedTasks = completedSprint.tasks.filter(
+        (t: any) => t.status === "COMPLETED",
+      ).length;
+
+      emailService
+        .sendSprintCompletedEmail(memberEmails, {
+          teamMembers: completedSprint.project.members.map((m) => m.user.name),
+          sprintName: completedSprint.name,
+          sprintGoal: completedSprint.goal || undefined,
+          startDate: completedSprint.startDate.toISOString(),
+          endDate: completedSprint.endDate.toISOString(),
+          taskCount: completedSprint.tasks.length,
+          completedTasks: completedTasks,
+          totalTasks: completedSprint.tasks.length,
+        })
+        .catch((err: any) =>
+          console.error("Failed to send sprint completed email:", err),
+        );
+    }
 
     return completedSprint;
   }
@@ -358,13 +443,13 @@ class SprintService {
     const startDate = new Date(sprint.startDate);
     const endDate = new Date(sprint.endDate);
     const totalDays = Math.ceil(
-      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     // Calculate total story points
     const totalStoryPoints = sprint.tasks.reduce(
       (sum: number, task: any) => sum + (task.storyPoints || 0),
-      0
+      0,
     );
 
     // Build burndown data for each day
@@ -378,7 +463,7 @@ class SprintService {
       sprint.tasks.forEach((task: any) => {
         const completedActivity = task.activityLogs.find(
           (a: any) =>
-            a.newStatus === "COMPLETED" && new Date(a.timestamp) <= currentDate
+            a.newStatus === "COMPLETED" && new Date(a.timestamp) <= currentDate,
         );
         if (completedActivity) {
           remainingPoints -= task.storyPoints || 0;
@@ -425,7 +510,7 @@ class SprintService {
       velocity: completedPoints,
       totalPlanned: sprint.tasks.reduce(
         (sum: number, t: any) => sum + (t.storyPoints || 0),
-        0
+        0,
       ),
     };
   }
@@ -477,11 +562,11 @@ class SprintService {
     const tasks = sprint.tasks || [];
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter(
-      (t: any) => t.status === "COMPLETED"
+      (t: any) => t.status === "COMPLETED",
     ).length;
     const totalStoryPoints = tasks.reduce(
       (sum: number, t: any) => sum + (t.storyPoints || 0),
-      0
+      0,
     );
     const completedStoryPoints = tasks
       .filter((t: any) => t.status === "COMPLETED")
