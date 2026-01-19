@@ -1,11 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	CheckCircle2,
-	Clock,
-	Flag,
-	User,
-} from "lucide-react";
+import { CheckCircle2, Flag, User } from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -14,7 +9,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import ReactSelect from "react-select";
 
 const TaskDetails = ({
@@ -102,12 +97,10 @@ const TaskDetails = ({
 							</SelectContent>
 						</Select>
 					</div>
-
-			
 				</CardContent>
 			</Card>
 
-			<Card>
+			{/* <Card>
 				<CardHeader>
 					<CardTitle>Time Tracking</CardTitle>
 				</CardHeader>
@@ -141,7 +134,7 @@ const TaskDetails = ({
 						Log Time
 					</Button>
 				</CardContent>
-			</Card>
+			</Card> */}
 		</div>
 	);
 };

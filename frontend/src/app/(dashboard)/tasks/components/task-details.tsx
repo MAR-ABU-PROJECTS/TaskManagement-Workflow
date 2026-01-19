@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import { Task } from "../lib/queries";
 import ReactSelect from "react-select";
 
@@ -122,7 +122,7 @@ const TaskDetails = ({ data }: { data: Task }) => {
 				</CardContent>
 			</Card>
 
-			<Card>
+			{/* <Card>
 				<CardHeader>
 					<CardTitle>Time Tracking</CardTitle>
 				</CardHeader>
@@ -156,7 +156,7 @@ const TaskDetails = ({ data }: { data: Task }) => {
 						Log Time
 					</Button>
 				</CardContent>
-			</Card>
+			</Card> */}
 		</div>
 	);
 };
