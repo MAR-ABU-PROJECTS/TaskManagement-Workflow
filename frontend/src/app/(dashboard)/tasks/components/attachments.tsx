@@ -10,9 +10,9 @@ import TaskAttachment from "./attachment";
 import { QueryStateHandler } from "@/components/QueryStateHandler";
 
 const Attachments = () => {
-	const { taskId } = useParams();
+	const { id } = useParams();
 	const [showFileModal, setShowFileModal] = useState(false);
-	const query = useGetAttachment(taskId as string, {
+	const query = useGetAttachment(id as string, {
 		disableGlobalSuccess: true,
 	});
 	return (
