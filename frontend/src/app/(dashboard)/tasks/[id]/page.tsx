@@ -1,8 +1,12 @@
 import TaskDetailPage from "@/components/TaskDetailPage";
 import React from "react";
 
-const page = () => {
-  return <TaskDetailPage />;
+type Props = {
+	params: { id: string };
+};
+const page = ({params}: Props) => {
+  const id = params.id
+	return <TaskDetailPage taskId={id} />;
 };
 
 export default page;

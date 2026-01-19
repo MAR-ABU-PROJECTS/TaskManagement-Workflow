@@ -14,7 +14,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import ReactSelect from "react-select";
 
@@ -104,7 +103,7 @@ const TaskDetails = ({
 						</Select>
 					</div>
 
-					<Separator />
+			
 				</CardContent>
 			</Card>
 

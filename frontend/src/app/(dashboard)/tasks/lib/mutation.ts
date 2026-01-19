@@ -69,6 +69,24 @@ export const useEditTaskProject = (projectId: string) => {
 	});
 };
 
+export const useEditPersonalTask = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			taskId,
+			task,
+		}: {
+			taskId: string;
+			task: createPTaskSchemaType;
+		}) => TaskService.editPersonalTask({ taskId, data: task }),
+		onSuccess: () => {
+			qc.invalidateQueries({
+				queryKey: taskKeys.allPersonal,
+			});
+		},
+	});
+};
+
 export const useDeleteTaskProject = (projectId: string) => {
 	const qc = useQueryClient();
 	return useMutation({

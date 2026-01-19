@@ -56,8 +56,6 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 						name: u?.user?.name,
 					}));
 
-					console.log({ assignees, data });
-
 					return (
 						<div className="flex flex-1 flex-col">
 							<div className="flex items-center mb-3">
@@ -146,7 +144,7 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 											type="button"
 											variant="outline"
 											onClick={() =>
-												setShowDeleteModal(true)
+												setShowDeleteModal(false)
 											}
 											disabled={mutation.isPending}
 											className="border-slate-200 dark:border-slate-800 bg-transparent"
@@ -161,7 +159,7 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 												mutation.mutate(taskId, {
 													onSuccess() {
 														setShowDeleteModal(
-															false
+															true
 														);
 													},
 												})

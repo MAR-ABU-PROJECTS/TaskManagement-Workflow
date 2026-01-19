@@ -244,42 +244,45 @@ export default function NewTaskPage() {
 												</FormItem>
 											)}
 										/>
-									</div>
 
-									<FormField
-										control={form.control}
-										name="estimatedHours"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel>
-													{" "}
-													Estimated Hours
-												</FormLabel>
-												<FormControl>
-													<Input
-														type="number"
-														placeholder="e.g. 8"
-														className="border-slate-200 dark:border-slate-800"
-														step={0.1}
-														value={
-															field.value || ""
-														}
-														onChange={(e) =>
-															field.onChange(
-																e.target
-																	.valueAsNumber ||
-																	0
-															)
-														}
-														onBlur={field.onBlur}
-														name={field.name}
-														ref={field.ref}
-													/>
-												</FormControl>
-												<FormMessage />
-											</FormItem>
-										)}
-									/>
+										<FormField
+											control={form.control}
+											name="estimatedHours"
+											render={({ field }) => (
+												<FormItem>
+													<FormLabel>
+														{" "}
+														Estimated Hours
+													</FormLabel>
+													<FormControl>
+														<Input
+															type="number"
+															placeholder="e.g. 8"
+															className="border-slate-200 dark:border-slate-800"
+															step={0.1}
+															value={
+																field.value ||
+																""
+															}
+															onChange={(e) =>
+																field.onChange(
+																	e.target
+																		.valueAsNumber ||
+																		0
+																)
+															}
+															onBlur={
+																field.onBlur
+															}
+															name={field.name}
+															ref={field.ref}
+														/>
+													</FormControl>
+													<FormMessage />
+												</FormItem>
+											)}
+										/>
+									</div>
 								</CardContent>
 							</Card>
 
