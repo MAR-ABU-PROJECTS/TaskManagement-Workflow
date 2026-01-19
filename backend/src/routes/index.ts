@@ -7,7 +7,6 @@ import notificationRoutes from "./notifications.routes";
 import searchRoutes from "./search.routes";
 import auditLogRoutes from "./audit-logs.routes";
 import dashboardRoutes from "./dashboard.routes";
-import testEmailsRoutes from "./test-emails.routes";
 
 // Jira-like Project Management routes
 import configRoutes from "./config.routes";
@@ -46,9 +45,6 @@ router.use("/", componentRoutes);
 router.use("/", versionRoutes);
 router.use("/bulk", bulkOperationsRoutes);
 router.use("/notifications", notificationRoutes);
-
-// Test emails (development/testing only)
-router.use("/test-emails", testEmailsRoutes);
 
 // Health check
 router.get("/health", (_req, res) => {
