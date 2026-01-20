@@ -50,6 +50,7 @@ export class ProjectService {
         name: data.name,
         key: data.key,
         description: data.description || null,
+        dueDate: data.dueDate || null,
         workflowType: (data.workflowType as WorkflowType) || WorkflowType.BASIC,
         workflowSchemeId: data.workflowSchemeId || null,
         creatorId,
@@ -229,6 +230,7 @@ export class ProjectService {
       data: {
         name: data.name,
         description: data.description,
+        dueDate: data.dueDate,
         workflowType: data.workflowType as any,
         workflowSchemeId: data.workflowSchemeId,
       },

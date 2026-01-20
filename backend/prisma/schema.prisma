@@ -246,6 +246,7 @@ model Project {
   name             String
   key              String       @unique // Project key like "PROJ", "DEV"
   description      String?
+  dueDate          DateTime?    @map("due_date")
   creatorId        String       @map("creator_id")
   workflowType     WorkflowType @default(BASIC) @map("workflow_type")
   workflowSchemeId String?      @map("workflow_scheme_id") // Only used when workflowType = CUSTOM
