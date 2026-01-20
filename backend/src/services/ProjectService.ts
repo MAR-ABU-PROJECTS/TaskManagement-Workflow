@@ -207,7 +207,7 @@ export class ProjectService {
     }
 
     // Update project basic info
-    const updated = await prisma.project.update({
+    await prisma.project.update({
       where: { id },
       data: {
         name: data.name,
@@ -267,7 +267,33 @@ export class ProjectService {
       });
     }
 
-    return updated as Project;
+    const updatedProject = await prisma.project.findUnique({
+      where: { id },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return updatedProject as any;
   }
 
   /**

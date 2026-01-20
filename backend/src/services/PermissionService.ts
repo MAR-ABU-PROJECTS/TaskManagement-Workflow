@@ -25,7 +25,18 @@ export class PermissionService {
         select: { role: true },
       });
 
-      return hasPermission(permission, membership?.role, user.role as UserRole);
+      let projectRole = membership?.role;
+      if (!projectRole) {
+        const project = await prisma.project.findUnique({
+          where: { id: projectId },
+          select: { creatorId: true },
+        });
+        if (project?.creatorId === userId) {
+          projectRole = ProjectRole.PROJECT_ADMIN;
+        }
+      }
+
+      return hasPermission(permission, projectRole, user.role as UserRole);
     } catch (error) {
       console.error("Error checking project permission:", error);
       return false;
@@ -107,7 +118,13 @@ export class PermissionService {
       const membership = await prisma.projectMember.findFirst({
         where: { projectId, userId },
       });
-      return !!membership;
+      if (membership) return true;
+
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { creatorId: true },
+      });
+      return project?.creatorId === userId;
     } catch (error) {
       return false;
     }
