@@ -552,9 +552,11 @@ router.post("/forgot-password", async (req, res) => {
     });
 
     // Send reset email with the unhashed token
-    const resetUrl = `${
-      process.env.FRONTEND_URL || "http://localhost:5173"
-    }/reset-password?token=${resetToken}`;
+    const frontendBase =
+      process.env.FRONTEND_URL || "https://tasks.marabuprojects.com";
+    const resetUrl = `${frontendBase}/forgot-password?intent=reset_password&email=${encodeURIComponent(
+      user.email
+    )}&token=${resetToken}`;
 
     await emailService.sendPasswordResetEmail(user.email, {
       userName: user.name,
