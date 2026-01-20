@@ -56,6 +56,11 @@ router.use(authenticate);
  *                 type: string
  *                 description: Project description
  *                 example: Complete redesign of company website with modern UI/UX
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Optional project due date
+ *                 example: "2026-02-01T00:00:00.000Z"
  *               workflowType:
  *                 type: string
  *                 enum: [BASIC, AGILE, BUG_TRACKING, CUSTOM]
@@ -100,6 +105,9 @@ router.use(authenticate);
  *                   type: string
  *                 description:
  *                   type: string
+ *                 dueDate:
+ *                   type: string
+ *                   format: date-time
  *                 workflowType:
  *                   type: string
  *                   enum: [BASIC, AGILE, BUG_TRACKING, CUSTOM]
@@ -119,6 +127,7 @@ router.use(authenticate);
  *               name: Website Redesign
  *               key: WEB
  *               description: Complete redesign of company website
+ *               dueDate: "2026-02-01T00:00:00.000Z"
  *               workflowType: AGILE
  *               workflowSchemeId: null
  *               isArchived: false
@@ -217,6 +226,10 @@ router.post("/", canCreateProject, (req, res) =>
  *                       description:
  *                         type: string
  *                         nullable: true
+ *                       dueDate:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
  *                       workflowType:
  *                         type: string
  *                         enum: [BASIC, AGILE, BUG_TRACKING, CUSTOM]
@@ -253,6 +266,7 @@ router.post("/", canCreateProject, (req, res) =>
  *                   name: "Website Redesign"
  *                   key: "WEB"
  *                   description: "Complete redesign of company website"
+ *                   dueDate: "2026-02-01T00:00:00.000Z"
  *                   workflowType: "AGILE"
  *                   workflowSchemeId: null
  *                   isArchived: false
@@ -338,6 +352,10 @@ router.get("/", authenticate, (req, res) =>
  *                       type: string
  *                     description:
  *                       type: string
+ *                       nullable: true
+ *                     dueDate:
+ *                       type: string
+ *                       format: date-time
  *                       nullable: true
  *                     workflowType:
  *                       type: string
@@ -447,6 +465,9 @@ router.get(
  *                 type: string
  *               description:
  *                 type: string
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
  *               workflowId:
  *                 type: string
  *                 format: uuid

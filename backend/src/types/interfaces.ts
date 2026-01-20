@@ -22,6 +22,7 @@ export interface Project {
   id: string;
   name: string;
   description: string | null;
+  dueDate: Date | null;
   creatorId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -90,6 +91,7 @@ export interface CreateProjectDTO {
   name: string;
   key: string; // Project key like "PROJ", "DEV"
   description?: string;
+  dueDate?: Date;
   workflowType?: string; // BASIC, AGILE, BUG_TRACKING, or CUSTOM
   workflowSchemeId?: string; // Only used when workflowType = CUSTOM
   members?: Array<{ userId: string }>; // Optional array of initial members (auto-assigned as DEVELOPER)
@@ -98,6 +100,7 @@ export interface CreateProjectDTO {
 export interface UpdateProjectDTO {
   name?: string;
   description?: string;
+  dueDate?: Date;
   workflowType?: string;
   workflowSchemeId?: string;
   members?: Array<{ userId: string }>; // Alias for addMembers during updates
