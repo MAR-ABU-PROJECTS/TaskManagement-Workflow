@@ -35,6 +35,12 @@ export class ProjectController {
       if (error.message.includes("Forbidden")) {
         return res.status(403).json({ message: error.message });
       }
+      if (error.message.includes("Member userId is required")) {
+        return res.status(400).json({ message: error.message });
+      }
+      if (error.message.includes("users not found")) {
+        return res.status(404).json({ message: error.message });
+      }
       if (
         error.message.includes("already exists") ||
         error.code === "P2002"
@@ -153,6 +159,15 @@ export class ProjectController {
     } catch (error: any) {
       if (error.message.includes("Forbidden")) {
         return res.status(403).json({ message: error.message });
+      }
+      if (
+        error.message.includes("Project not found") ||
+        error.message.includes("users not found")
+      ) {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes("Member userId is required")) {
+        return res.status(400).json({ message: error.message });
       }
       return res.status(500).json({
         message: "Failed to update project",
