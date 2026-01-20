@@ -11,6 +11,7 @@ const Activities = () => {
 
 	const query = useGetActivities(taskId as string);
 
+
 	return (
 		<Card>
 			<CardHeader>

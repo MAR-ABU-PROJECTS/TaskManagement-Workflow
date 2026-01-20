@@ -156,6 +156,10 @@ export const useCommentMutation = () => {
 				exact: false,
 				refetchType: "active",
 			});
+			qc.invalidateQueries({
+				queryKey: taskKeys.activities(variables.taskId),
+				exact: false,
+			});
 		},
 	});
 };

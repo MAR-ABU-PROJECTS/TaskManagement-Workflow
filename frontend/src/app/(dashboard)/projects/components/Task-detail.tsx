@@ -9,8 +9,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import TaskComments from "@/app/(dashboard)/tasks/components/comments";
-import Activity from "@/app/(dashboard)/tasks/components/activities";
 // import Attachments from "@/app/(dashboard)/tasks/components/attachments";
 import Subtasks from "@/app/(dashboard)/tasks/components/subtasks";
 import { useState } from "react";
@@ -28,6 +26,8 @@ import { useGetTaskDetails } from "../../tasks/lib/queries";
 import { Spinner } from "@/components/ui/spinner";
 import { useDeleteTaskProject } from "../../tasks/lib/mutation";
 import Attachments from "./attachments";
+import TaskComments from "./comments";
+import Activities from "./activities";
 
 export default function TaskDetailPage({ taskId }: { taskId: string }) {
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -117,7 +117,7 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 
 										<TaskComments />
 
-										<Activity />
+										<Activities />
 									</div>
 
 									<TaskDetails
@@ -159,7 +159,7 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 												mutation.mutate(taskId, {
 													onSuccess() {
 														setShowDeleteModal(
-															true
+															true,
 														);
 													},
 												})
