@@ -341,40 +341,7 @@ router.patch(
 router.delete(
   "/:id",
   async (req, res) => {
-    try {
-      const { id } = req.params;
-
-      const requester = await prisma.user.findUnique({
-        where: { id: req.user!.id },
-        select: { isSuperAdmin: true },
-      });
-
-      if (!requester?.isSuperAdmin) {
-        return res.status(403).json({
-          message: "Access denied. Super Admin privileges required.",
-        });
-      }
-
-      // Check if target user is SUPER_ADMIN
-      const targetUser = await prisma.user.findUnique({
-        where: { id },
-        select: { isSuperAdmin: true },
-      });
-
-      if (targetUser?.isSuperAdmin) {
-        return res.status(403).json({
-          message: "Super Admin accounts cannot be deleted",
-        });
-      }
-
-      // Note: Cascade deletes will handle related records
-      // Update schema to add onDelete: Cascade to user relations
-      await prisma.user.delete({ where: { id } });
-
-      return res.json({ message: "User deleted successfully" });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
-    }
+    return hierarchyController.removeUser(req, res);
   }
 );
 
