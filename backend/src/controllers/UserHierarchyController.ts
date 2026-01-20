@@ -40,6 +40,12 @@ class UserHierarchyController {
         return res.status(404).json({ message: "Promoter not found" });
       }
 
+      if (!promoter.isSuperAdmin) {
+        return res.status(403).json({
+          message: "Only Super Admins can delete user accounts",
+        });
+      }
+
       // Get target user
       const targetUser = await prisma.user.findUnique({
         where: { id: userId },
@@ -327,16 +333,10 @@ class UserHierarchyController {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Validate removal authority
-      const validation = RoleHierarchyService.canModifyUser(
-        promoter.role as UserRole,
-        promoter.isSuperAdmin,
-        targetUser.role as UserRole,
-        targetUser.isSuperAdmin
-      );
-
-      if (!validation.allowed) {
-        return res.status(403).json({ message: validation.reason });
+      if (targetUser.isSuperAdmin) {
+        return res.status(403).json({
+          message: "Super Admin accounts cannot be deleted",
+        });
       }
 
       // Check for assigned tasks

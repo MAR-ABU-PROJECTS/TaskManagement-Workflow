@@ -323,8 +323,8 @@ router.patch(
  * @swagger
  * /api/users/{id}:
  *   delete:
- *     summary: Delete user (admin only)
- *     description: Permanently delete a user. Requires admin privileges.
+ *     summary: Delete user (super admin only)
+ *     description: Permanently delete a user. Requires Super Admin privileges.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -340,10 +340,20 @@ router.patch(
  */
 router.delete(
   "/:id",
-  requireRoles(UserRole.CEO, UserRole.HOO, UserRole.HR),
   async (req, res) => {
     try {
       const { id } = req.params;
+
+      const requester = await prisma.user.findUnique({
+        where: { id: req.user!.id },
+        select: { isSuperAdmin: true },
+      });
+
+      if (!requester?.isSuperAdmin) {
+        return res.status(403).json({
+          message: "Access denied. Super Admin privileges required.",
+        });
+      }
 
       // Check if target user is SUPER_ADMIN
       const targetUser = await prisma.user.findUnique({
