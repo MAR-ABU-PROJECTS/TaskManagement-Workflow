@@ -53,18 +53,28 @@ export class TaskService {
     creatorRole: UserRole,
   ): Promise<Task> {
     // Validate project exists if projectId provided
+    let projectCreatorId: string | null = null;
     if (data.projectId) {
       const project = await prisma.project.findUnique({
         where: { id: data.projectId },
+        select: { id: true, creatorId: true },
       });
 
       if (!project) {
         throw new Error("Project not found");
       }
+      projectCreatorId = project.creatorId;
     }
 
     // Validate assignees exist if provided
     const assigneeIds = data.assigneeIds || [];
+    if (
+      projectCreatorId &&
+      projectCreatorId === creatorId &&
+      !assigneeIds.includes(creatorId)
+    ) {
+      assigneeIds.push(creatorId);
+    }
     if (assigneeIds.length > 0) {
       const users = await prisma.user.findMany({
         where: { id: { in: assigneeIds } },
