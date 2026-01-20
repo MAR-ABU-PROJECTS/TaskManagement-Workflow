@@ -94,7 +94,7 @@ export interface CreateProjectDTO {
   dueDate?: Date;
   workflowType?: string; // BASIC, AGILE, BUG_TRACKING, or CUSTOM
   workflowSchemeId?: string; // Only used when workflowType = CUSTOM
-  members?: Array<{ userId: string }>; // Optional array of initial members (auto-assigned as DEVELOPER)
+  members?: Array<{ userId: string } | { id: string } | string>; // Optional array of initial members (auto-assigned as DEVELOPER)
 }
 
 export interface UpdateProjectDTO {
@@ -103,8 +103,8 @@ export interface UpdateProjectDTO {
   dueDate?: Date;
   workflowType?: string;
   workflowSchemeId?: string;
-  members?: Array<{ userId: string }>; // Alias for addMembers during updates
-  addMembers?: Array<{ userId: string }>; // Array of members to add (will be assigned as DEVELOPER)
+  members?: Array<{ userId: string } | { id: string } | string>; // Alias for addMembers during updates
+  addMembers?: Array<{ userId: string } | { id: string } | string>; // Array of members to add (will be assigned as DEVELOPER)
   removeMembers?: string[]; // Array of user IDs to remove from project
 }
 

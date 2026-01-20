@@ -35,7 +35,20 @@ export class ProjectService {
     }
 
     // Extract members array if provided
-    const members = data.members || [];
+    const membersInput = data.members || [];
+    const memberIds = membersInput
+      .map((member) =>
+        typeof member === "string"
+          ? member
+          : member.userId || (member as { id?: string }).id
+      )
+      .filter((id): id is string => Boolean(id));
+
+    if (membersInput.length > 0 && memberIds.length === 0) {
+      throw new Error("Member userId is required");
+    }
+
+    const uniqueMemberIds = Array.from(new Set(memberIds));
 
     const existingProject = await prisma.project.findUnique({
       where: { key: data.key },
@@ -70,11 +83,11 @@ export class ProjectService {
     });
 
     // Add additional members if provided (all auto-assigned as DEVELOPER)
-    if (members.length > 0) {
+    if (uniqueMemberIds.length > 0) {
       await prisma.projectMember.createMany({
-        data: members.map((member) => ({
+        data: uniqueMemberIds.map((userId) => ({
           projectId: project.id,
-          userId: member.userId,
+          userId,
           role: ProjectRole.DEVELOPER,
           addedById: creatorId,
         })),
@@ -250,14 +263,24 @@ export class ProjectService {
       ...(data.addMembers || []),
       ...(data.members || []),
     ];
-    const uniqueMembersToAdd = Array.from(
-      new Map(membersToAdd.map((member) => [member.userId, member])).values()
-    );
+    const memberIdsToAdd = membersToAdd
+      .map((member) =>
+        typeof member === "string"
+          ? member
+          : member.userId || (member as { id?: string }).id
+      )
+      .filter((id): id is string => Boolean(id));
+
+    if (membersToAdd.length > 0 && memberIdsToAdd.length === 0) {
+      throw new Error("Member userId is required");
+    }
+
+    const uniqueMemberIdsToAdd = Array.from(new Set(memberIdsToAdd));
 
     // Handle adding new members
-    if (uniqueMembersToAdd.length > 0) {
+    if (uniqueMemberIdsToAdd.length > 0) {
       // Verify all users exist
-      const userIds = uniqueMembersToAdd.map((m) => m.userId);
+      const userIds = uniqueMemberIdsToAdd;
       const users = await prisma.user.findMany({
         where: { id: { in: userIds } },
         select: { id: true },
@@ -269,9 +292,9 @@ export class ProjectService {
 
       // Add members (skip duplicates)
       await prisma.projectMember.createMany({
-        data: uniqueMembersToAdd.map((member) => ({
+        data: uniqueMemberIdsToAdd.map((memberId) => ({
           projectId: id,
-          userId: member.userId,
+          userId: memberId,
           role: ProjectRole.DEVELOPER,
           addedById: userId,
         })),
