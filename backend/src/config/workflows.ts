@@ -14,215 +14,51 @@ export interface WorkflowTransitionRule {
 }
 
 /**
- * BASIC Workflow: Simple linear progression
- * DRAFT → ASSIGNED → IN_PROGRESS → COMPLETED
+ * Standard board flow: To Do -> In Progress -> Review -> Done
+ * Includes back transitions for quick corrections.
  */
-const BASIC_WORKFLOW: WorkflowTransitionRule[] = [
-  // From DRAFT
+const STANDARD_WORKFLOW: WorkflowTransitionRule[] = [
+  // From DRAFT / ASSIGNED (To Do)
   { name: "Assign Task", from: TaskStatus.DRAFT, to: TaskStatus.ASSIGNED },
-  { name: "Reject Draft", from: TaskStatus.DRAFT, to: TaskStatus.REJECTED },
-
-  // From ASSIGNED
+  { name: "Start Work", from: TaskStatus.DRAFT, to: TaskStatus.IN_PROGRESS },
   { name: "Start Work", from: TaskStatus.ASSIGNED, to: TaskStatus.IN_PROGRESS },
-  {
-    name: "Reject Assignment",
-    from: TaskStatus.ASSIGNED,
-    to: TaskStatus.REJECTED,
-  },
-
-  // From IN_PROGRESS
-  {
-    name: "Complete",
-    from: TaskStatus.IN_PROGRESS,
-    to: TaskStatus.COMPLETED,
-    requiredRole: ProjectRole.PROJECT_ADMIN,
-  },
-  {
-    name: "Submit for Review",
-    from: TaskStatus.IN_PROGRESS,
-    to: TaskStatus.REVIEW,
-    description: "Send work for review",
-  },
-  { name: "Pause Work", from: TaskStatus.IN_PROGRESS, to: TaskStatus.PAUSED },
-  {
-    name: "Reject Work",
-    from: TaskStatus.IN_PROGRESS,
-    to: TaskStatus.REJECTED,
-    requiredRole: ProjectRole.PROJECT_ADMIN,
-  },
-
-  // From PAUSED
-  { name: "Resume Work", from: TaskStatus.PAUSED, to: TaskStatus.IN_PROGRESS },
-  { name: "Reject Paused", from: TaskStatus.PAUSED, to: TaskStatus.REJECTED },
-
-  // From REVIEW
-  {
-    name: "Approve",
-    from: TaskStatus.REVIEW,
-    to: TaskStatus.COMPLETED,
-    requiredRole: ProjectRole.PROJECT_ADMIN,
-  },
-  {
-    name: "Request Changes",
-    from: TaskStatus.REVIEW,
-    to: TaskStatus.IN_PROGRESS,
-  },
-  {
-    name: "Reject Review",
-    from: TaskStatus.REVIEW,
-    to: TaskStatus.REJECTED,
-    requiredRole: ProjectRole.PROJECT_ADMIN,
-  },
-
-  // From REJECTED - Allow reopen
-  { name: "Reopen", from: TaskStatus.REJECTED, to: TaskStatus.DRAFT },
-
-  // From COMPLETED - Allow reopen if needed
-  {
-    name: "Reopen Completed",
-    from: TaskStatus.COMPLETED,
-    to: TaskStatus.IN_PROGRESS,
-    requiredRole: ProjectRole.PROJECT_ADMIN,
-  },
-];
-
-/**
- * AGILE Workflow: Scrum/Kanban style
- * Includes backlog management and review process
- */
-const AGILE_WORKFLOW: WorkflowTransitionRule[] = [
-  // From DRAFT (Backlog)
-  {
-    name: "Move to Draft",
-    from: TaskStatus.DRAFT,
-    to: TaskStatus.ASSIGNED,
-    description: "Ready for assignment",
-  },
-  { name: "Reject Idea", from: TaskStatus.DRAFT, to: TaskStatus.REJECTED },
-
-  // From ASSIGNED (To Do)
-  {
-    name: "Start Sprint",
-    from: TaskStatus.ASSIGNED,
-    to: TaskStatus.IN_PROGRESS,
-  },
   { name: "Back to Backlog", from: TaskStatus.ASSIGNED, to: TaskStatus.DRAFT },
 
-  // From IN_PROGRESS (In Progress)
+  // From IN_PROGRESS
   {
     name: "Ready for Review",
     from: TaskStatus.IN_PROGRESS,
     to: TaskStatus.REVIEW,
   },
-  { name: "Pause Sprint", from: TaskStatus.IN_PROGRESS, to: TaskStatus.PAUSED },
-  {
-    name: "Block",
-    from: TaskStatus.IN_PROGRESS,
-    to: TaskStatus.PAUSED,
-    description: "Blocked by dependency",
-  },
+  { name: "Back to To Do", from: TaskStatus.IN_PROGRESS, to: TaskStatus.ASSIGNED },
 
-  // From PAUSED (Blocked/On Hold)
-  { name: "Unblock", from: TaskStatus.PAUSED, to: TaskStatus.IN_PROGRESS },
+  // From REVIEW
+  { name: "Mark Done", from: TaskStatus.REVIEW, to: TaskStatus.COMPLETED },
+  { name: "Request Changes", from: TaskStatus.REVIEW, to: TaskStatus.IN_PROGRESS },
+
+  // From COMPLETED (Done)
+  { name: "Back to Review", from: TaskStatus.COMPLETED, to: TaskStatus.REVIEW },
+
+  // Allow recovery for paused/rejected tasks
+  { name: "Resume Work", from: TaskStatus.PAUSED, to: TaskStatus.IN_PROGRESS },
   { name: "Back to To Do", from: TaskStatus.PAUSED, to: TaskStatus.ASSIGNED },
-
-  // From REVIEW (Code Review / QA)
-  {
-    name: "Approve & Done",
-    from: TaskStatus.REVIEW,
-    to: TaskStatus.COMPLETED,
-    requiredRole: ProjectRole.PROJECT_ADMIN,
-  },
-  {
-    name: "Request Changes",
-    from: TaskStatus.REVIEW,
-    to: TaskStatus.IN_PROGRESS,
-  },
-  {
-    name: "Reject & Close",
-    from: TaskStatus.REVIEW,
-    to: TaskStatus.REJECTED,
-    requiredRole: ProjectRole.PROJECT_ADMIN,
-  },
-
-  // From REJECTED
-  {
-    name: "Reopen to Backlog",
-    from: TaskStatus.REJECTED,
-    to: TaskStatus.DRAFT,
-  },
-
-  // From COMPLETED
-  {
-    name: "Reopen",
-    from: TaskStatus.COMPLETED,
-    to: TaskStatus.IN_PROGRESS,
-    requiredRole: ProjectRole.PROJECT_ADMIN,
-  },
+  { name: "Reopen", from: TaskStatus.REJECTED, to: TaskStatus.ASSIGNED },
 ];
 
 /**
- * BUG_TRACKING Workflow: Bug lifecycle management
- * NEW → CONFIRMED → IN_PROGRESS → TESTING → CLOSED
+ * BASIC Workflow: Uses the standard board flow
  */
-const BUG_TRACKING_WORKFLOW: WorkflowTransitionRule[] = [
-  // From DRAFT (New Bug)
-  {
-    name: "Confirm Bug",
-    from: TaskStatus.DRAFT,
-    to: TaskStatus.ASSIGNED,
-    requiredRole: ProjectRole.PROJECT_ADMIN,
-  },
-  { name: "Cannot Reproduce", from: TaskStatus.DRAFT, to: TaskStatus.REJECTED },
-  { name: "Duplicate", from: TaskStatus.DRAFT, to: TaskStatus.REJECTED },
+const BASIC_WORKFLOW: WorkflowTransitionRule[] = STANDARD_WORKFLOW;
 
-  // From ASSIGNED (Confirmed)
-  { name: "Start Fix", from: TaskStatus.ASSIGNED, to: TaskStatus.IN_PROGRESS },
-  { name: "Not a Bug", from: TaskStatus.ASSIGNED, to: TaskStatus.REJECTED },
+/**
+ * AGILE Workflow: Uses the standard board flow
+ */
+const AGILE_WORKFLOW: WorkflowTransitionRule[] = STANDARD_WORKFLOW;
 
-  // From IN_PROGRESS (Fixing)
-  {
-    name: "Ready for Testing",
-    from: TaskStatus.IN_PROGRESS,
-    to: TaskStatus.REVIEW,
-    description: "Fix ready for QA",
-  },
-  { name: "Pause Fix", from: TaskStatus.IN_PROGRESS, to: TaskStatus.PAUSED },
-  { name: "Cannot Fix", from: TaskStatus.IN_PROGRESS, to: TaskStatus.REJECTED },
-
-  // From PAUSED
-  { name: "Resume Fix", from: TaskStatus.PAUSED, to: TaskStatus.IN_PROGRESS },
-
-  // From REVIEW (Testing/QA)
-  {
-    name: "Test Passed - Close",
-    from: TaskStatus.REVIEW,
-    to: TaskStatus.COMPLETED,
-    requiredRole: ProjectRole.PROJECT_ADMIN,
-  },
-  {
-    name: "Test Failed - Reopen",
-    from: TaskStatus.REVIEW,
-    to: TaskStatus.IN_PROGRESS,
-  },
-  {
-    name: "Won't Fix",
-    from: TaskStatus.REVIEW,
-    to: TaskStatus.REJECTED,
-    requiredRole: ProjectRole.PROJECT_ADMIN,
-  },
-
-  // From REJECTED
-  { name: "Reopen Bug", from: TaskStatus.REJECTED, to: TaskStatus.DRAFT },
-
-  // From COMPLETED
-  {
-    name: "Regression Found",
-    from: TaskStatus.COMPLETED,
-    to: TaskStatus.ASSIGNED,
-    requiredRole: ProjectRole.PROJECT_ADMIN,
-  },
-];
+/**
+ * BUG_TRACKING Workflow: Uses the standard board flow
+ */
+const BUG_TRACKING_WORKFLOW: WorkflowTransitionRule[] = STANDARD_WORKFLOW;
 
 /**
  * Workflow configurations mapped by type
@@ -292,10 +128,11 @@ export function getAvailableTransitions(
 export function getWorkflowDescription(workflowType: WorkflowType): string {
   const descriptions: Record<WorkflowType, string> = {
     [WorkflowType.BASIC]:
-      "Simple linear workflow: Draft → Assigned → In Progress → Completed",
-    [WorkflowType.AGILE]: "Agile/Scrum workflow with backlog and review stages",
+      "Board workflow: To Do -> In Progress -> Review -> Done (with back transitions)",
+    [WorkflowType.AGILE]:
+      "Board workflow: To Do -> In Progress -> Review -> Done (with back transitions)",
     [WorkflowType.BUG_TRACKING]:
-      "Bug tracking workflow with confirmation and testing stages",
+      "Board workflow: To Do -> In Progress -> Review -> Done (with back transitions)",
     [WorkflowType.CUSTOM]: "Custom workflow defined in database",
   };
 

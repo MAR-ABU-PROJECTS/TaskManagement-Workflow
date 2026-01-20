@@ -1640,6 +1640,13 @@ export class TaskService {
             },
           },
         },
+        watchers: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         project: {
           select: {
             id: true,
@@ -1665,6 +1672,48 @@ export class TaskService {
       task.status as TaskStatus,
       newStatus,
     );
+
+    // Email all task participants about the move
+    const changedByUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+
+    const recipients = new Map<string, { name: string; email: string }>();
+    if (updated.creator?.id) {
+      recipients.set(updated.creator.id, {
+        name: updated.creator.name,
+        email: updated.creator.email,
+      });
+    }
+    for (const assignment of updated.assignees) {
+      recipients.set(assignment.user.id, {
+        name: assignment.user.name,
+        email: assignment.user.email,
+      });
+    }
+    for (const watcher of updated.watchers || []) {
+      recipients.set(watcher.id, {
+        name: watcher.name,
+        email: watcher.email,
+      });
+    }
+
+    for (const [recipientId, recipient] of recipients) {
+      if (recipientId === userId) continue;
+      emailService
+        .sendStatusChangeEmail(recipient.email, {
+          userName: recipient.name,
+          taskTitle: updated.title,
+          taskId: updated.id,
+          oldStatus: task.status,
+          newStatus,
+          changedBy: changedByUser?.name || "Unknown",
+        })
+        .catch((err) =>
+          console.error("Failed to send status change email:", err),
+        );
+    }
 
     return updated as Task;
   }

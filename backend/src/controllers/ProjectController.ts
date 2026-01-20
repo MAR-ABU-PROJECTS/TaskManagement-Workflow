@@ -35,6 +35,12 @@ export class ProjectController {
       if (error.message.includes("Forbidden")) {
         return res.status(403).json({ message: error.message });
       }
+      if (
+        error.message.includes("Project key is required") ||
+        error.message.includes("Project key must be 2-10 uppercase letters")
+      ) {
+        return res.status(400).json({ message: error.message });
+      }
       if (error.message.includes("Member userId is required")) {
         return res.status(400).json({ message: error.message });
       }

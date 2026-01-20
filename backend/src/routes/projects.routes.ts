@@ -41,7 +41,6 @@ router.use(authenticate);
  *             type: object
  *             required:
  *               - name
- *               - key
  *             properties:
  *               name:
  *                 type: string
@@ -49,7 +48,7 @@ router.use(authenticate);
  *                 example: Website Redesign
  *               key:
  *                 type: string
- *                 description: Unique project key (2-10 uppercase letters, used for task prefixes)
+ *                 description: Unique project key (required for AGILE; auto-generated for other workflows)
  *                 pattern: '^[A-Z]{2,10}$'
  *                 example: WEB
  *               description:
@@ -145,10 +144,13 @@ router.use(authenticate);
  *             examples:
  *               missingFields:
  *                 value:
- *                   error: "Missing required fields: name, key"
+ *                   error: "Project name is required"
  *               invalidKey:
  *                 value:
- *                   error: "Project key must be 2-10 uppercase letters"
+ *                   error: "Project key must be 2-10 uppercase letters and numbers"
+ *               agileMissingKey:
+ *                 value:
+ *                   error: "Project key is required for AGILE workflow"
  *       403:
  *         description: Insufficient permissions to create project
  *         content:
