@@ -343,6 +343,10 @@ class UserHierarchyController {
         });
       }
 
+      const projectsDeleted = await prisma.project.deleteMany({
+        where: { creatorId: userId! },
+      });
+
       // Check for assigned tasks
       const taskCheck = await RoleHierarchyService.hasAssignedTasks(userId!);
       const dependencyCheck =
@@ -408,6 +412,7 @@ class UserHierarchyController {
         message: `User ${targetUser.name} (${targetUser.email}) removed successfully`,
         tasksReassigned: taskCheck.hasTasks,
         taskCount: taskCheck.taskCount,
+        projectsDeleted: projectsDeleted.count,
       });
     } catch (error: any) {
       console.error("Remove user error:", error);
