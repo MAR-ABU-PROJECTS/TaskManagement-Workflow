@@ -4,7 +4,13 @@ import {
   UpdateProjectDTO,
   Project,
 } from "../types/interfaces";
-import { UserRole, WorkflowType, ProjectRole } from "@prisma/client";
+import {
+  UserRole,
+  WorkflowType,
+  ProjectRole,
+  Permission,
+} from "@prisma/client";
+import PermissionService from "./PermissionService";
 
 export class ProjectService {
   /**
@@ -197,12 +203,15 @@ export class ProjectService {
       throw new Error("Project not found");
     }
 
-    // Check permission: only creator can update project
-    const isCreator = project.creatorId === userId;
+    const canEdit = await PermissionService.hasProjectPermission(
+      userId,
+      id,
+      Permission.EDIT_PROJECT
+    );
 
-    if (!isCreator) {
+    if (!canEdit) {
       throw new Error(
-        "Forbidden: Only the project creator can update this project"
+        "Forbidden: You do not have permission to update this project"
       );
     }
 
@@ -227,10 +236,18 @@ export class ProjectService {
       },
     });
 
+    const membersToAdd = [
+      ...(data.addMembers || []),
+      ...(data.members || []),
+    ];
+    const uniqueMembersToAdd = Array.from(
+      new Map(membersToAdd.map((member) => [member.userId, member])).values()
+    );
+
     // Handle adding new members
-    if (data.addMembers && data.addMembers.length > 0) {
+    if (uniqueMembersToAdd.length > 0) {
       // Verify all users exist
-      const userIds = data.addMembers.map((m) => m.userId);
+      const userIds = uniqueMembersToAdd.map((m) => m.userId);
       const users = await prisma.user.findMany({
         where: { id: { in: userIds } },
         select: { id: true },
@@ -242,7 +259,7 @@ export class ProjectService {
 
       // Add members (skip duplicates)
       await prisma.projectMember.createMany({
-        data: data.addMembers.map((member) => ({
+        data: uniqueMembersToAdd.map((member) => ({
           projectId: id,
           userId: member.userId,
           role: ProjectRole.DEVELOPER,

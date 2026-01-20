@@ -5,6 +5,7 @@ import {
   Permission,
   ProjectRole,
 } from "../types/enums";
+import prisma from "../db/prisma";
 import PermissionService from "../services/PermissionService";
 
 /**
@@ -170,6 +171,64 @@ export function hasProjectPermission(permission: Permission) {
         req.user.id,
         projectId,
         permission
+      );
+
+      if (!hasPermission) {
+        return res.status(403).json({
+          message: `Forbidden: ${permission} permission required`,
+        });
+      }
+
+      return next();
+    } catch (error) {
+      return res.status(500).json({ message: "Permission check failed" });
+    }
+  };
+}
+
+/**
+ * Check if user has specific permission in a task's project
+ */
+export function hasTaskPermission(permission: Permission) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res
+        .status(403)
+        .json({ message: "Forbidden: Authentication required" });
+    }
+
+    const taskId = req.params.id || req.params.taskId;
+
+    if (!taskId) {
+      return res.status(400).json({ message: "Task ID required" });
+    }
+
+    try {
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+        select: { projectId: true, creatorId: true },
+      });
+
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      if (!task.projectId) {
+        const isOwner =
+          task.creatorId === req.user.id ||
+          req.user.role === UserRole.SUPER_ADMIN;
+        if (!isOwner) {
+          return res.status(403).json({
+            message: `Forbidden: ${permission} permission required`,
+          });
+        }
+        return next();
+      }
+
+      const hasPermission = await PermissionService.hasProjectPermission(
+        req.user.id,
+        task.projectId,
+        permission,
       );
 
       if (!hasPermission) {

@@ -4,6 +4,7 @@ import { authenticate } from "../middleware/auth";
 import {
   canApproveTask,
   hasProjectPermission,
+  hasTaskPermission,
   canEditIssue,
   canDeleteIssue,
 } from "../middleware/rbac";
@@ -449,7 +450,7 @@ router.post(
  */
 router.get(
   "/:id",
-  hasProjectPermission(Permission.BROWSE_PROJECT),
+  hasTaskPermission(Permission.BROWSE_PROJECT),
   (req, res) => TaskController.getTaskById(req, res),
 );
 
@@ -586,7 +587,7 @@ router.delete("/:id", canDeleteIssue, (req, res) =>
  */
 router.post(
   "/:id/assign",
-  hasProjectPermission(Permission.ASSIGN_ISSUES),
+  hasTaskPermission(Permission.ASSIGN_ISSUES),
   (req, res) => TaskController.assignTask(req, res),
 );
 
@@ -680,7 +681,7 @@ router.post(
  */
 router.delete(
   "/:id/assign/:userId",
-  hasProjectPermission(Permission.ASSIGN_ISSUES),
+  hasTaskPermission(Permission.ASSIGN_ISSUES),
   (req, res) => TaskController.unassignTask(req, res),
 );
 
@@ -731,7 +732,7 @@ router.delete(
  */
 router.post(
   "/:id/transition",
-  hasProjectPermission(Permission.TRANSITION_ISSUES),
+  hasTaskPermission(Permission.TRANSITION_ISSUES),
   (req, res) => TaskController.changeStatus(req, res),
 );
 
