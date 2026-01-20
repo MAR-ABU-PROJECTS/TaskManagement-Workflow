@@ -14,11 +14,39 @@ import PermissionService from "./PermissionService";
 
 type MemberInput = { userId: string } | { id: string } | string;
 
+const PROJECT_KEY_PATTERN = /^[A-Z0-9]{2,10}$/;
+
 function getMemberId(member: MemberInput): string | undefined {
   if (typeof member === "string") return member;
   if ("userId" in member) return member.userId;
   if ("id" in member) return member.id;
   return undefined;
+}
+
+function normalizeProjectKey(input: string): string {
+  return input.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function buildBaseProjectKey(name: string): string {
+  const cleaned = name.replace(/[^A-Za-z0-9 ]/g, " ").trim();
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  let key = words.map((word) => word[0]).join("");
+
+  if (key.length < 2) {
+    key = cleaned.replace(/\s+/g, "");
+  }
+
+  key = normalizeProjectKey(key);
+
+  if (key.length < 2) {
+    key = "PRJ";
+  }
+
+  return key.slice(0, 10);
+}
+
+function isValidProjectKey(key: string): boolean {
+  return PROJECT_KEY_PATTERN.test(key);
 }
 
 export class ProjectService {
@@ -43,6 +71,9 @@ export class ProjectService {
       );
     }
 
+    const workflowType =
+      (data.workflowType as WorkflowType) || WorkflowType.BASIC;
+
     // Extract members array if provided
     const membersInput = data.members || [];
     const memberIds = membersInput
@@ -55,21 +86,42 @@ export class ProjectService {
 
     const uniqueMemberIds = Array.from(new Set(memberIds));
 
-    const existingProject = await prisma.project.findUnique({
-      where: { key: data.key },
-      select: { id: true },
-    });
-    if (existingProject) {
-      throw new Error("Project key already exists");
+    let projectKey = "";
+    const normalizedKey = data.key ? normalizeProjectKey(data.key) : "";
+
+    if (workflowType === WorkflowType.AGILE) {
+      if (!normalizedKey) {
+        throw new Error("Project key is required for AGILE workflow");
+      }
+      if (!isValidProjectKey(normalizedKey)) {
+        throw new Error(
+          "Project key must be 2-10 uppercase letters and numbers"
+        );
+      }
+
+      const existingProject = await prisma.project.findUnique({
+        where: { key: normalizedKey },
+        select: { id: true },
+      });
+      if (existingProject) {
+        throw new Error("Project key already exists");
+      }
+      projectKey = normalizedKey;
+    } else {
+      const baseKey =
+        normalizedKey && isValidProjectKey(normalizedKey)
+          ? normalizedKey
+          : buildBaseProjectKey(data.name);
+      projectKey = await this.ensureUniqueProjectKey(baseKey);
     }
 
     const project = await prisma.project.create({
       data: {
         name: data.name,
-        key: data.key,
+        key: projectKey,
         description: data.description || null,
         dueDate: data.dueDate || null,
-        workflowType: (data.workflowType as WorkflowType) || WorkflowType.BASIC,
+        workflowType,
         workflowSchemeId: data.workflowSchemeId || null,
         creatorId,
       },
@@ -101,6 +153,31 @@ export class ProjectService {
     }
 
     return project as Project;
+  }
+
+  private async ensureUniqueProjectKey(baseKey: string): Promise<string> {
+    let candidate = baseKey;
+    let suffix = 1;
+
+    while (true) {
+      const existing = await prisma.project.findUnique({
+        where: { key: candidate },
+        select: { id: true },
+      });
+      if (!existing) {
+        return candidate;
+      }
+
+      const suffixText = String(suffix);
+      const maxBaseLength = 10 - suffixText.length;
+      const trimmedBase = baseKey.slice(0, Math.max(2, maxBaseLength));
+      candidate = `${trimmedBase}${suffixText}`;
+      suffix += 1;
+
+      if (suffix > 9999) {
+        throw new Error("Unable to generate unique project key");
+      }
+    }
   }
 
   /**

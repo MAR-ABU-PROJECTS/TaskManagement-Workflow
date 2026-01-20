@@ -194,6 +194,21 @@ export class RoleHierarchyService {
       };
     }
 
+    // HR can demote HOO (special case)
+    if (
+      !promoterIsSuperAdmin &&
+      promoterRole === UserRole.HR &&
+      currentRole === UserRole.HOO
+    ) {
+      if (this.ROLE_LEVELS[targetRole] >= this.ROLE_LEVELS[currentRole]) {
+        return {
+          allowed: false,
+          reason: "Target role must be lower than current role",
+        };
+      }
+      return { allowed: true };
+    }
+
     // Check if promoter has authority over target
     const canModify = this.canModifyUser(
       promoterRole,

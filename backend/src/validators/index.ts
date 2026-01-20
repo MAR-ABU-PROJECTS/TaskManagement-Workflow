@@ -58,8 +58,18 @@ export const createProjectSchema = z.object({
     .regex(
       /^[A-Z0-9]+$/,
       "Project key must contain only uppercase letters and numbers"
-    ),
+    )
+    .optional(),
   description: z.string().max(1000).optional(),
+  workflowType: z.enum(["BASIC", "AGILE", "BUG_TRACKING", "CUSTOM"]).optional(),
+}).superRefine((data, ctx) => {
+  if (data.workflowType === "AGILE" && !data.key) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Project key is required for AGILE workflow",
+      path: ["key"],
+    });
+  }
 });
 
 export const updateProjectSchema = z.object({

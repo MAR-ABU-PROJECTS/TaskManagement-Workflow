@@ -89,7 +89,7 @@ export interface Notification {
 
 export interface CreateProjectDTO {
   name: string;
-  key: string; // Project key like "PROJ", "DEV"
+  key?: string; // Project key like "PROJ", "DEV" (required for AGILE)
   description?: string;
   dueDate?: Date;
   workflowType?: string; // BASIC, AGILE, BUG_TRACKING, or CUSTOM
