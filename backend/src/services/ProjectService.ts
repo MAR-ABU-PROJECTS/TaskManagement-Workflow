@@ -12,6 +12,15 @@ import {
 } from "@prisma/client";
 import PermissionService from "./PermissionService";
 
+type MemberInput = { userId: string } | { id: string } | string;
+
+function getMemberId(member: MemberInput): string | undefined {
+  if (typeof member === "string") return member;
+  if ("userId" in member) return member.userId;
+  if ("id" in member) return member.id;
+  return undefined;
+}
+
 export class ProjectService {
   /**
    * Create a new project
@@ -37,11 +46,7 @@ export class ProjectService {
     // Extract members array if provided
     const membersInput = data.members || [];
     const memberIds = membersInput
-      .map((member) =>
-        typeof member === "string"
-          ? member
-          : member.userId || (member as { id?: string }).id
-      )
+      .map((member) => getMemberId(member as MemberInput))
       .filter((id): id is string => Boolean(id));
 
     if (membersInput.length > 0 && memberIds.length === 0) {
@@ -264,11 +269,7 @@ export class ProjectService {
       ...(data.members || []),
     ];
     const memberIdsToAdd = membersToAdd
-      .map((member) =>
-        typeof member === "string"
-          ? member
-          : member.userId || (member as { id?: string }).id
-      )
+      .map((member) => getMemberId(member as MemberInput))
       .filter((id): id is string => Boolean(id));
 
     if (membersToAdd.length > 0 && memberIdsToAdd.length === 0) {
