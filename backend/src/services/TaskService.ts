@@ -6,7 +6,7 @@ import {
   ActivityAction,
   IssueType,
 } from "../types/enums";
-import { ProjectRole, WorkflowType } from "@prisma/client";
+import { ProjectRole, WorkflowType, Permission } from "@prisma/client";
 import {
   isTransitionAllowed,
   getAvailableTransitions as getWorkflowTransitions,
@@ -14,6 +14,7 @@ import {
 import NotificationService from "./NotificationService";
 import ActivityLogService from "./ActivityLogService";
 import emailService from "./EmailService";
+import PermissionService from "./PermissionService";
 
 /**
  * Status Categories - Maps TaskStatus to Board Columns (Jira-style)
@@ -344,23 +345,34 @@ export class TaskService {
       // CEO sees all project tasks, but NO personal tasks
       where.projectId = { not: null };
     } else if (userRole === UserRole.HOO || userRole === UserRole.HR) {
-      // HOO/HR see only ADMIN and STAFF tasks (not CEO tasks, not personal tasks)
+      // HOO/HR see ADMIN and STAFF tasks, plus projects where they're members
       where.AND = [
         { projectId: { not: null } }, // Exclude personal tasks
         {
-          creator: {
-            role: {
-              in: [UserRole.ADMIN, UserRole.STAFF],
+          OR: [
+            {
+              creator: {
+                role: {
+                  in: [UserRole.ADMIN, UserRole.STAFF],
+                },
+              },
             },
-          },
+            { project: { members: { some: { userId } } } },
+            { project: { creatorId: userId } },
+          ],
         },
       ];
     } else {
-      // ADMIN and STAFF see only their created tasks + tasks assigned to them
-      // NO personal tasks from other users
+      // ADMIN and STAFF see tasks for projects they belong to
+      // plus any tasks they created or are assigned to
       where.AND = [
         {
-          OR: [{ creatorId: userId }, { assignees: { some: { userId } } }],
+          OR: [
+            { project: { members: { some: { userId } } } },
+            { project: { creatorId: userId } },
+            { creatorId: userId },
+            { assignees: { some: { userId } } },
+          ],
         },
         // Explicitly exclude personal tasks they didn't create
         {
@@ -534,7 +546,7 @@ export class TaskService {
     }
 
     // Check access
-    const hasAccess = this.checkTaskAccess(task, userId, userRole);
+    const hasAccess = await this.checkTaskAccess(task, userId, userRole);
     if (!hasAccess) {
       return null;
     }
@@ -562,15 +574,23 @@ export class TaskService {
       return null;
     }
 
-    // Check permission: only creator can update task
+    // Check permission
     const isCreator = task.creatorId === userId;
+    const isAssignee = task.assignees.some((a) => a.userId === userId);
+    let canEdit = isCreator || isAssignee;
 
-    if (!isCreator) {
-      throw new Error("Forbidden: Only the task creator can update this task");
+    if (!canEdit && task.projectId) {
+      const hasEditPermission = await PermissionService.hasProjectPermission(
+        userId,
+        task.projectId,
+        Permission.EDIT_ISSUES,
+      );
+      canEdit = hasEditPermission;
     }
 
-    // Check if user is assignee for auto-transition logic
-    const isAssignee = task.assignees.some((a) => a.userId === userId);
+    if (!canEdit) {
+      throw new Error("Forbidden: You do not have permission to update this task");
+    }
 
     // Handle assignee updates if provided
     if (data.assigneeIds !== undefined) {
@@ -1315,11 +1335,11 @@ export class TaskService {
   /**
    * Helper: Check if user has access to task
    */
-  private checkTaskAccess(
+  private async checkTaskAccess(
     task: any,
     userId: string,
     userRole: UserRole,
-  ): boolean {
+  ): Promise<boolean> {
     // Personal task privacy: Only creator + SUPER_ADMIN can see
     if (!task.projectId) {
       return task.creatorId === userId || userRole === UserRole.SUPER_ADMIN;
@@ -1335,12 +1355,6 @@ export class TaskService {
       return true;
     }
 
-    // HOO/HR can see ADMIN and STAFF tasks only (not CEO tasks)
-    if (userRole === UserRole.HOO || userRole === UserRole.HR) {
-      const creatorRole = task.creator?.role;
-      return creatorRole === UserRole.ADMIN || creatorRole === UserRole.STAFF;
-    }
-
     // Creator has access to their own tasks
     if (task.creatorId === userId) {
       return true;
@@ -1351,6 +1365,28 @@ export class TaskService {
       task.assignees &&
       task.assignees.some((a: any) => a.userId === userId)
     ) {
+      return true;
+    }
+
+    // HOO/HR can see ADMIN and STAFF tasks only (not CEO tasks)
+    if (userRole === UserRole.HOO || userRole === UserRole.HR) {
+      const creatorRole = task.creator?.role;
+      if (creatorRole === UserRole.ADMIN || creatorRole === UserRole.STAFF) {
+        return true;
+      }
+    }
+
+    // Project members (including creator as PROJECT_ADMIN) can browse project tasks
+    const membership = await prisma.projectMember.findFirst({
+      where: { projectId: task.projectId, userId },
+      select: { role: true },
+    });
+
+    if (membership) {
+      return true;
+    }
+
+    if (task.project?.creatorId === userId) {
       return true;
     }
 
