@@ -40,12 +40,6 @@ class UserHierarchyController {
         return res.status(404).json({ message: "Promoter not found" });
       }
 
-      if (!promoter.isSuperAdmin) {
-        return res.status(403).json({
-          message: "Only Super Admins can delete user accounts",
-        });
-      }
-
       // Get target user
       const targetUser = await prisma.user.findUnique({
         where: { id: userId },
@@ -294,7 +288,7 @@ class UserHierarchyController {
    */
   async removeUser(req: Request, res: Response) {
     try {
-      const { userId } = req.params;
+      const userId = req.params.userId || req.params.id;
       const { reassignToUserId } = req.body;
       const promoterId = req.user?.id;
 
@@ -315,6 +309,16 @@ class UserHierarchyController {
 
       if (!promoter) {
         return res.status(404).json({ message: "Promoter not found" });
+      }
+
+      if (!promoter.isSuperAdmin) {
+        return res.status(403).json({
+          message: "Only Super Admins can delete user accounts",
+        });
+      }
+
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
       }
 
       // Get target user
@@ -341,13 +345,37 @@ class UserHierarchyController {
 
       // Check for assigned tasks
       const taskCheck = await RoleHierarchyService.hasAssignedTasks(userId!);
+      const dependencyCheck =
+        await RoleHierarchyService.getDeletionDependencies(userId!);
 
-      if (taskCheck.hasTasks) {
-        if (!reassignToUserId) {
+      const needsReassign =
+        taskCheck.hasTasks ||
+        dependencyCheck.projectsCount > 0 ||
+        dependencyCheck.commentsCount > 0 ||
+        dependencyCheck.activityLogsCount > 0 ||
+        dependencyCheck.timeEntriesCount > 0 ||
+        dependencyCheck.attachmentsCount > 0 ||
+        dependencyCheck.addedMembersCount > 0;
+
+      if (needsReassign && !reassignToUserId) {
+        return res.status(400).json({
+          message:
+            "User has related records. Please provide reassignToUserId to reassign them before removal.",
+          taskCount: taskCheck.taskCount,
+          taskIds: taskCheck.taskIds,
+          projectsCount: dependencyCheck.projectsCount,
+          commentsCount: dependencyCheck.commentsCount,
+          activityLogsCount: dependencyCheck.activityLogsCount,
+          timeEntriesCount: dependencyCheck.timeEntriesCount,
+          attachmentsCount: dependencyCheck.attachmentsCount,
+          addedMembersCount: dependencyCheck.addedMembersCount,
+        });
+      }
+
+      if (reassignToUserId) {
+        if (reassignToUserId === userId) {
           return res.status(400).json({
-            message: `User has ${taskCheck.taskCount} assigned tasks. Please provide reassignToUserId to reassign them before removal.`,
-            taskCount: taskCheck.taskCount,
-            taskIds: taskCheck.taskIds,
+            message: "reassignToUserId must be different from the userId",
           });
         }
 
@@ -363,8 +391,12 @@ class UserHierarchyController {
           });
         }
 
-        // Reassign tasks
+        // Reassign tasks and related records
         await RoleHierarchyService.reassignUserTasks(userId!, reassignToUserId);
+        await RoleHierarchyService.reassignUserReferences(
+          userId!,
+          reassignToUserId
+        );
       }
 
       // Delete user

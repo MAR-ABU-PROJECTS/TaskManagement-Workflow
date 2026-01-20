@@ -319,6 +319,108 @@ export class RoleHierarchyService {
   }
 
   /**
+   * Check if user has related records that block deletion
+   */
+  static async getDeletionDependencies(userId: string): Promise<{
+    projectsCount: number;
+    commentsCount: number;
+    activityLogsCount: number;
+    timeEntriesCount: number;
+    attachmentsCount: number;
+    addedMembersCount: number;
+  }> {
+    const [
+      projectsCount,
+      commentsCount,
+      activityLogsCount,
+      timeEntriesCount,
+      attachmentsCount,
+      addedMembersCount,
+    ] = await Promise.all([
+      prisma.project.count({ where: { creatorId: userId } }),
+      prisma.taskComment.count({ where: { userId } }),
+      prisma.taskActivityLog.count({ where: { userId } }),
+      prisma.timeEntry.count({ where: { userId } }),
+      prisma.taskAttachment.count({ where: { uploadedById: userId } }),
+      prisma.projectMember.count({ where: { addedById: userId } }),
+    ]);
+
+    return {
+      projectsCount,
+      commentsCount,
+      activityLogsCount,
+      timeEntriesCount,
+      attachmentsCount,
+      addedMembersCount,
+    };
+  }
+
+  /**
+   * Reassign user's related records before deletion
+   */
+  static async reassignUserReferences(
+    fromUserId: string,
+    toUserId: string
+  ): Promise<{
+    projectsUpdated: number;
+    commentsUpdated: number;
+    activityLogsUpdated: number;
+    timeEntriesUpdated: number;
+    attachmentsUpdated: number;
+    addedMembersUpdated: number;
+    promotedByCleared: number;
+  }> {
+    const [
+      projectsUpdated,
+      commentsUpdated,
+      activityLogsUpdated,
+      timeEntriesUpdated,
+      attachmentsUpdated,
+      addedMembersUpdated,
+      promotedByCleared,
+    ] = await prisma.$transaction([
+      prisma.project.updateMany({
+        where: { creatorId: fromUserId },
+        data: { creatorId: toUserId },
+      }),
+      prisma.taskComment.updateMany({
+        where: { userId: fromUserId },
+        data: { userId: toUserId },
+      }),
+      prisma.taskActivityLog.updateMany({
+        where: { userId: fromUserId },
+        data: { userId: toUserId },
+      }),
+      prisma.timeEntry.updateMany({
+        where: { userId: fromUserId },
+        data: { userId: toUserId },
+      }),
+      prisma.taskAttachment.updateMany({
+        where: { uploadedById: fromUserId },
+        data: { uploadedById: toUserId },
+      }),
+      prisma.projectMember.updateMany({
+        where: { addedById: fromUserId },
+        data: { addedById: toUserId },
+      }),
+      prisma.user.updateMany({
+        where: { promotedById: fromUserId },
+        data: { promotedById: null },
+      }),
+    ]);
+
+    return {
+      projectsUpdated: projectsUpdated.count,
+      commentsUpdated: commentsUpdated.count,
+      activityLogsUpdated: activityLogsUpdated.count,
+      timeEntriesUpdated: timeEntriesUpdated.count,
+      attachmentsUpdated: attachmentsUpdated.count,
+      addedMembersUpdated: addedMembersUpdated.count,
+      promotedByCleared: promotedByCleared.count,
+    };
+  }
+
+  /**
    * Check if user has any assigned tasks (for removal validation)
    */
   static async hasAssignedTasks(userId: string): Promise<{
