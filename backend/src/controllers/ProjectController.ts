@@ -35,6 +35,12 @@ export class ProjectController {
       if (error.message.includes("Forbidden")) {
         return res.status(403).json({ message: error.message });
       }
+      if (
+        error.message.includes("already exists") ||
+        error.code === "P2002"
+      ) {
+        return res.status(409).json({ message: "Project key already exists" });
+      }
       return res.status(500).json({
         message: "Failed to create project",
         error: error.message,

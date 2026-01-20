@@ -37,6 +37,14 @@ export class ProjectService {
     // Extract members array if provided
     const members = data.members || [];
 
+    const existingProject = await prisma.project.findUnique({
+      where: { key: data.key },
+      select: { id: true },
+    });
+    if (existingProject) {
+      throw new Error("Project key already exists");
+    }
+
     const project = await prisma.project.create({
       data: {
         name: data.name,
