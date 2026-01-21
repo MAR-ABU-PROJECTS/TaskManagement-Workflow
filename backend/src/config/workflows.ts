@@ -31,13 +31,19 @@ const STANDARD_WORKFLOW: WorkflowTransitionRule[] = [
     to: TaskStatus.REVIEW,
   },
   { name: "Back to To Do", from: TaskStatus.IN_PROGRESS, to: TaskStatus.ASSIGNED },
+  { name: "Back to Backlog", from: TaskStatus.IN_PROGRESS, to: TaskStatus.DRAFT },
 
   // From REVIEW
   { name: "Mark Done", from: TaskStatus.REVIEW, to: TaskStatus.COMPLETED },
   { name: "Request Changes", from: TaskStatus.REVIEW, to: TaskStatus.IN_PROGRESS },
+  { name: "Back to To Do", from: TaskStatus.REVIEW, to: TaskStatus.ASSIGNED },
+  { name: "Back to Backlog", from: TaskStatus.REVIEW, to: TaskStatus.DRAFT },
 
   // From COMPLETED (Done)
   { name: "Back to Review", from: TaskStatus.COMPLETED, to: TaskStatus.REVIEW },
+  { name: "Reopen Work", from: TaskStatus.COMPLETED, to: TaskStatus.IN_PROGRESS },
+  { name: "Back to To Do", from: TaskStatus.COMPLETED, to: TaskStatus.ASSIGNED },
+  { name: "Back to Backlog", from: TaskStatus.COMPLETED, to: TaskStatus.DRAFT },
 
   // Allow recovery for paused/rejected tasks
   { name: "Resume Work", from: TaskStatus.PAUSED, to: TaskStatus.IN_PROGRESS },
