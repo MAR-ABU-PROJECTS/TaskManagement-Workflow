@@ -1,5 +1,10 @@
 import prisma from "../db/prisma";
-import { CreateTaskDTO, UpdateTaskDTO, Task } from "../types/interfaces";
+import {
+  CreateTaskDTO,
+  CreatePersonalTaskDTO,
+  UpdateTaskDTO,
+  Task,
+} from "../types/interfaces";
 import {
   UserRole,
   TaskStatus,
@@ -204,16 +209,7 @@ export class TaskService {
    * Create a personal task (no project required)
    */
   async createPersonalTask(
-    data: {
-      title: string;
-      description?: string;
-      priority?: string;
-      issueType?: IssueType;
-      labels?: string[];
-      dueDate?: Date;
-      estimatedHours?: number;
-      storyPoints?: number;
-    },
+    data: CreatePersonalTaskDTO,
     creatorId: string,
   ): Promise<Task> {
     // Personal tasks:

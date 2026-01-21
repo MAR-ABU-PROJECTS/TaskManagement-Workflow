@@ -6,6 +6,93 @@ import {
   CreatePersonalTaskDTO,
 } from "../types/interfaces";
 import { UserRole, TaskStatus } from "../types/enums";
+import { normalizeTaskStatus } from "../utils/taskStatus";
+
+const hasOwn = (obj: Record<string, unknown>, key: string) =>
+  Object.prototype.hasOwnProperty.call(obj, key);
+
+const parseDateValue = (
+  value: unknown,
+): { value: Date | null; invalid: boolean } => {
+  if (value === null || value === "") {
+    return { value: null, invalid: false };
+  }
+
+  if (value instanceof Date) {
+    return { value, invalid: false };
+  }
+
+  if (typeof value === "number" || typeof value === "string") {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? { value: null, invalid: true }
+      : { value: date, invalid: false };
+  }
+
+  if (
+    value &&
+    typeof value === "object" &&
+    "toISOString" in value &&
+    typeof (value as { toISOString?: () => string }).toISOString === "function"
+  ) {
+    const date = new Date(
+      (value as { toISOString: () => string }).toISOString(),
+    );
+    return Number.isNaN(date.getTime())
+      ? { value: null, invalid: true }
+      : { value: date, invalid: false };
+  }
+
+  return { value: null, invalid: true };
+};
+
+const getDueDateField = (
+  raw: Record<string, unknown>,
+): { value?: Date | null; invalid: boolean } => {
+  const hasDueDate = hasOwn(raw, "dueDate") || hasOwn(raw, "due_date");
+  if (!hasDueDate) {
+    return { value: undefined, invalid: false };
+  }
+
+  const rawValue = hasOwn(raw, "dueDate") ? raw.dueDate : raw.due_date;
+  const parsed = parseDateValue(rawValue);
+  return parsed.invalid
+    ? { value: undefined, invalid: true }
+    : { value: parsed.value, invalid: false };
+};
+
+const normalizeAssigneeIds = (raw: Record<string, unknown>) => {
+  if (Array.isArray(raw.assigneeIds)) {
+    return raw.assigneeIds.filter(
+      (id) => typeof id === "string" && id.trim() !== "",
+    );
+  }
+
+  if (typeof raw.assigneeId === "string" && raw.assigneeId.trim() !== "") {
+    return [raw.assigneeId];
+  }
+
+  return undefined;
+};
+
+const normalizeTaskPayload = (raw: Record<string, unknown>) => {
+  const { value: dueDate, invalid: dueDateInvalid } = getDueDateField(raw);
+
+  const payload = {
+    title: (raw.title as string) ?? (raw.summary as string),
+    description: raw.description as string | undefined,
+    priority: raw.priority,
+    issueType: (raw.issueType as string) ?? (raw.type as string),
+    assigneeIds: normalizeAssigneeIds(raw),
+    parentTaskId: (raw.parentTaskId as string) ?? (raw.parentId as string),
+    labels: raw.labels as string[] | undefined,
+    dueDate,
+    estimatedHours: raw.estimatedHours as number | undefined,
+    storyPoints: raw.storyPoints as number | undefined,
+  };
+
+  return { payload, dueDateInvalid };
+};
 
 export class TaskController {
   /**
@@ -48,7 +135,23 @@ export class TaskController {
           .json({ message: "Forbidden: Authentication required" });
       }
 
-      const data: CreatePersonalTaskDTO = req.body;
+      const raw = req.body as Record<string, unknown>;
+      const { payload, dueDateInvalid } = normalizeTaskPayload(raw);
+
+      if (dueDateInvalid) {
+        return res.status(400).json({ message: "Invalid dueDate value" });
+      }
+
+      const data: CreatePersonalTaskDTO = {
+        title: payload.title as string,
+        description: payload.description,
+        priority: payload.priority as any,
+        issueType: payload.issueType as any,
+        labels: payload.labels,
+        dueDate: payload.dueDate || undefined,
+        estimatedHours: payload.estimatedHours,
+        storyPoints: payload.storyPoints,
+      };
 
       if (!data.title) {
         return res.status(400).json({ message: "Task title is required" });
@@ -94,7 +197,24 @@ export class TaskController {
           .json({ message: "Forbidden: Authentication required" });
       }
 
-      const data: CreateTaskDTO = req.body;
+      const raw = req.body as Record<string, unknown>;
+      const { payload, dueDateInvalid } = normalizeTaskPayload(raw);
+
+      if (dueDateInvalid) {
+        return res.status(400).json({ message: "Invalid dueDate value" });
+      }
+
+      const data: CreateTaskDTO = {
+        projectId: raw.projectId as string | undefined,
+        title: payload.title as string,
+        description: payload.description,
+        priority: payload.priority as any,
+        issueType: payload.issueType as any,
+        assigneeIds: payload.assigneeIds,
+        parentTaskId: payload.parentTaskId,
+        labels: payload.labels,
+        dueDate: payload.dueDate || undefined,
+      };
 
       if (!data.title) {
         return res.status(400).json({ message: "Task title is required" });
@@ -129,9 +249,21 @@ export class TaskController {
           .json({ message: "Forbidden: Authentication required" });
       }
 
+      const rawStatus = req.query.status as string | undefined;
+      const normalizedStatus = rawStatus
+        ? normalizeTaskStatus(rawStatus)
+        : undefined;
+
+      if (rawStatus && !normalizedStatus) {
+        return res.status(400).json({
+          message: "Invalid status",
+          validStatuses: Object.values(TaskStatus),
+        });
+      }
+
       const filters = {
         projectId: req.query.projectId as string,
-        status: req.query.status as TaskStatus,
+        status: normalizedStatus as TaskStatus | undefined,
         assigneeId: req.query.assigneeId as string,
         creatorId: req.query.creatorId as string,
       };
@@ -211,7 +343,22 @@ export class TaskController {
         return res.status(400).json({ message: "Task ID is required" });
       }
 
-      const data: UpdateTaskDTO = req.body;
+      const raw = req.body as Record<string, unknown>;
+      const { payload, dueDateInvalid } = normalizeTaskPayload(raw);
+
+      if (dueDateInvalid) {
+        return res.status(400).json({ message: "Invalid dueDate value" });
+      }
+
+      const data: UpdateTaskDTO = {
+        title: payload.title,
+        description: payload.description,
+        priority: payload.priority as any,
+        issueType: payload.issueType as any,
+        labels: payload.labels,
+        dueDate: payload.dueDate,
+        assigneeIds: payload.assigneeIds,
+      };
 
       const task = await TaskService.updateTask(
         id,
@@ -255,15 +402,24 @@ export class TaskController {
         return res.status(400).json({ message: "Task ID is required" });
       }
 
-      const { status } = req.body;
-
-      if (!status) {
+      const rawStatus = (req.body?.status ?? req.body?.toStatus) as
+        | string
+        | undefined;
+      if (!rawStatus) {
         return res.status(400).json({ message: "Status is required" });
+      }
+
+      const normalizedStatus = normalizeTaskStatus(rawStatus);
+      if (!normalizedStatus) {
+        return res.status(400).json({
+          message: "Invalid status",
+          validStatuses: Object.values(TaskStatus),
+        });
       }
 
       const task = await TaskService.changeStatus(
         id,
-        status as TaskStatus,
+        normalizedStatus,
         req.user.id,
         req.user.role as UserRole,
       );
@@ -560,10 +716,21 @@ export class TaskController {
         return res.status(400).json({ message: "Task ID is required" });
       }
 
-      const { status, position } = req.body;
+      const rawStatus = (req.body?.status ?? req.body?.toStatus) as
+        | string
+        | undefined;
+      const { position } = req.body;
 
-      if (!status) {
+      if (!rawStatus) {
         return res.status(400).json({ message: "Status is required" });
+      }
+
+      const normalizedStatus = normalizeTaskStatus(rawStatus);
+      if (!normalizedStatus) {
+        return res.status(400).json({
+          message: "Invalid status",
+          validStatuses: Object.values(TaskStatus),
+        });
       }
 
       if (position === undefined || position === null) {
@@ -572,7 +739,7 @@ export class TaskController {
 
       const task = await TaskService.moveTask(
         id,
-        status as TaskStatus,
+        normalizedStatus,
         position,
         req.user.id,
         req.user.role as UserRole,

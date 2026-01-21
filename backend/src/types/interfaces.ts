@@ -117,7 +117,7 @@ export interface CreateTaskDTO {
   assigneeIds?: string[]; // Changed from assigneeId to support multiple assignees
   parentTaskId?: string;
   labels?: string[];
-  dueDate?: Date;
+  dueDate?: Date | null;
 }
 
 export interface CreatePersonalTaskDTO {
@@ -126,7 +126,7 @@ export interface CreatePersonalTaskDTO {
   priority?: TaskPriority;
   issueType?: IssueType;
   labels?: string[];
-  dueDate?: Date;
+  dueDate?: Date | null;
   estimatedHours?: number;
   storyPoints?: number;
 }
@@ -137,7 +137,7 @@ export interface UpdateTaskDTO {
   priority?: TaskPriority;
   issueType?: IssueType;
   labels?: string[];
-  dueDate?: Date;
+  dueDate?: Date | null;
   assigneeIds?: string[]; // Array of user IDs to assign to the task
 }
 

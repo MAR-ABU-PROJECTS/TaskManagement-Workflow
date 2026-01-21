@@ -512,6 +512,11 @@ router.patch("/:id", canEditIssue, (req, res) =>
   TaskController.updateTask(req, res),
 );
 
+// Support PUT for clients expecting full update semantics (backward compatibility)
+router.put("/:id", canEditIssue, (req, res) =>
+  TaskController.updateTask(req, res),
+);
+
 /**
  * @swagger
  * /api/tasks/{id}:
@@ -732,6 +737,19 @@ router.delete(
  */
 router.post(
   "/:id/transition",
+  hasTaskPermission(Permission.TRANSITION_ISSUES),
+  (req, res) => TaskController.changeStatus(req, res),
+);
+
+// Legacy alias for clients using /tasks/:id/status
+router.put(
+  "/:id/status",
+  hasTaskPermission(Permission.TRANSITION_ISSUES),
+  (req, res) => TaskController.changeStatus(req, res),
+);
+
+router.patch(
+  "/:id/status",
   hasTaskPermission(Permission.TRANSITION_ISSUES),
   (req, res) => TaskController.changeStatus(req, res),
 );
