@@ -4,17 +4,10 @@ import {
   UpdateProjectDTO,
   Project,
 } from "../types/interfaces";
-import {
-  UserRole,
-  WorkflowType,
-  ProjectRole,
-  Permission,
-} from "@prisma/client";
+import { UserRole, WorkflowType, ProjectRole, Permission } from "@prisma/client";
 import PermissionService from "./PermissionService";
 
 type MemberInput = { userId: string } | { id: string } | string;
-
-const PROJECT_KEY_PATTERN = /^[A-Z0-9]{2,10}$/;
 
 function getMemberId(member: MemberInput): string | undefined {
   if (typeof member === "string") return member;
@@ -24,29 +17,12 @@ function getMemberId(member: MemberInput): string | undefined {
 }
 
 function normalizeProjectKey(input: string): string {
-  return input.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return input.trim();
 }
 
 function buildBaseProjectKey(name: string): string {
-  const cleaned = name.replace(/[^A-Za-z0-9 ]/g, " ").trim();
-  const words = cleaned.split(/\s+/).filter(Boolean);
-  let key = words.map((word) => word[0]).join("");
-
-  if (key.length < 2) {
-    key = cleaned.replace(/\s+/g, "");
-  }
-
-  key = normalizeProjectKey(key);
-
-  if (key.length < 2) {
-    key = "PRJ";
-  }
-
-  return key.slice(0, 10);
-}
-
-function isValidProjectKey(key: string): boolean {
-  return PROJECT_KEY_PATTERN.test(key);
+  const cleaned = name.trim();
+  return cleaned.length > 0 ? cleaned : "Project";
 }
 
 export class ProjectService {
@@ -71,8 +47,7 @@ export class ProjectService {
       );
     }
 
-    const workflowType =
-      (data.workflowType as WorkflowType) || WorkflowType.BASIC;
+    const workflowType = WorkflowType.BASIC;
 
     // Extract members array if provided
     const membersInput = data.members || [];
@@ -86,34 +61,9 @@ export class ProjectService {
 
     const uniqueMemberIds = Array.from(new Set(memberIds));
 
-    let projectKey = "";
     const normalizedKey = data.key ? normalizeProjectKey(data.key) : "";
-
-    if (workflowType === WorkflowType.AGILE) {
-      if (!normalizedKey) {
-        throw new Error("Project key is required for AGILE workflow");
-      }
-      if (!isValidProjectKey(normalizedKey)) {
-        throw new Error(
-          "Project key must be 2-10 uppercase letters and numbers"
-        );
-      }
-
-      const existingProject = await prisma.project.findUnique({
-        where: { key: normalizedKey },
-        select: { id: true },
-      });
-      if (existingProject) {
-        throw new Error("Project key already exists");
-      }
-      projectKey = normalizedKey;
-    } else {
-      const baseKey =
-        normalizedKey && isValidProjectKey(normalizedKey)
-          ? normalizedKey
-          : buildBaseProjectKey(data.name);
-      projectKey = await this.ensureUniqueProjectKey(baseKey);
-    }
+    const baseKey = normalizedKey || buildBaseProjectKey(data.name);
+    const projectKey = await this.ensureUniqueProjectKey(baseKey);
 
     const project = await prisma.project.create({
       data: {
@@ -122,7 +72,7 @@ export class ProjectService {
         description: data.description || null,
         dueDate: data.dueDate || null,
         workflowType,
-        workflowSchemeId: data.workflowSchemeId || null,
+        workflowSchemeId: null,
         creatorId,
       },
     });
@@ -156,7 +106,9 @@ export class ProjectService {
   }
 
   private async ensureUniqueProjectKey(baseKey: string): Promise<string> {
-    let candidate = baseKey;
+    const trimmedBase = baseKey.trim();
+    const safeBase = trimmedBase.length > 0 ? trimmedBase : "Project";
+    let candidate = safeBase;
     let suffix = 1;
 
     while (true) {
@@ -168,10 +120,7 @@ export class ProjectService {
         return candidate;
       }
 
-      const suffixText = String(suffix);
-      const maxBaseLength = 10 - suffixText.length;
-      const trimmedBase = baseKey.slice(0, Math.max(2, maxBaseLength));
-      candidate = `${trimmedBase}${suffixText}`;
+      candidate = `${safeBase}-${suffix}`;
       suffix += 1;
 
       if (suffix > 9999) {
@@ -326,8 +275,6 @@ export class ProjectService {
         name: data.name,
         description: data.description,
         dueDate: data.dueDate,
-        workflowType: data.workflowType as any,
-        workflowSchemeId: data.workflowSchemeId,
       },
       include: {
         creator: {
