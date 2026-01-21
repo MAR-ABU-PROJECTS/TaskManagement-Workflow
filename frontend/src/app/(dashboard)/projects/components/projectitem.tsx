@@ -95,7 +95,7 @@ const Projectitem = (project: ProjectType) => {
 						</DropdownMenu>
 					</div>
 				</CardHeader>
-				<CardContent className="flex justify-between items-center flex-wrap gap-5">
+				<CardContent className="flex gap-4 flex-col">
 					<div>
 						<h2 className="text-sm text-black font-[500]">
 							Created By
@@ -108,26 +108,28 @@ const Projectitem = (project: ProjectType) => {
 						</p>
 					</div>
 
-					<div>
-						<h2 className="text-sm text-black font-[500]">
-							Created At
-						</h2>
-						<p className="text-sm">
-							<span className="mr-1.5 text-gray-600">
-								{formattedDate}
-							</span>
-						</p>
-					</div>
+					<div className="flex gap-5 items-center justify-between">
+						<div>
+							<h2 className="text-sm text-black font-[500]">
+								Created At
+							</h2>
+							<p className="text-sm">
+								<span className="mr-1.5 text-gray-600">
+									{formattedDate}
+								</span>
+							</p>
+						</div>
 
-					<div>
-						<h2 className="text-sm text-black font-[500]">
-							Due By
-						</h2>
-						<p className="text-sm">
-							<span className="mr-1.5 text-gray-600">
-								{dueDate}
-							</span>
-						</p>
+						<div>
+							<h2 className="text-sm text-black font-[500]">
+								Due By
+							</h2>
+							<p className="text-sm">
+								<span className="mr-1.5 text-gray-600">
+									{dueDate}
+								</span>
+							</p>
+						</div>
 					</div>
 				</CardContent>
 			</Card>

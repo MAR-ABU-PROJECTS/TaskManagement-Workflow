@@ -115,7 +115,7 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 
 										<Attachments />
 
-										<TaskComments />
+										<TaskComments assignees={assignees} />
 
 										<Activities />
 									</div>

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useGetComments } from "../../tasks/lib/queries";
 import { useParams } from "next/navigation";
@@ -12,8 +11,17 @@ import { useSession } from "@/app/providers/session-provider";
 import { QueryStateHandler } from "@/components/QueryStateHandler";
 import { getInitials } from "@/lib/utils";
 import Comment, { CommentType } from "./comment";
+import { MentionsInput, Mention } from "react-mentions";
+import {
+	mentionsInputStyle,
+	mentionsStyle,
+} from "@/components/mentionsInputStyle";
 
-const TaskComments = () => {
+const TaskComments = ({
+	assignees,
+}: {
+	assignees: { id: string; name: string }[];
+}) => {
 	const { taskId } = useParams();
 	const user = useSession();
 
@@ -22,6 +30,9 @@ const TaskComments = () => {
 	const mutation = useCommentMutation();
 
 	const { first, last } = getInitials(user?.user?.name ?? "");
+
+	const users = assignees.map((a) => ({ id: a.id, display: a.name }));
+
 	return (
 		<Card>
 			<CardHeader>
@@ -47,19 +58,34 @@ const TaskComments = () => {
 
 				<div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
 					<Avatar className="h-8 w-8">
-						<AvatarFallback className="uppercase">
+						<AvatarFallback className="uppercase text-sm">
 							{first}
 							{last}
 						</AvatarFallback>
 					</Avatar>
 					<div className="flex-1 space-y-2">
-						<Textarea
+						<MentionsInput
+							style={mentionsInputStyle}
+							value={newComment}
+							onChange={(e) => setNewComment(e.target.value)}
+							placeholder="Add a comment… use @ to mention"
+							disabled={mutation.isPending}
+						>
+							<Mention
+								trigger="@"
+								data={users}
+								style={mentionsStyle}
+						
+							/>
+						</MentionsInput>
+
+						{/* <Textarea
 							placeholder="Add a comment..."
 							value={newComment}
 							onChange={(e) => setNewComment(e.target.value)}
 							disabled={mutation.isPending}
 							className="min-h-20"
-						/>
+						/> */}
 						<div className="flex justify-end">
 							<Button
 								size="sm"
@@ -74,7 +100,7 @@ const TaskComments = () => {
 											onSuccess: () => {
 												setNewComment("");
 											},
-										}
+										},
 									)
 								}
 							>

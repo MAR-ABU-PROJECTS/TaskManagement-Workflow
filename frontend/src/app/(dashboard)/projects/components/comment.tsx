@@ -13,6 +13,7 @@ import {
 	AlertDialogHeader,
 } from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { renderComment } from "@/lib/rendercomment";
 
 const Comment = (comment: CommentType) => {
 	const { first, last } = getInitials(comment.user.name ?? "");
@@ -25,7 +26,7 @@ const Comment = (comment: CommentType) => {
 		<div>
 			<div className="flex gap-3 mb-1.5 items-start hover:bg-gray-200 p-1.5 rounded-sm transition-all">
 				<Avatar className="h-8 w-8">
-					<AvatarFallback>
+					<AvatarFallback className="text-sm">
 						{first}
 						{last}
 					</AvatarFallback>
@@ -40,9 +41,9 @@ const Comment = (comment: CommentType) => {
 								{formatTimeStamp(comment.createdAt)}
 							</span>
 						</div>
-						<p className="text-sm text-muted-foreground">
-							{comment.message}
-						</p>
+						<div className="text-sm leading-relaxed">
+							{renderComment(comment.message)}
+						</div>
 					</div>
 					<div className="shrink-0">
 						{isAuthor && (
@@ -88,7 +89,7 @@ const Comment = (comment: CommentType) => {
 										onSuccess: () => {
 											setAlert(false);
 										},
-									}
+									},
 								)
 							}
 						>
