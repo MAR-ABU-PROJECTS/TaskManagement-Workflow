@@ -6,6 +6,7 @@ import {
 } from "../types/interfaces";
 import { UserRole, WorkflowType, ProjectRole, Permission } from "@prisma/client";
 import PermissionService from "./PermissionService";
+import emailService from "./EmailService";
 
 type MemberInput = { userId: string } | { id: string } | string;
 
@@ -77,6 +78,12 @@ export class ProjectService {
       },
     });
 
+    const creator = await prisma.user.findUnique({
+      where: { id: creatorId },
+      select: { id: true, name: true, email: true },
+    });
+    const addedByName = creator?.name || "Project Admin";
+
     // Auto-assign creator as PROJECT_ADMIN (all creators get admin role)
     const projectRole = ProjectRole.PROJECT_ADMIN;
 
@@ -100,6 +107,27 @@ export class ProjectService {
         })),
         skipDuplicates: true, // Skip if creator is in members array
       });
+
+      const members = await prisma.user.findMany({
+        where: { id: { in: uniqueMemberIds } },
+        select: { id: true, name: true, email: true },
+      });
+
+      for (const member of members) {
+        if (!member.email || member.id === creatorId) {
+          continue;
+        }
+        emailService
+          .sendProjectMemberAddedEmail(member.email, {
+            userName: member.name,
+            projectName: project.name,
+            projectId: project.id,
+            addedBy: addedByName,
+          })
+          .catch((err) =>
+            console.error("Failed to send project member email:", err),
+          );
+      }
     }
 
     return project as Project;
@@ -325,6 +353,33 @@ export class ProjectService {
         })),
         skipDuplicates: true,
       });
+
+      const addedBy = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      });
+      const addedByName = addedBy?.name || "Project Admin";
+
+      const members = await prisma.user.findMany({
+        where: { id: { in: uniqueMemberIdsToAdd } },
+        select: { id: true, name: true, email: true },
+      });
+
+      for (const member of members) {
+        if (!member.email || member.id === userId) {
+          continue;
+        }
+        emailService
+          .sendProjectMemberAddedEmail(member.email, {
+            userName: member.name,
+            projectName: project.name,
+            projectId: project.id,
+            addedBy: addedByName,
+          })
+          .catch((err) =>
+            console.error("Failed to send project member email:", err),
+          );
+      }
     }
 
     // Handle removing members

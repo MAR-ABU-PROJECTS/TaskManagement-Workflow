@@ -216,10 +216,30 @@ export const startProjectDeadlineReminderChecker = () => {
 };
 
 /**
+ * AUTOMATION: Retry failed emails
+ * Runs every 30 seconds to resend queued emails
+ */
+export const startEmailRetryProcessor = () => {
+  cron.schedule("*/30 * * * * *", async () => {
+    try {
+      await emailService.processEmailRetryQueue();
+    } catch (error) {
+      console.error(
+        `[${new Date().toISOString()}] Error processing email retry queue:`,
+        error
+      );
+    }
+  });
+
+  console.log("Email retry processor started (runs every 30 seconds)");
+};
+
+/**
  * Start all automation cron jobs
  */
 export const startAutomationJobs = () => {
   startDeadlineReminderChecker();
   startOverdueAutoLabeler();
   startProjectDeadlineReminderChecker();
+  startEmailRetryProcessor();
 };
