@@ -6,6 +6,11 @@ import { ActivityAction } from "../types/enums";
 import emailService from "./EmailService";
 
 export class CommentService {
+  private formatCommentForEmail(message: string): string {
+    // Convert mention markup like "@[Name](userId)" to "@Name" for emails.
+    return message.replace(/@\[(.+?)\]\([^)]+\)/g, "@$1");
+  }
+
   /**
    * Create a comment on a task
    */
@@ -81,6 +86,8 @@ export class CommentService {
       metadata: { commentId: comment.id },
     });
 
+    const emailCommentText = this.formatCommentForEmail(messageText);
+
     // AUTOMATION: Send email to task creator if they're not the commenter
     if (task.creatorId && task.creatorId !== userId) {
       const creator = task.creator;
@@ -91,7 +98,7 @@ export class CommentService {
             commenterName: comment.user?.name || "Unknown",
             taskTitle: task.title,
             taskId: task.id,
-            commentText: messageText,
+            commentText: emailCommentText,
             projectName: task.project?.name,
           })
           .catch((err) =>
@@ -112,7 +119,7 @@ export class CommentService {
             commenterName: comment.user?.name || "Unknown",
             taskTitle: task.title,
             taskId: task.id,
-            commentText: messageText,
+            commentText: emailCommentText,
             projectName: task.project?.name,
           })
           .catch((err) =>
@@ -145,7 +152,7 @@ export class CommentService {
             commenterName: comment.user?.name || "Unknown",
             taskTitle: task.title,
             taskId: task.id,
-            commentText: messageText,
+            commentText: emailCommentText,
           })
           .catch((err) => console.error("Failed to send mention email:", err));
       }
