@@ -48,7 +48,86 @@ const STATUS_CATEGORIES = {
   },
 };
 
+const STATUS_STAGES: Partial<Record<TaskStatus, number>> = {
+  [TaskStatus.DRAFT]: 0,
+  [TaskStatus.ASSIGNED]: 0,
+  [TaskStatus.IN_PROGRESS]: 1,
+  [TaskStatus.REVIEW]: 2,
+  [TaskStatus.COMPLETED]: 3,
+};
+
+const DONE_STAGE = 3;
+
 export class TaskService {
+  private getStatusStage(status: TaskStatus): number | undefined {
+    return STATUS_STAGES[status];
+  }
+
+  private enforceTransitionPermission(
+    task: {
+      projectId: string | null;
+      creatorId: string;
+      status: TaskStatus;
+      assignees: Array<{ userId: string }>;
+      project?: { creatorId: string | null } | null;
+    },
+    userId: string,
+    userRole: UserRole,
+    newStatus: TaskStatus,
+  ): void {
+    const isSystemRole = [
+      UserRole.SUPER_ADMIN,
+      UserRole.CEO,
+      UserRole.HOO,
+      UserRole.HR,
+      UserRole.ADMIN,
+    ].includes(userRole);
+    const isTaskCreator = task.creatorId === userId;
+    const isProjectCreator =
+      task.project?.creatorId ? task.project.creatorId === userId : false;
+    const isAssignee = task.assignees.some((a) => a.userId === userId);
+
+    if (isSystemRole || isTaskCreator || isProjectCreator) {
+      return;
+    }
+
+    // Personal tasks: only creator (auto-assigned) or system roles
+    if (!task.projectId) {
+      if (isAssignee) {
+        return;
+      }
+      throw new Error(
+        "Forbidden: You do not have permission to change this task status",
+      );
+    }
+
+    if (!isAssignee) {
+      throw new Error(
+        "Forbidden: Only assignees can move a task forward",
+      );
+    }
+
+    const fromStage = this.getStatusStage(task.status);
+    const toStage = this.getStatusStage(newStatus);
+
+    if (fromStage === undefined || toStage === undefined) {
+      throw new Error(
+        "Forbidden: Only the task creator or project creator can move this task to that status",
+      );
+    }
+
+    if (toStage === DONE_STAGE) {
+      throw new Error(
+        "Forbidden: Only the task creator or project creator can mark this task as done",
+      );
+    }
+
+    if (toStage <= fromStage) {
+      throw new Error(
+        "Forbidden: Only the task creator or project creator can move this task backward",
+      );
+    }
+  }
   /**
    * Create a new task
    */
@@ -758,20 +837,20 @@ export class TaskService {
       return null;
     }
 
-    // Check permission
     const isAssignee = task.assignees.some((a) => a.userId === userId);
-    const canChange =
-      task.creatorId === userId ||
-      isAssignee ||
-      [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
-        userRole,
-      );
 
-    if (!canChange) {
-      throw new Error(
-        "Forbidden: You do not have permission to change this task status",
-      );
-    }
+    this.enforceTransitionPermission(
+      {
+        projectId: task.projectId,
+        creatorId: task.creatorId,
+        status: task.status as TaskStatus,
+        assignees: task.assignees,
+        project: task.project,
+      },
+      userId,
+      userRole,
+      newStatus,
+    );
 
     // Get user's project role for workflow validation
     let projectRole: ProjectRole | undefined;
@@ -1563,20 +1642,18 @@ export class TaskService {
       throw new Error("Task not found");
     }
 
-    // Check permission
-    const isAssignee = task.assignees.some((a: any) => a.userId === userId);
-    const canMove =
-      task.creatorId === userId ||
-      isAssignee ||
-      [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
-        userRole,
-      );
-
-    if (!canMove) {
-      throw new Error(
-        "Forbidden: You do not have permission to move this task",
-      );
-    }
+    this.enforceTransitionPermission(
+      {
+        projectId: task.projectId,
+        creatorId: task.creatorId,
+        status: task.status as TaskStatus,
+        assignees: task.assignees as Array<{ userId: string }>,
+        project: task.project,
+      },
+      userId,
+      userRole,
+      newStatus,
+    );
 
     // Get user's project role for workflow validation
     let projectRole: ProjectRole | undefined;
@@ -1837,19 +1914,23 @@ export class TaskService {
           continue;
         }
 
-        // Check permission
-        const isAssignee = task.assignees.some((a) => a.userId === userId);
-        const canChange =
-          task.creatorId === userId ||
-          isAssignee ||
-          [UserRole.CEO, UserRole.HOO, UserRole.HR, UserRole.ADMIN].includes(
+        try {
+          this.enforceTransitionPermission(
+            {
+              projectId: task.projectId,
+              creatorId: task.creatorId,
+              status: task.status as TaskStatus,
+              assignees: task.assignees,
+              project: task.project,
+            },
+            userId,
             userRole,
+            newStatus,
           );
-
-        if (!canChange) {
+        } catch (error: any) {
           failed.push({
             taskId,
-            reason: "Insufficient permissions",
+            reason: error.message || "Insufficient permissions",
           });
           continue;
         }
