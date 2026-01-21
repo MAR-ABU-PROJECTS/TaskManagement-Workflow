@@ -6,7 +6,6 @@ import { QueryStateHandler } from "./QueryStateHandler";
 import { useGetPersonalTasks } from "@/app/(dashboard)/tasks/lib/queries";
 import PerosnalTask from "@/app/(dashboard)/tasks/components/perosnalTask";
 import { BoardTask } from "@/app/(dashboard)/projects/lib/type";
-import { useSession } from "@/app/providers/session-provider";
 
 export default function TasksPage() {
 	const query = useGetPersonalTasks();
