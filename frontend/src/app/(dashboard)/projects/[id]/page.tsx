@@ -8,7 +8,7 @@ const page = ({ params }: Props) => {
 	const projectId = params.id;
 	return (
 		<div className="w-full h-full overflow-x-hidden">
-			<ProjectBoard projectId={projectId} />
+			<ProjectBoard projectId={projectId} />``
 		</div>
 	);
 };
