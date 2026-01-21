@@ -99,6 +99,13 @@ interface PasswordChangedEmailData {
   userName: string;
 }
 
+interface ProjectDeadlineReminderData {
+  projectId: string;
+  projectName: string;
+  dueDate: string;
+  daysRemaining: number;
+}
+
 export class EmailService {
   private resend: Resend | null;
   private isConfigured: boolean;
@@ -644,6 +651,40 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
       <div class="warning-box">
         <p style="margin:0;"><strong>⚠️ Security Alert:</strong></p>
         <p style="margin:10px 0 0 0;">If you didn't make this change, please contact your administrator immediately.</p>
+      </div>
+    `;
+
+    const html = this.getBaseTemplate(content);
+    await this.sendEmail({ to, subject, html });
+  }
+
+  async sendProjectDeadlineReminderEmail(
+    to: string,
+    data: ProjectDeadlineReminderData,
+  ): Promise<void> {
+    const subject = `Project due in ${data.daysRemaining} day${
+      data.daysRemaining === 1 ? "" : "s"
+    }: ${data.projectName}`;
+    const formattedDate = new Date(data.dueDate).toLocaleDateString();
+    const projectUrl = `${
+      process.env.FRONTEND_URL || "http://localhost:3000"
+    }/projects/${data.projectId}`;
+
+    const content = `
+      <h2>⏰ Project Deadline Reminder</h2>
+      <p>Your project <strong>${data.projectName}</strong> is due soon.</p>
+      <div class="warning-box">
+        <div class="detail-row">
+          <span class="detail-label">Due Date:</span>
+          <span>${formattedDate}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Days Remaining:</span>
+          <span>${data.daysRemaining}</span>
+        </div>
+      </div>
+      <div style="text-align:center;">
+        <a href="${projectUrl}" class="button">View Project</a>
       </div>
     `;
 

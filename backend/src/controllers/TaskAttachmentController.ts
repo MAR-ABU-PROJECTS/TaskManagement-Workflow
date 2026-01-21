@@ -16,23 +16,45 @@ class TaskAttachmentController {
         return;
       }
 
-      if (!req.file) {
+      const files: any[] = [];
+
+      if (req.file) {
+        files.push(req.file as any);
+      }
+
+      if (req.files) {
+        if (Array.isArray(req.files)) {
+          files.push(...req.files);
+        } else {
+          const fileGroups = req.files as Record<string, Express.Multer.File[]>;
+          Object.values(fileGroups).forEach((group) => {
+            if (Array.isArray(group)) {
+              files.push(...group);
+            }
+          });
+        }
+      }
+
+      if (files.length === 0) {
         res.status(400).json({ message: "No file uploaded" });
         return;
       }
 
-      // Validate file
-      TaskAttachmentService.validateFile(req.file as any);
-
-      const attachment = await TaskAttachmentService.uploadAttachment(
-        taskId,
-        userId!,
-        req.file as any
-      );
+      const attachments = [];
+      for (const file of files) {
+        TaskAttachmentService.validateFile(file);
+        const attachment = await TaskAttachmentService.uploadAttachment(
+          taskId,
+          userId!,
+          file
+        );
+        attachments.push(attachment);
+      }
 
       res.status(201).json({
         message: "Attachment uploaded successfully",
-        data: attachment,
+        data: attachments.length === 1 ? attachments[0] : attachments,
+        uploadedCount: attachments.length,
       });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
