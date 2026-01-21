@@ -10,7 +10,7 @@ export const TaskService = {
 		data: createPTaskSchemaType;
 		taskId: string;
 	}) => apiService.patch(`/tasks/${taskId}`, data),
-	getPersonalTasks: () => apiService.get(`/tasks`),
+	getPersonalTasks: () => apiService.get(`/tasks/personal`),
 	createPersonalTask: (data: createPTaskSchemaType) =>
 		apiService.post("/tasks/personal", data),
 	createProjectTask: (data: createTaskPSchemaType) =>

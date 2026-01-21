@@ -70,7 +70,7 @@ const PerosnalTask = (task: BoardTask) => {
 							
 
 							<div className="text-sm text-muted-foreground text-right">
-								Due {dueDate}
+								Due: {dueDate}
 							</div>
 						</div>
 					</div>

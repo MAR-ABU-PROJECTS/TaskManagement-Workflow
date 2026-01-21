@@ -51,3 +51,5 @@ export const formatTimeStamp = (date: string) => {
 
 	return format(createdAt, "MMM d, yyyy · h:mm a");
 };
+
+export const toDateInputValue = (iso?: string) => (iso ? iso.split("T")[0] : "");

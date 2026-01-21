@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, CheckCircle2, Clock, Flag, User } from "lucide-react";
+import { Calendar, CheckCircle2, Flag, User } from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -13,6 +13,8 @@ import { Separator } from "@/components/ui/separator";
 // import { Button } from "@/components/ui/button";
 import { Task } from "../lib/queries";
 import ReactSelect from "react-select";
+import { format } from "date-fns";
+import { Input } from "@/components/ui/input";
 
 const TaskDetails = ({ data }: { data: Task }) => {
 	type MembersOption = {
@@ -24,9 +26,12 @@ const TaskDetails = ({ data }: { data: Task }) => {
 		(u) => ({
 			value: u?.user.id,
 			label: u?.user.name,
-		})
+		}),
 	);
-	
+
+	const formattedDate = data.dueDate
+		? format(data.dueDate, "yyyy-MM-dd")
+		: null;
 	return (
 		<div className="space-y-6">
 			<Card>
@@ -97,15 +102,17 @@ const TaskDetails = ({ data }: { data: Task }) => {
 							<Calendar className="h-4 w-4" />
 							Due Date
 						</Label>
-						<input
-							disabled
+
+						<Input
 							type="date"
-							defaultValue={data.dueDate ?? ""}
-							className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+							defaultValue={
+								formattedDate ? formattedDate : "2026"
+							}
+							disabled
 						/>
 					</div>
 
-					<div className="space-y-2">
+					{/* <div className="space-y-2">
 						<Label className="flex items-center gap-2 text-sm font-medium">
 							<Clock className="h-4 w-4" />
 							Time Estimate
@@ -116,7 +123,7 @@ const TaskDetails = ({ data }: { data: Task }) => {
 							defaultValue={data.estimatedHours ?? ""}
 							className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
 						/>
-					</div>
+					</div> */}
 
 					<Separator />
 				</CardContent>

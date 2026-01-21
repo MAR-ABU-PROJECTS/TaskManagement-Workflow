@@ -45,6 +45,9 @@ const Projectitem = (project: ProjectType) => {
 	};
 
 	const formattedDate = format(project.createdAt, "yyyy-MM-dd");
+	const dueDate = project.dueDate
+		? format(project.dueDate, "yyyy-MM-dd")
+		: "";
 
 	return (
 		<div>
@@ -112,6 +115,17 @@ const Projectitem = (project: ProjectType) => {
 						<p className="text-sm">
 							<span className="mr-1.5 text-gray-600">
 								{formattedDate}
+							</span>
+						</p>
+					</div>
+
+					<div>
+						<h2 className="text-sm text-black font-[500]">
+							Due By
+						</h2>
+						<p className="text-sm">
+							<span className="mr-1.5 text-gray-600">
+								{dueDate}
 							</span>
 						</p>
 					</div>

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
 	Dialog,
 	DialogContent,
@@ -34,6 +34,7 @@ import { createTaskPSchemaType } from "./add-task-modal";
 import { useEditTaskProject } from "../../tasks/lib/mutation";
 import { useGetProjectsMembers } from "../lib/queries";
 import ReactSelect from "react-select";
+import { toDateInputValue } from "@/lib/utils";
 
 interface EditTaskModalProps {
 	isOpen: boolean;
@@ -71,7 +72,7 @@ export function EditTaskModal({
 					onSuccess: () => {
 						onClose();
 					},
-				}
+				},
 			);
 		}
 	};
@@ -81,11 +82,14 @@ export function EditTaskModal({
 		label: string;
 	};
 
-	const taskMembers: Member[] =
-		task.assignees?.map((m) => ({
-			id: m.user.id,
-			name: m.user.name,
-		})) ?? [];
+	const taskMembers: Member[] = useMemo(
+		() =>
+			task.assignees?.map((m) => ({
+				id: m.user.id,
+				name: m.user.name,
+			})) ?? [],
+		[task.assignees],
+	);
 
 	const options: Option[] =
 		members.data?.map((u: { user: { id: string; name: string } }) => ({
@@ -112,13 +116,12 @@ export function EditTaskModal({
 						value: m.id,
 						label: m.name,
 					})),
-				].map((o) => [o.value, o])
-			).values()
+				].map((o) => [o.value, o]),
+			).values(),
 		);
 	};
 
 	const mergedOptions = mergeToOptions(options, taskMembers);
-
 
 	useEffect(() => {
 		const assignedMembers = taskMembers.map((m) => m.id);
@@ -129,9 +132,11 @@ export function EditTaskModal({
 			issueType: task.issueType,
 			priority: task.priority,
 			projectId: projectId,
+			dueDate: task.dueDate ? toDateInputValue(task.dueDate) : "",
 		});
-	}, [task, form, projectId]);
+	}, [task, form, projectId, taskMembers]);
 
+	const today = new Date().toISOString().split("T")[0];
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent>
@@ -230,14 +235,14 @@ export function EditTaskModal({
 												options={mergedOptions}
 												value={options?.filter((o) =>
 													field.value?.includes(
-														o.value
-													)
+														o.value,
+													),
 												)}
 												onChange={(selected) =>
 													field.onChange(
 														selected.map(
-															(s) => s.value
-														)
+															(s) => s.value,
+														),
 													)
 												}
 											/>
@@ -282,6 +287,26 @@ export function EditTaskModal({
 							)}
 						/>
 
+						<FormField
+							control={form.control}
+							name="dueDate"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel> Due Date</FormLabel>
+									<FormControl>
+										<Input
+											type="date"
+											min={today}
+											className="border-slate-200 dark:border-slate-800"
+											{...field}
+											// className="border-slate-200 dark:border-slate-800 pl-10"
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
 						<div className="flex justify-end gap-4">
 							<Button
 								type="button"
@@ -317,4 +342,10 @@ export const createTaskSchema = z.object({
 	issueType: z.string().min(1, "issue type is required"),
 	priority: z.string().min(1, "priority is required"),
 	assigneeIds: z.array(z.string()),
+	dueDate: z
+		.string()
+		.min(1, "due date is required")
+		.refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
+			message: "Invalid date",
+		}),
 });

@@ -124,6 +124,7 @@ export default function TaskDetailPage({ taskId }: { taskId: string }) {
 										assignees={assignees}
 										priority={data.priority}
 										status={data.status}
+										dueDate={data.dueDate}
 									/>
 								</div>
 							</main>

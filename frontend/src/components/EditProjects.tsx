@@ -30,6 +30,7 @@ import { useEffect } from "react";
 import { Spinner } from "./ui/spinner";
 import { useGetUsers } from "@/app/(dashboard)/user-management/lib/queries";
 import ReactSelect from "react-select";
+import { toDateInputValue } from "@/lib/utils";
 
 export type editProjectType = z.infer<typeof EditProjectSchema>;
 
@@ -45,23 +46,29 @@ export default function EditProjectPage({ id }: { id: string }) {
 			key: "",
 			name: "",
 			members: [""],
+			dueDate: "",
 		},
 	});
 
 	useEffect(() => {
 		const assignedMembers = query.data?.data?.members?.map((m) => m.userId);
+
 		if (query.data?.data) {
 			form.reset({
 				description: query.data.data.description,
 				key: query.data.data.key,
 				name: query.data.data.name,
 				members: Array.isArray(assignedMembers) ? assignedMembers : [],
+				dueDate: query.data.data.dueDate
+					? toDateInputValue(query.data.data.dueDate)
+					: "",
 			});
 		}
 	}, [query.data, form]);
 
 	const onSubmit = (data: editProjectType) => {
-		mutate({ id, project: data });
+		const dueDate = new Date(data.dueDate).toISOString();
+		mutate({ id, project: { ...data, dueDate } });
 	};
 
 	type MembersOption = {
@@ -72,6 +79,8 @@ export default function EditProjectPage({ id }: { id: string }) {
 		value: u.id,
 		label: u.name,
 	}));
+
+	const today = new Date().toISOString().split("T")[0];
 
 	return (
 		<div className="flex flex-1 flex-col w-full h-full">
@@ -97,7 +106,7 @@ export default function EditProjectPage({ id }: { id: string }) {
 									<Form {...form}>
 										<form
 											onSubmit={form.handleSubmit(
-												onSubmit
+												onSubmit,
 											)}
 											className="space-y-6 max-w-6xl mx-auto"
 										>
@@ -178,22 +187,22 @@ export default function EditProjectPage({ id }: { id: string }) {
 																			}
 																			value={options?.filter(
 																				(
-																					o
+																					o,
 																				) =>
 																					field.value?.includes(
-																						o.value
-																					)
+																						o.value,
+																					),
 																			)}
 																			onChange={(
-																				selected
+																				selected,
 																			) =>
 																				field.onChange(
 																					selected.map(
 																						(
-																							s
+																							s,
 																						) =>
-																							s.value
-																					)
+																							s.value,
+																					),
 																				)
 																			}
 																		/>
@@ -223,6 +232,30 @@ export default function EditProjectPage({ id }: { id: string }) {
 																	/>
 																</FormControl>
 
+																<FormMessage />
+															</FormItem>
+														)}
+													/>
+													<FormField
+														control={form.control}
+														name="dueDate"
+														render={({ field }) => (
+															<FormItem>
+																<FormLabel>
+																	{" "}
+																	Due Date
+																</FormLabel>
+																<FormControl>
+																	<Input
+																		type="date"
+																		min={
+																			today
+																		}
+																		className="border-slate-200 dark:border-slate-800"
+																		{...field}
+																		// className="border-slate-200 dark:border-slate-800 pl-10"
+																	/>
+																</FormControl>
 																<FormMessage />
 															</FormItem>
 														)}
@@ -259,4 +292,10 @@ export const EditProjectSchema = z.object({
 	key: z.string().min(1, "project key is required"),
 	description: z.string().min(1, "project description is required"),
 	members: z.array(z.string()),
+	dueDate: z
+		.string()
+		.min(1, "due date is required")
+		.refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
+			message: "Invalid date",
+		}),
 });

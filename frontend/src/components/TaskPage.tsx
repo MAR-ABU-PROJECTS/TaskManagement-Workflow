@@ -2,7 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QueryStateHandler } from "./QueryStateHandler";
 import { useGetPersonalTasks } from "@/app/(dashboard)/tasks/lib/queries";
 import PerosnalTask from "@/app/(dashboard)/tasks/components/perosnalTask";
@@ -11,7 +10,6 @@ import { useSession } from "@/app/providers/session-provider";
 
 export default function TasksPage() {
 	const query = useGetPersonalTasks();
-	const user = useSession();
 	return (
 		<div className="flex flex-1 flex-col px-4 p-6">
 			{/* Header */}
@@ -45,13 +43,8 @@ export default function TasksPage() {
 
 				<div className="mx-auto space-y-6 mt-3">
 					{/* Filter Tabs */}
-					<Tabs defaultValue="all" className="w-full">
-						<TabsList>
-							<TabsTrigger value="all">All Tasks</TabsTrigger>
-							<TabsTrigger value="my-tasks">My Tasks</TabsTrigger>
-						</TabsList>
-
-						<TabsContent value="all" className="mt-5">
+					<div defaultValue="all" className="w-full">
+						<div className="mt-5">
 							<QueryStateHandler
 								query={query}
 								emptyMessage="No Tasks."
@@ -68,35 +61,8 @@ export default function TasksPage() {
 									);
 								}}
 							/>
-						</TabsContent>
-
-						<TabsContent value="my-tasks" className="mt-5">
-							<QueryStateHandler
-								query={query}
-								emptyMessage="No Tasks."
-								getItems={(res) => res}
-								render={(res) => {
-									const data: BoardTask[] = res.data ?? [];
-
-									const filtered = data.filter((task) =>
-										task.assignees?.some(
-											(assignee) =>
-												assignee.user.id ===
-												user.user?.id
-										)
-									);
-
-									return (
-										<div className="space-y-4">
-											{filtered.map((p, i) => (
-												<PerosnalTask key={i} {...p} />
-											))}
-										</div>
-									);
-								}}
-							/>
-						</TabsContent>
-					</Tabs>
+						</div>
+					</div>
 				</div>
 			</main>
 		</div>

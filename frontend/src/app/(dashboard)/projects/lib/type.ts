@@ -17,6 +17,7 @@ export interface ProjectType {
 		email: string;
 		role: string;
 	};
+	dueDate: string | null;
 	isPublic: boolean;
 	workflowType: WorkflowType;
 	workflowSchemeId: string | null;

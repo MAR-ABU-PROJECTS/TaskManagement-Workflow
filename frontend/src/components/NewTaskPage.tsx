@@ -51,11 +51,15 @@ export default function NewTaskPage() {
 
 	const taskMutation = useCreatePersonalTask();
 	const onSubmit = (data: createPTaskSchemaType) => {
-		taskMutation.mutate(data, {
-			onSuccess: () => {
-				form.reset();
+		const dueDate = new Date(data.dueDate).toISOString();
+		taskMutation.mutate(
+			{ ...data, dueDate },
+			{
+				onSuccess: () => {
+					form.reset();
+				},
 			},
-		});
+		);
 	};
 
 	const today = new Date().toISOString().split("T")[0];
@@ -268,7 +272,7 @@ export default function NewTaskPage() {
 																field.onChange(
 																	e.target
 																		.valueAsNumber ||
-																		0
+																		0,
 																)
 															}
 															onBlur={
@@ -317,11 +321,8 @@ const schema = createTaskSchema
 		dueDate: z
 			.string()
 			.min(1, "due date is required")
-			.refine((val) => !Number.isNaN(Date.parse(val)), {
+			.refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
 				message: "Invalid date",
-			})
-			.transform((val) => {
-				return new Date(`${val}T00:00:00`).toISOString();
 			}),
 		estimatedHours: z.number().min(0.1, "input estimated hours"),
 	});

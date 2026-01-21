@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, Flag, User } from "lucide-react";
+import { Calendar, CheckCircle2, Flag, User } from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -9,17 +9,20 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-// import { Button } from "@/components/ui/button";
 import ReactSelect from "react-select";
+import { format } from "date-fns";
+import { Input } from "@/components/ui/input";
 
 const TaskDetails = ({
 	assignees,
 	priority,
 	status,
+	dueDate,
 }: {
 	assignees: { name: string; id: string }[];
 	priority: string;
 	status: string;
+	dueDate: string | null;
 }) => {
 	type MembersOption = {
 		value: string;
@@ -31,6 +34,7 @@ const TaskDetails = ({
 		label: u?.name,
 	}));
 
+	const formattedDate = dueDate ? format(dueDate, "yyyy-MM-dd") : null;
 	return (
 		<div className="space-y-6">
 			<Card>
@@ -96,6 +100,21 @@ const TaskDetails = ({
 								<SelectItem value="done">Done</SelectItem>
 							</SelectContent>
 						</Select>
+					</div>
+
+					<div className="space-y-2">
+						<Label className="flex items-center gap-2 text-sm font-medium">
+							<Calendar className="h-4 w-4" />
+							Due Date
+						</Label>
+
+						<Input
+							type="date"
+							defaultValue={
+								formattedDate ? formattedDate : "2026"
+							}
+							disabled
+						/>
 					</div>
 				</CardContent>
 			</Card>

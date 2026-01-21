@@ -44,11 +44,13 @@ export default function NewProjectPage() {
 			members: [""],
 			workflowType: "AGILE",
 			workflowSchemeId: "",
+			dueDate: "",
 		},
 	});
 
 	const onSubmit = (data: createProjectType) => {
-		mutate(data, {
+		const dueDate = new Date(data.dueDate).toISOString();
+		mutate({...data, dueDate}, {
 			onSuccess: () => {
 				form.reset();
 			},
@@ -62,6 +64,7 @@ export default function NewProjectPage() {
 		value: u.id,
 		label: u.name,
 	}));
+	const today = new Date().toISOString().split("T")[0];
 
 	return (
 		<div className="flex flex-1 flex-col w-full h-full">
@@ -158,17 +161,17 @@ export default function NewProjectPage() {
 															value={options?.filter(
 																(o) =>
 																	field.value?.includes(
-																		o.value
-																	)
+																		o.value,
+																	),
 															)}
 															onChange={(
-																selected
+																selected,
 															) =>
 																field.onChange(
 																	selected.map(
 																		(s) =>
-																			s.value
-																	)
+																			s.value,
+																	),
 																)
 															}
 														/>
@@ -197,6 +200,26 @@ export default function NewProjectPage() {
 													/>
 												</FormControl>
 
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+
+									<FormField
+										control={form.control}
+										name="dueDate"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel> Due Date</FormLabel>
+												<FormControl>
+													<Input
+														type="date"
+														min={today}
+														className="border-slate-200 dark:border-slate-800"
+														{...field}
+														// className="border-slate-200 dark:border-slate-800 pl-10"
+													/>
+												</FormControl>
 												<FormMessage />
 											</FormItem>
 										)}
@@ -232,4 +255,10 @@ export const CreateProjectSchema = z.object({
 	workflowType: z.enum(["AGILE", "KANBAN", "SCRUM", "WATERFALL"]),
 	workflowSchemeId: z.string().optional(),
 	members: z.array(z.string()),
+	dueDate: z
+		.string()
+		.min(1, "due date is required")
+		.refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
+			message: "Invalid date",
+		}),
 });

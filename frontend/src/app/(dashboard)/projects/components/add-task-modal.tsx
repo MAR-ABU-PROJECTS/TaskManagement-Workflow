@@ -69,12 +69,14 @@ export function AddTaskModal({
 		(u: { user: { name: string; id: string } }) => ({
 			value: u?.user?.id,
 			label: u?.user?.name,
-		})
+		}),
 	);
 
+	const today = new Date().toISOString().split("T")[0];
 	const taskMutation = useCreateTaskProject();
 	const onSubmit = (data: createTaskPSchemaType) => {
-		taskMutation.mutate(data, {
+			const dueDate = new Date(data.dueDate).toISOString();
+		taskMutation.mutate({...data, dueDate}, {
 			onSuccess: () => {
 				form.reset();
 				onClose();
@@ -190,14 +192,14 @@ export function AddTaskModal({
 												options={options}
 												value={options?.filter((o) =>
 													field.value?.includes(
-														o.value
-													)
+														o.value,
+													),
 												)}
 												onChange={(selected) =>
 													field.onChange(
 														selected.map(
-															(s) => s.value
-														)
+															(s) => s.value,
+														),
 													)
 												}
 											/>
@@ -242,6 +244,26 @@ export function AddTaskModal({
 							)}
 						/>
 
+						<FormField
+							control={form.control}
+							name="dueDate"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel> Due Date</FormLabel>
+									<FormControl>
+										<Input
+											type="date"
+											min={today}
+											className="border-slate-200 dark:border-slate-800"
+											{...field}
+											// className="border-slate-200 dark:border-slate-800 pl-10"
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
 						<div className="flex justify-end gap-4">
 							<Button
 								type="button"
@@ -277,5 +299,10 @@ export const createTaskSchema = z.object({
 	issueType: z.string().min(1, "issue type is required"),
 	priority: z.string().min(1, "priority is required"),
 	assigneeIds: z.array(z.string()),
+	dueDate: z
+		.string()
+		.min(1, "due date is required")
+		.refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
+			message: "Invalid date",
+		}),
 });
-

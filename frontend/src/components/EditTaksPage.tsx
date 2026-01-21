@@ -36,6 +36,7 @@ import { Spinner } from "./ui/spinner";
 import z from "zod";
 import { useEffect } from "react";
 import { useEditPersonalTask } from "@/app/(dashboard)/tasks/lib/mutation";
+import { toDateInputValue } from "@/lib/utils";
 
 export default function EditTaskPage({ id }: { id: string }) {
 	const query = useGetTaskDetails(id);
@@ -61,7 +62,9 @@ export default function EditTaskPage({ id }: { id: string }) {
 				issueType: query.data.data.issueType,
 				description: query.data.data.description,
 				priority: query.data.data.priority,
-				dueDate: query.data.data.dueDate ?? "",
+				dueDate: query.data?.data?.dueDate
+					? toDateInputValue(query.data?.data?.dueDate)
+					: "",
 				estimatedHours: 0,
 			});
 		}
@@ -70,13 +73,14 @@ export default function EditTaskPage({ id }: { id: string }) {
 	const taskMutation = useEditPersonalTask();
 
 	const onSubmit = (data: createPTaskSchemaType) => {
+		const dueDate = new Date(data.dueDate).toISOString();
 		taskMutation.mutate(
-			{ task: data, taskId: id },
+			{ task: { ...data, dueDate }, taskId: id },
 			{
 				onSuccess: () => {
 					form.reset();
 				},
-			}
+			},
 		);
 	};
 
@@ -288,7 +292,7 @@ export default function EditTaskPage({ id }: { id: string }) {
 															field.onChange(
 																e.target
 																	.valueAsNumber ||
-																	0
+																	0,
 															)
 														}
 														onBlur={field.onBlur}
@@ -334,11 +338,8 @@ const schema = createTaskSchema
 		dueDate: z
 			.string()
 			.min(1, "due date is required")
-			.refine((val) => !Number.isNaN(Date.parse(val)), {
+			.refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
 				message: "Invalid date",
-			})
-			.transform((val) => {
-				return new Date(`${val}T00:00:00`).toISOString();
 			}),
 		estimatedHours: z.number().min(0.1, "input estimated hours"),
 	});
