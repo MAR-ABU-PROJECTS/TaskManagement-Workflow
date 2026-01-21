@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import crypto from "crypto";
 
 // M.A.R Abu Projects Constants
 const APP_CONSTANTS = {
@@ -106,9 +107,26 @@ interface ProjectDeadlineReminderData {
   daysRemaining: number;
 }
 
+interface ProjectMemberAddedEmailData {
+  userName: string;
+  projectName: string;
+  projectId: string;
+  addedBy: string;
+}
+
+interface QueuedEmail {
+  id: string;
+  options: EmailOptions;
+  attempts: number;
+  nextAttemptAt: Date;
+  lastError?: string;
+}
+
 export class EmailService {
   private resend: Resend | null;
   private isConfigured: boolean;
+  private pendingEmails: QueuedEmail[] = [];
+  private maxRetryAttempts: number;
 
   constructor() {
     const apiKey = process.env.RESEND_API_KEY;
@@ -123,6 +141,9 @@ export class EmailService {
       this.resend = new Resend(apiKey);
       this.isConfigured = true;
     }
+
+    const maxRetries = Number(process.env.EMAIL_MAX_RETRIES || "5");
+    this.maxRetryAttempts = Number.isNaN(maxRetries) ? 5 : maxRetries;
   }
 
   /**
@@ -159,6 +180,87 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
   /**
    * Send email using Resend
    */
+  private async deliverEmail(options: EmailOptions): Promise<void> {
+    if (!this.isConfigured || !this.resend) {
+      throw new Error("Email service not configured");
+    }
+
+    const from = process.env.EMAIL_FROM || APP_CONSTANTS.COMPANY.EMAIL;
+
+    await this.resend.emails.send({
+      from,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+    });
+  }
+
+  private enqueueFailedEmail(options: EmailOptions, error: unknown) {
+    if (!this.isConfigured || !this.resend) {
+      return;
+    }
+
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown email error";
+    const entry: QueuedEmail = {
+      id: crypto.randomUUID(),
+      options,
+      attempts: 1,
+      nextAttemptAt: new Date(Date.now() + 30 * 1000),
+      lastError: errorMessage,
+    };
+
+    this.pendingEmails.push(entry);
+  }
+
+  async processEmailRetryQueue(): Promise<void> {
+    if (!this.isConfigured || !this.resend) {
+      return;
+    }
+
+    const now = new Date();
+    const dueEmails = this.pendingEmails.filter(
+      (entry) => entry.nextAttemptAt <= now
+    );
+
+    if (dueEmails.length === 0) {
+      return;
+    }
+
+    const stillPending: QueuedEmail[] = [];
+
+    for (const entry of this.pendingEmails) {
+      if (entry.nextAttemptAt > now) {
+        stillPending.push(entry);
+        continue;
+      }
+
+      try {
+        await this.deliverEmail(entry.options);
+        console.log(
+          `Email resend succeeded: ${entry.options.to} (${entry.options.subject})`
+        );
+      } catch (error) {
+        entry.attempts += 1;
+        entry.lastError =
+          error instanceof Error ? error.message : "Unknown email error";
+
+        if (entry.attempts >= this.maxRetryAttempts) {
+          console.error(
+            `Email resend failed after ${entry.attempts} attempts: ${entry.options.to} (${entry.options.subject})`
+          );
+          continue;
+        }
+
+        entry.nextAttemptAt = new Date(Date.now() + 30 * 1000);
+        stillPending.push(entry);
+      }
+    }
+
+    this.pendingEmails = stillPending;
+  }
+
   private async sendEmail(options: EmailOptions): Promise<void> {
     try {
       if (!this.isConfigured || !this.resend) {
@@ -168,19 +270,11 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
         return;
       }
 
-      const from = process.env.EMAIL_FROM || APP_CONSTANTS.COMPANY.EMAIL;
-
-      await this.resend.emails.send({
-        from,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-      });
-
+      await this.deliverEmail(options);
       console.log(`Email sent to ${options.to}: ${options.subject}`);
     } catch (error) {
       console.error("Error sending email:", error);
+      this.enqueueFailedEmail(options, error);
     }
   }
 
@@ -683,6 +777,31 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
           <span>${data.daysRemaining}</span>
         </div>
       </div>
+      <div style="text-align:center;">
+        <a href="${projectUrl}" class="button">View Project</a>
+      </div>
+    `;
+
+    const html = this.getBaseTemplate(content);
+    await this.sendEmail({ to, subject, html });
+  }
+
+  async sendProjectMemberAddedEmail(
+    to: string,
+    data: ProjectMemberAddedEmailData,
+  ): Promise<void> {
+    const subject = `Added to project: ${data.projectName}`;
+    const projectUrl = `${
+      process.env.FRONTEND_URL || "http://localhost:3000"
+    }/projects/${data.projectId}`;
+
+    const content = `
+      <h2>🚀 You were added to a project</h2>
+      <p>Hi ${data.userName},</p>
+      <p><strong>${data.addedBy}</strong> added you to the project <strong>${
+        data.projectName
+      }</strong>.</p>
+      
       <div style="text-align:center;">
         <a href="${projectUrl}" class="button">View Project</a>
       </div>
