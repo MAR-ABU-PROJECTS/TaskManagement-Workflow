@@ -23,7 +23,10 @@ const router = express.Router();
 // Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 10, // Max number of files per request
+  },
 });
 
 // All routes require authentication
@@ -1076,10 +1079,16 @@ router.get("/:taskId/attachments", authenticate, (req, res) =>
  *             required:
  *               - file
  *             properties:
+ *               files:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Files to upload (max 10 files, 10MB each)
  *               file:
  *                 type: string
  *                 format: binary
- *                 description: File to upload (max 10MB)
+ *                 description: Single file to upload (legacy)
  *               description:
  *                 type: string
  *                 description: Optional file description
@@ -1111,7 +1120,10 @@ router.get("/:taskId/attachments", authenticate, (req, res) =>
 router.post(
   "/:taskId/attachments",
   authenticate,
-  upload.single("file"),
+  upload.fields([
+    { name: "files", maxCount: 10 },
+    { name: "file", maxCount: 1 },
+  ]),
   (req, res) => TaskAttachmentController.uploadAttachment(req, res),
 );
 
