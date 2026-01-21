@@ -4,6 +4,7 @@ import { TaskStatus, TaskPriority, UserRole } from "../types/enums";
 import ActivityLogService from "../services/ActivityLogService";
 import NotificationService from "../services/NotificationService";
 import TaskService from "../services/TaskService";
+import { normalizeTaskStatus } from "../utils/taskStatus";
 
 class BulkOperationsController {
   /**
@@ -98,8 +99,8 @@ class BulkOperationsController {
         return res.status(400).json({ message: "Status is required" });
       }
 
-      // Validate status
-      if (!Object.values(TaskStatus).includes(status as TaskStatus)) {
+      const normalizedStatus = normalizeTaskStatus(status);
+      if (!normalizedStatus) {
         return res.status(400).json({
           message: "Invalid status",
           validStatuses: Object.values(TaskStatus),
@@ -109,7 +110,7 @@ class BulkOperationsController {
       // Use workflow-validated bulk transition
       const result = await TaskService.bulkTransitionTasks(
         taskIds,
-        status as TaskStatus,
+        normalizedStatus,
         userId,
         req.user?.role as UserRole
       );
