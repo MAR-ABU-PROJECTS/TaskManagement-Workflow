@@ -51,25 +51,8 @@ export const addTeamMemberSchema = z.object({
 export const createProjectSchema = z.object({
   teamId: z.string().uuid("Invalid team ID"),
   name: z.string().min(1, "Project name is required").max(100),
-  key: z
-    .string()
-    .min(2, "Project key must be at least 2 characters")
-    .max(10, "Project key must be at most 10 characters")
-    .regex(
-      /^[A-Z0-9]+$/,
-      "Project key must contain only uppercase letters and numbers"
-    )
-    .optional(),
+  key: z.string().trim().min(1, "Project key cannot be empty").optional(),
   description: z.string().max(1000).optional(),
-  workflowType: z.enum(["BASIC", "AGILE", "BUG_TRACKING", "CUSTOM"]).optional(),
-}).superRefine((data, ctx) => {
-  if (data.workflowType === "AGILE" && !data.key) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Project key is required for AGILE workflow",
-      path: ["key"],
-    });
-  }
 });
 
 export const updateProjectSchema = z.object({
