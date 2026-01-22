@@ -968,6 +968,7 @@ export class TaskService {
         where: { id: userId },
         select: { name: true },
       });
+      const changedAt = new Date().toISOString();
 
       // Email all assignees (except the person who made the change)
       for (const assignment of updatedTask.assignees) {
@@ -980,6 +981,7 @@ export class TaskService {
               oldStatus: task.status,
               newStatus: newStatus,
               changedBy: changedByUser?.name || "Unknown",
+              changedAt,
             })
             .catch((err) =>
               console.error("Failed to send status change email:", err),
@@ -1003,6 +1005,7 @@ export class TaskService {
             oldStatus: task.status,
             newStatus: newStatus,
             changedBy: changedByUser?.name || "Unknown",
+            changedAt,
           })
           .catch((err) =>
             console.error("Failed to send status change email:", err),
@@ -1139,6 +1142,7 @@ export class TaskService {
     });
 
     // AUTOMATION: Notify each assignee and send emails
+    const assignedAt = new Date().toISOString();
     for (const assignee of assignees) {
       await NotificationService.notifyTaskAssigned(id, assignee.id, userId);
 
@@ -1151,6 +1155,7 @@ export class TaskService {
           assignedBy: updated.creator?.name || "Unknown",
           priority: updated.priority,
           dueDate: updated.dueDate?.toISOString(),
+          assignedAt,
         })
         .catch((err) =>
           console.error("Failed to send task assignment email:", err),
@@ -1772,6 +1777,7 @@ export class TaskService {
       });
     }
 
+    const changedAt = new Date().toISOString();
     for (const [recipientId, recipient] of recipients) {
       if (recipientId === userId) continue;
       emailService
@@ -1782,6 +1788,7 @@ export class TaskService {
           oldStatus: task.status,
           newStatus,
           changedBy: changedByUser?.name || "Unknown",
+          changedAt,
         })
         .catch((err) =>
           console.error("Failed to send status change email:", err),

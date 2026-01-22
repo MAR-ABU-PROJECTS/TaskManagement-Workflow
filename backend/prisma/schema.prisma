@@ -107,6 +107,13 @@ enum NotificationType {
   REJECTED
 }
 
+enum EmailJobStatus {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+}
+
 enum DependencyType {
   BLOCKS
   IS_BLOCKED_BY
@@ -677,4 +684,27 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model EmailJob {
+  id                String          @id @default(uuid())
+  to                String
+  subject           String
+  html              String
+  text              String?
+  template          String
+  status            EmailJobStatus  @default(QUEUED)
+  attempts          Int             @default(0)
+  maxAttempts       Int             @default(5) @map("max_attempts")
+  nextAttemptAt     DateTime        @default(now()) @map("next_attempt_at")
+  lockedAt          DateTime?       @map("locked_at")
+  lockedBy          String?         @map("locked_by")
+  lastError         String?         @map("last_error")
+  providerMessageId String?         @map("provider_message_id")
+  idempotencyKey    String          @unique @map("idempotency_key")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  @@index([status, nextAttemptAt])
+  @@map("email_jobs")
 }

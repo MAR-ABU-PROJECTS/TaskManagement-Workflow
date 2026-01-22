@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import crypto from "crypto";
+import prisma from "../db/prisma";
 
 // M.A.R Abu Projects Constants
 const APP_CONSTANTS = {
@@ -27,6 +28,15 @@ interface EmailOptions {
   text?: string;
 }
 
+export interface EmailSendJob {
+  id: string;
+  to: string;
+  subject: string;
+  html: string;
+  text?: string | null;
+  idempotencyKey: string;
+}
+
 interface TaskAssignmentEmailData {
   assigneeName: string;
   taskTitle: string;
@@ -35,6 +45,7 @@ interface TaskAssignmentEmailData {
   assignedBy: string;
   priority: string;
   dueDate?: string;
+  assignedAt?: string;
 }
 
 interface StatusChangeEmailData {
@@ -44,6 +55,7 @@ interface StatusChangeEmailData {
   oldStatus: string;
   newStatus: string;
   changedBy: string;
+  changedAt?: string;
 }
 
 interface CommentMentionEmailData {
@@ -52,9 +64,11 @@ interface CommentMentionEmailData {
   taskTitle: string;
   taskId: string;
   commentText: string;
+  commentId?: string;
 }
 
 interface SprintEmailData {
+  sprintId: string;
   teamMembers: string[];
   sprintName: string;
   sprintGoal?: string;
@@ -67,6 +81,7 @@ interface WelcomeEmailData {
   userName: string;
   userEmail: string;
   role: string;
+  userId?: string;
 }
 
 interface LoginNotificationData {
@@ -81,6 +96,7 @@ interface PromotionEmailData {
   oldRole: string;
   newRole: string;
   promotedBy: string;
+  promotedAt?: string;
 }
 
 interface DemotionEmailData {
@@ -89,6 +105,7 @@ interface DemotionEmailData {
   newRole: string;
   demotedBy: string;
   reason?: string;
+  demotedAt?: string;
 }
 
 interface PasswordResetEmailData {
@@ -98,6 +115,7 @@ interface PasswordResetEmailData {
 
 interface PasswordChangedEmailData {
   userName: string;
+  changeId?: string;
 }
 
 interface ProjectDeadlineReminderData {
@@ -112,20 +130,12 @@ interface ProjectMemberAddedEmailData {
   projectName: string;
   projectId: string;
   addedBy: string;
-}
-
-interface QueuedEmail {
-  id: string;
-  options: EmailOptions;
-  attempts: number;
-  nextAttemptAt: Date;
-  lastError?: string;
+  addedAt?: string;
 }
 
 export class EmailService {
   private resend: Resend | null;
   private isConfigured: boolean;
-  private pendingEmails: QueuedEmail[] = [];
   private maxRetryAttempts: number;
 
   constructor() {
@@ -180,102 +190,85 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
   /**
    * Send email using Resend
    */
-  private async deliverEmail(options: EmailOptions): Promise<void> {
+  private async deliverEmail(
+    options: EmailOptions,
+    idempotencyKey?: string,
+  ): Promise<string | null> {
     if (!this.isConfigured || !this.resend) {
       throw new Error("Email service not configured");
     }
 
     const from = process.env.EMAIL_FROM || APP_CONSTANTS.COMPANY.EMAIL;
 
-    await this.resend.emails.send({
-      from,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-      text: options.text,
+    const response = await this.resend.emails.send(
+      {
+        from,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      },
+      idempotencyKey ? { idempotencyKey } : undefined,
+    );
+
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+
+    return response.data?.id ?? null;
+  }
+
+  private buildDedupeKey(parts: Array<string | undefined | null>): string {
+    return parts.filter((part) => Boolean(part)).join("|");
+  }
+
+  private hashKey(value: string): string {
+    return crypto.createHash("sha256").update(value).digest("hex");
+  }
+
+  private async queueEmail(params: {
+    template: string;
+    dedupeKey: string;
+    options: EmailOptions;
+  }): Promise<void> {
+    if (!this.isConfigured || !this.resend) {
+      console.log(
+        `[EMAIL NOT QUEUED - NOT CONFIGURED] To: ${params.options.to}, Subject: ${params.options.subject}`,
+      );
+      return;
+    }
+
+    const idempotencyKey = this.hashKey(params.dedupeKey);
+
+    await prisma.emailJob.createMany({
+      data: [
+        {
+          to: params.options.to,
+          subject: params.options.subject,
+          html: params.options.html,
+          text: params.options.text || null,
+          template: params.template,
+          status: "QUEUED",
+          attempts: 0,
+          maxAttempts: this.maxRetryAttempts,
+          nextAttemptAt: new Date(),
+          idempotencyKey,
+        },
+      ],
+      skipDuplicates: true,
     });
   }
 
-  private enqueueFailedEmail(options: EmailOptions, error: unknown) {
-    if (!this.isConfigured || !this.resend) {
-      return;
-    }
-
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown email error";
-    const entry: QueuedEmail = {
-      id: crypto.randomUUID(),
-      options,
-      attempts: 1,
-      nextAttemptAt: new Date(Date.now() + 30 * 1000),
-      lastError: errorMessage,
-    };
-
-    this.pendingEmails.push(entry);
-  }
-
-  async processEmailRetryQueue(): Promise<void> {
-    if (!this.isConfigured || !this.resend) {
-      return;
-    }
-
-    const now = new Date();
-    const dueEmails = this.pendingEmails.filter(
-      (entry) => entry.nextAttemptAt <= now
+  async sendQueuedEmail(job: EmailSendJob): Promise<string | null> {
+    return this.deliverEmail(
+      {
+        to: job.to,
+        subject: job.subject,
+        html: job.html,
+        text: job.text || undefined,
+      },
+      job.idempotencyKey,
     );
-
-    if (dueEmails.length === 0) {
-      return;
-    }
-
-    const stillPending: QueuedEmail[] = [];
-
-    for (const entry of this.pendingEmails) {
-      if (entry.nextAttemptAt > now) {
-        stillPending.push(entry);
-        continue;
-      }
-
-      try {
-        await this.deliverEmail(entry.options);
-        console.log(
-          `Email resend succeeded: ${entry.options.to} (${entry.options.subject})`
-        );
-      } catch (error) {
-        entry.attempts += 1;
-        entry.lastError =
-          error instanceof Error ? error.message : "Unknown email error";
-
-        if (entry.attempts >= this.maxRetryAttempts) {
-          console.error(
-            `Email resend failed after ${entry.attempts} attempts: ${entry.options.to} (${entry.options.subject})`
-          );
-          continue;
-        }
-
-        entry.nextAttemptAt = new Date(Date.now() + 30 * 1000);
-        stillPending.push(entry);
-      }
-    }
-
-    this.pendingEmails = stillPending;
-  }
-
-  private async sendEmail(options: EmailOptions): Promise<void> {
-    try {
-      if (!this.isConfigured || !this.resend) {
-        console.log(
-          `[EMAIL NOT SENT - NOT CONFIGURED] To: ${options.to}, Subject: ${options.subject}`,
-        );
-        return;
-      }
-
-      await this.deliverEmail(options);
-      console.log(`Email sent to ${options.to}: ${options.subject}`);
-    } catch (error) {
-      console.error("Error sending email:", error);
-      this.enqueueFailedEmail(options, error);
-    }
   }
 
   /**
@@ -316,7 +309,12 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail({ to, subject, html });
+    const dedupeKey = this.buildDedupeKey(["welcome", data.userId, to]);
+    await this.queueEmail({
+      template: "welcome",
+      dedupeKey,
+      options: { to, subject, html },
+    });
   }
 
   /**
@@ -362,7 +360,16 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail({ to, subject, html });
+    const dedupeKey = this.buildDedupeKey([
+      "login-notification",
+      to,
+      data.loginTime,
+    ]);
+    await this.queueEmail({
+      template: "login-notification",
+      dedupeKey,
+      options: { to, subject, html },
+    });
   }
 
   /**
@@ -406,7 +413,18 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail({ to, subject, html });
+    const dedupeKey = this.buildDedupeKey([
+      "task-assignment",
+      to,
+      data.taskId,
+      data.assignedAt,
+      data.assignedBy,
+    ]);
+    await this.queueEmail({
+      template: "task-assignment",
+      dedupeKey,
+      options: { to, subject, html },
+    });
   }
 
   /**
@@ -439,7 +457,19 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail({ to, subject, html });
+    const dedupeKey = this.buildDedupeKey([
+      "status-change",
+      to,
+      data.taskId,
+      data.oldStatus,
+      data.newStatus,
+      data.changedAt,
+    ]);
+    await this.queueEmail({
+      template: "status-change",
+      dedupeKey,
+      options: { to, subject, html },
+    });
   }
 
   /**
@@ -454,6 +484,7 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
       taskId: string;
       commentText: string;
       projectName?: string;
+      commentId?: string;
     },
   ): Promise<void> {
     const subject = `New Comment on: ${data.taskTitle}`;
@@ -481,7 +512,17 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail({ to, subject, html });
+    const dedupeKey = this.buildDedupeKey([
+      "comment-notification",
+      to,
+      data.taskId,
+      data.commentId,
+    ]);
+    await this.queueEmail({
+      template: "comment-notification",
+      dedupeKey,
+      options: { to, subject, html },
+    });
   }
 
   /**
@@ -512,7 +553,17 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail({ to, subject, html });
+    const dedupeKey = this.buildDedupeKey([
+      "mention",
+      to,
+      data.taskId,
+      data.commentId,
+    ]);
+    await this.queueEmail({
+      template: "mention",
+      dedupeKey,
+      options: { to, subject, html },
+    });
   }
 
   /**
@@ -558,7 +609,16 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
 
     // Send to all team members
     for (const email of to) {
-      await this.sendEmail({ to: email, subject, html });
+      const dedupeKey = this.buildDedupeKey([
+        "sprint-started",
+        email,
+        data.sprintId,
+      ]);
+      await this.queueEmail({
+        template: "sprint-started",
+        dedupeKey,
+        options: { to: email, subject, html },
+      });
     }
   }
 
@@ -602,7 +662,16 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     const html = this.getBaseTemplate(content);
 
     for (const email of to) {
-      await this.sendEmail({ to: email, subject, html });
+      const dedupeKey = this.buildDedupeKey([
+        "sprint-completed",
+        email,
+        data.sprintId,
+      ]);
+      await this.queueEmail({
+        template: "sprint-completed",
+        dedupeKey,
+        options: { to: email, subject, html },
+      });
     }
   }
 
@@ -649,7 +718,17 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail({ to, subject, html });
+    const dedupeKey = this.buildDedupeKey([
+      "promotion",
+      to,
+      data.newRole,
+      data.promotedAt,
+    ]);
+    await this.queueEmail({
+      template: "promotion",
+      dedupeKey,
+      options: { to, subject, html },
+    });
   }
 
   /**
@@ -687,7 +766,17 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail({ to, subject, html });
+    const dedupeKey = this.buildDedupeKey([
+      "demotion",
+      to,
+      data.newRole,
+      data.demotedAt,
+    ]);
+    await this.queueEmail({
+      template: "demotion",
+      dedupeKey,
+      options: { to, subject, html },
+    });
   }
 
   /**
@@ -722,7 +811,16 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail({ to, subject, html });
+    const dedupeKey = this.buildDedupeKey([
+      "password-reset",
+      to,
+      data.resetUrl,
+    ]);
+    await this.queueEmail({
+      template: "password-reset",
+      dedupeKey,
+      options: { to, subject, html },
+    });
   }
 
   /**
@@ -749,7 +847,16 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail({ to, subject, html });
+    const dedupeKey = this.buildDedupeKey([
+      "password-changed",
+      to,
+      data.changeId,
+    ]);
+    await this.queueEmail({
+      template: "password-changed",
+      dedupeKey,
+      options: { to, subject, html },
+    });
   }
 
   async sendProjectDeadlineReminderEmail(
@@ -783,7 +890,18 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail({ to, subject, html });
+    const dedupeKey = this.buildDedupeKey([
+      "project-deadline-reminder",
+      to,
+      data.projectId,
+      data.dueDate,
+      String(data.daysRemaining),
+    ]);
+    await this.queueEmail({
+      template: "project-deadline-reminder",
+      dedupeKey,
+      options: { to, subject, html },
+    });
   }
 
   async sendProjectMemberAddedEmail(
@@ -808,7 +926,17 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     `;
 
     const html = this.getBaseTemplate(content);
-    await this.sendEmail({ to, subject, html });
+    const dedupeKey = this.buildDedupeKey([
+      "project-member-added",
+      to,
+      data.projectId,
+      data.addedAt,
+    ]);
+    await this.queueEmail({
+      template: "project-member-added",
+      dedupeKey,
+      options: { to, subject, html },
+    });
   }
 
   /**
