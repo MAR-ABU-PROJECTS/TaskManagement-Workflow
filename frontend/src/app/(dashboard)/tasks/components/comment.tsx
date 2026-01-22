@@ -13,6 +13,7 @@ import {
 	AlertDialogHeader,
 } from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { renderComment } from "@/lib/rendercomment";
 
 const Comment = (comment: CommentType) => {
 	const { first, last } = getInitials(comment.user.name ?? "");
@@ -41,7 +42,7 @@ const Comment = (comment: CommentType) => {
 							</span>
 						</div>
 						<p className="text-sm text-muted-foreground">
-							{comment.message}
+							{renderComment(comment.message)}
 						</p>
 					</div>
 					<div className="shrink-0">
@@ -88,7 +89,7 @@ const Comment = (comment: CommentType) => {
 										onSuccess: () => {
 											setAlert(false);
 										},
-									}
+									},
 								)
 							}
 						>
