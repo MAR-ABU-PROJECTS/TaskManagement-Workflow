@@ -113,6 +113,7 @@ export class ProjectService {
         select: { id: true, name: true, email: true },
       });
 
+      const addedAt = new Date().toISOString();
       for (const member of members) {
         if (!member.email || member.id === creatorId) {
           continue;
@@ -123,6 +124,7 @@ export class ProjectService {
             projectName: project.name,
             projectId: project.id,
             addedBy: addedByName,
+            addedAt,
           })
           .catch((err) =>
             console.error("Failed to send project member email:", err),
@@ -365,6 +367,7 @@ export class ProjectService {
         select: { id: true, name: true, email: true },
       });
 
+      const addedAt = new Date().toISOString();
       for (const member of members) {
         if (!member.email || member.id === userId) {
           continue;
@@ -375,6 +378,7 @@ export class ProjectService {
             projectName: project.name,
             projectId: project.id,
             addedBy: addedByName,
+            addedAt,
           })
           .catch((err) =>
             console.error("Failed to send project member email:", err),

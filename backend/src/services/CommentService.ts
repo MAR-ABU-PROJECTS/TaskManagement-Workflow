@@ -100,6 +100,7 @@ export class CommentService {
             taskId: task.id,
             commentText: emailCommentText,
             projectName: task.project?.name,
+            commentId: comment.id,
           })
           .catch((err) =>
             console.error("Failed to send comment email to creator:", err),
@@ -121,6 +122,7 @@ export class CommentService {
             taskId: task.id,
             commentText: emailCommentText,
             projectName: task.project?.name,
+            commentId: comment.id,
           })
           .catch((err) =>
             console.error("Failed to send comment email to assignee:", err),
@@ -153,6 +155,7 @@ export class CommentService {
             taskTitle: task.title,
             taskId: task.id,
             commentText: emailCommentText,
+            commentId: comment.id,
           })
           .catch((err) => console.error("Failed to send mention email:", err));
       }

@@ -230,6 +230,7 @@ class SprintService {
 
       emailService
         .sendSprintStartedEmail(memberEmails, {
+          sprintId: updatedSprint.id,
           teamMembers: updatedSprint.project.members.map((m) => m.user.name),
           sprintName: updatedSprint.name,
           sprintGoal: updatedSprint.goal || undefined,
@@ -326,6 +327,7 @@ class SprintService {
 
       emailService
         .sendSprintCompletedEmail(memberEmails, {
+          sprintId: completedSprint.id,
           teamMembers: completedSprint.project.members.map((m) => m.user.name),
           sprintName: completedSprint.name,
           sprintGoal: completedSprint.goal || undefined,

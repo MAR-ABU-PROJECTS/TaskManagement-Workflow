@@ -133,6 +133,7 @@ router.post("/register", async (req, res) => {
         userName: newUser.name,
         userEmail: newUser.email,
         role: newUser.role,
+        userId: newUser.id,
       })
       .catch((err) => console.error("Failed to send welcome email:", err));
 
@@ -684,6 +685,7 @@ router.post("/reset-password", async (req, res) => {
     emailService
       .sendPasswordChangedEmail(resetToken.user.email, {
         userName: resetToken.user.name,
+        changeId: resetToken.id,
       })
       .catch((err) => console.error("Failed to send confirmation email:", err));
 

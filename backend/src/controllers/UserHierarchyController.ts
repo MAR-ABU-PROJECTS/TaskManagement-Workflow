@@ -100,6 +100,7 @@ class UserHierarchyController {
           oldRole: targetUser.role as string,
           newRole: newRole as string,
           promotedBy: updatedUser.promotedBy?.name || "Administrator",
+          promotedAt: updatedUser.promotedAt?.toISOString(),
         })
         .catch((error) =>
           console.error("Failed to send promotion email:", error)
@@ -207,6 +208,7 @@ class UserHierarchyController {
           oldRole: targetUser.role as string,
           newRole: newRole as string,
           demotedBy: updatedUser.promotedBy?.name || "Administrator",
+          demotedAt: updatedUser.promotedAt?.toISOString(),
         })
         .catch((error) =>
           console.error("Failed to send demotion email:", error)
