@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import ReactSelect from "react-select";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
+import { useDeadlineCountdown } from "@/hooks/useDeadlineCountdowon";
 
 const TaskDetails = ({
 	assignees,
@@ -35,6 +36,8 @@ const TaskDetails = ({
 	}));
 
 	const formattedDate = dueDate ? format(dueDate, "yyyy-MM-dd") : null;
+
+	const countdown = useDeadlineCountdown(dueDate ?? "");
 	return (
 		<div className="space-y-6">
 			<Card>
@@ -42,6 +45,19 @@ const TaskDetails = ({
 					<CardTitle>Task Details</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
+					{countdown && (
+						<p
+							className={`text-sm font-medium  ${
+								countdown === "Overdue"
+									? "text-destructive"
+									: "text-primary"
+							}`}
+						>
+							 {countdown === "Overdue"
+								? "Overdue"
+								: `Due in ${countdown}`}
+						</p>
+					)}
 					<div className="space-y-2">
 						<Label className="flex items-center gap-2 text-sm font-medium">
 							<User className="h-4 w-4" />

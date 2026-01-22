@@ -47,7 +47,7 @@ export default function ProjectBoardPage({ projectId }: { projectId: string }) {
 										const data = res.data as KanbanBoard;
 
 										const columns = Object.entries(
-											data.columns
+											data.columns,
 										).map(([key, column]) => ({
 											id: key,
 											title: column.name,

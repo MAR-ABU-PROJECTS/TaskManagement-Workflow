@@ -29,6 +29,7 @@ import { useDeleteProject } from "../lib/mutations";
 import { RoleBadge } from "@/components/ui/role-badge";
 import { Role } from "@/lib/rolespermissions";
 import { format } from "date-fns";
+import { useDeadlineCountdown } from "@/hooks/useDeadlineCountdowon";
 
 const Projectitem = (project: ProjectType) => {
 	const [confirm, setConfirm] = useState(false);
@@ -49,6 +50,7 @@ const Projectitem = (project: ProjectType) => {
 		? format(project.dueDate, "yyyy-MM-dd")
 		: "";
 
+	const countdown = useDeadlineCountdown(project.dueDate ?? "");
 	return (
 		<div>
 			<Card className="hover:border-primary/50 transition-colors">
@@ -121,15 +123,36 @@ const Projectitem = (project: ProjectType) => {
 						</div>
 
 						<div>
-							<h2 className="text-sm text-black font-[500]">
+							{/* <h2 className="text-sm text-black font-[500]">
 								Due By
 							</h2>
 							<p className="text-sm">
 								<span className="mr-1.5 text-gray-600">
 									{dueDate}
 								</span>
+							</p> */}
+
+							<h2 className="text-sm text-black font-[500]">
+								Due By
+							</h2>
+
+							<p className="text-sm text-gray-600">
+								{dueDate || "—"}
 							</p>
 						</div>
+						{countdown && (
+							<p
+								className={`text-sm font-medium mt-0.5 ${
+									countdown === "Overdue"
+										? "text-destructive"
+										: "text-primary"
+								}`}
+							>
+								{countdown === "Overdue"
+									? "Overdue"
+									: `Due in ${countdown}`}
+							</p>
+						)}
 					</div>
 				</CardContent>
 			</Card>

@@ -3,6 +3,7 @@ import KanbanColumn from "./kanban-column";
 import { KanbanBoardProps } from "../lib/type";
 
 const Kanbanboard = ({ columns, projectId }: KanbanBoardProps) => {
+	
 	return (
 		<div className="flex gap-4 pb-4 max-w-full w-full overflow-x-scroll scrollbar-hide">
 			{columns.map((column, i) => (
