@@ -40,8 +40,12 @@ const RETRY_MAX_MS = Number.isFinite(RETRY_MAX_MS_RAW) && RETRY_MAX_MS_RAW > 0
   : RETRY_MAX_SECONDS * 1000;
 const SEND_RPS = Number(process.env.EMAIL_SEND_RPS || "2");
 const MIN_SEND_INTERVAL_MS = SEND_RPS > 0 ? Math.floor(1000 / SEND_RPS) : 500;
-const HEALTHCHECK_ENABLED =
-  process.env.WORKER_HEALTHCHECK_ENABLED !== "false";
+const getHealthcheckEnabled = (override?: boolean) => {
+  if (typeof override === "boolean") {
+    return override;
+  }
+  return process.env.WORKER_HEALTHCHECK_ENABLED !== "false";
+};
 
 const sleep = (ms: number) =>
   new Promise((resolve) => {
@@ -111,8 +115,8 @@ const waitForSendSlot = async () => {
   }
 };
 
-const startHealthServer = () => {
-  if (!HEALTHCHECK_ENABLED) {
+const startHealthServer = (enabled: boolean) => {
+  if (!enabled) {
     return null;
   }
 
@@ -266,9 +270,13 @@ const processBatch = async (jobs: EmailJobRow[]) => {
   await Promise.all(workers);
 };
 
-export const startEmailWorker = async () => {
+export const startEmailWorker = async (options?: {
+  enableHealthcheck?: boolean;
+}) => {
   logger.info(`Email worker starting (id: ${WORKER_ID}).`);
-  const healthServer = startHealthServer();
+  const healthServer = startHealthServer(
+    getHealthcheckEnabled(options?.enableHealthcheck),
+  );
 
   let shuttingDown = false;
   const handleShutdown = (signal: NodeJS.Signals) => {

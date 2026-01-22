@@ -7,6 +7,7 @@ import { apiLimiter } from "./middleware/rateLimiter";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { setupSwagger } from "./config/swagger";
 import { startAutomationJobs } from "./jobs/automationJobs";
+import { startEmailWorker } from "./jobs/emailWorker";
 
 import routes from "./routes";
 
@@ -94,6 +95,15 @@ app.listen(config.PORT, () => {
   // Start automation jobs (deadline reminders, overdue labeling)
   startAutomationJobs();
   logger.info(`Automation jobs started`);
+
+  // Start email worker inside the web process
+  startEmailWorker({ enableHealthcheck: false }).catch((error) => {
+    logger.error(
+      `Email worker failed to start: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  });
 });
 
 export default app;
