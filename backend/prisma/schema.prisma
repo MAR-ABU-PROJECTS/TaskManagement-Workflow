@@ -695,7 +695,7 @@ model EmailJob {
   template          String
   status            EmailJobStatus  @default(QUEUED)
   attempts          Int             @default(0)
-  maxAttempts       Int             @default(5) @map("max_attempts")
+  maxAttempts       Int             @default(50) @map("max_attempts")
   nextAttemptAt     DateTime        @default(now()) @map("next_attempt_at")
   lockedAt          DateTime?       @map("locked_at")
   lockedBy          String?         @map("locked_by")

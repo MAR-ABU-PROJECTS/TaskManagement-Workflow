@@ -152,8 +152,8 @@ export class EmailService {
       this.isConfigured = true;
     }
 
-    const maxRetries = Number(process.env.EMAIL_MAX_RETRIES || "5");
-    this.maxRetryAttempts = Number.isNaN(maxRetries) ? 5 : maxRetries;
+    const maxRetries = Number(process.env.EMAIL_MAX_RETRIES || "50");
+    this.maxRetryAttempts = Number.isNaN(maxRetries) ? 50 : maxRetries;
   }
 
   /**
@@ -212,7 +212,11 @@ a{color:${APP_CONSTANTS.COLORS.PRIMARY};}
     );
 
     if (response.error) {
-      throw new Error(response.error.message);
+      const error = new Error(response.error.message);
+      (error as { statusCode?: number }).statusCode =
+        response.error.statusCode ?? undefined;
+      error.name = response.error.name;
+      throw error;
     }
 
     return response.data?.id ?? null;
