@@ -1,3 +1,4 @@
+import http from "http";
 import prisma from "../db/prisma";
 import emailService, { EmailSendJob } from "../services/EmailService";
 import logger from "../utils/logger";
@@ -18,31 +19,39 @@ type EmailJobRow = EmailSendJob & {
 
 const WORKER_ID =
   process.env.EMAIL_WORKER_ID || `email-worker-${process.pid}`;
-const POLL_MS = Number(process.env.EMAIL_WORKER_POLL_MS || "500");
+const POLL_MS = Number(process.env.EMAIL_WORKER_POLL_MS || "100");
 const BATCH_SIZE = Number(process.env.EMAIL_WORKER_BATCH_SIZE || "25");
-const CONCURRENCY = Number(process.env.EMAIL_WORKER_CONCURRENCY || "5");
+const CONCURRENCY = Number(process.env.EMAIL_WORKER_CONCURRENCY || "2");
 const STALE_LOCK_MS = Number(
   process.env.EMAIL_WORKER_STALE_LOCK_MS || "300000",
 );
 const STALE_CHECK_MS = Number(
   process.env.EMAIL_WORKER_STALE_CHECK_MS || "60000",
 );
-const RETRY_BASE_SECONDS = Number(
-  process.env.EMAIL_RETRY_BASE_SECONDS || "30",
-);
-const RETRY_MAX_SECONDS = Number(
-  process.env.EMAIL_RETRY_MAX_SECONDS || "1800",
-);
+const RETRY_BASE_SECONDS = Number(process.env.EMAIL_RETRY_BASE_SECONDS || "30");
+const RETRY_MAX_SECONDS = Number(process.env.EMAIL_RETRY_MAX_SECONDS || "1800");
+const RETRY_BASE_MS_RAW = Number(process.env.EMAIL_RETRY_BASE_MS || "");
+const RETRY_MAX_MS_RAW = Number(process.env.EMAIL_RETRY_MAX_MS || "");
+const RETRY_BASE_MS = Number.isFinite(RETRY_BASE_MS_RAW) && RETRY_BASE_MS_RAW > 0
+  ? RETRY_BASE_MS_RAW
+  : RETRY_BASE_SECONDS * 1000;
+const RETRY_MAX_MS = Number.isFinite(RETRY_MAX_MS_RAW) && RETRY_MAX_MS_RAW > 0
+  ? RETRY_MAX_MS_RAW
+  : RETRY_MAX_SECONDS * 1000;
+const SEND_RPS = Number(process.env.EMAIL_SEND_RPS || "2");
+const MIN_SEND_INTERVAL_MS = SEND_RPS > 0 ? Math.floor(1000 / SEND_RPS) : 500;
+const HEALTHCHECK_ENABLED =
+  process.env.WORKER_HEALTHCHECK_ENABLED !== "false";
 
 const sleep = (ms: number) =>
   new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
 
-const buildRetryDelaySeconds = (attempt: number) => {
-  const base = RETRY_BASE_SECONDS * Math.pow(2, attempt - 1);
-  const jitter = Math.floor(Math.random() * 5);
-  return Math.min(RETRY_MAX_SECONDS, base + jitter);
+const buildRetryDelayMs = (attempt: number) => {
+  const base = RETRY_BASE_MS * Math.pow(2, attempt - 1);
+  const jitter = Math.floor(Math.random() * 50);
+  return Math.min(RETRY_MAX_MS, base + jitter);
 };
 
 const extractErrorMessage = (error: unknown) => {
@@ -56,6 +65,7 @@ const isRetryable = (error: unknown) => {
   const statusCode =
     (error as { statusCode?: number }).statusCode ??
     (error as { status?: number }).status;
+  const errorName = (error as { name?: string }).name;
 
   if (!statusCode) {
     return true;
@@ -65,7 +75,70 @@ const isRetryable = (error: unknown) => {
     return false;
   }
 
+  if (
+    errorName === "validation_error" ||
+    errorName === "invalid_from_address" ||
+    errorName === "missing_required_field" ||
+    errorName === "invalid_parameter"
+  ) {
+    return false;
+  }
+
   return true;
+};
+
+let nextSendAt = 0;
+let rateGate: Promise<void> = Promise.resolve();
+
+const waitForSendSlot = async () => {
+  let release: () => void;
+  const waitForTurn = rateGate;
+  rateGate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  await waitForTurn;
+
+  try {
+    const now = Date.now();
+    const waitMs = Math.max(0, nextSendAt - now);
+    nextSendAt = Math.max(nextSendAt, now) + MIN_SEND_INTERVAL_MS;
+    if (waitMs > 0) {
+      await sleep(waitMs);
+    }
+  } finally {
+    release!();
+  }
+};
+
+const startHealthServer = () => {
+  if (!HEALTHCHECK_ENABLED) {
+    return null;
+  }
+
+  const port = Number(process.env.PORT || "");
+  if (!Number.isFinite(port) || port <= 0) {
+    return null;
+  }
+
+  const server = http.createServer((req, res) => {
+    const url = req.url || "/";
+    if (url === "/" || url === "/health") {
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "text/plain");
+      res.end("ok");
+      return;
+    }
+
+    res.statusCode = 404;
+    res.end("not found");
+  });
+
+  server.listen(port, () => {
+    logger.info(`Email worker healthcheck listening on port ${port}.`);
+  });
+
+  return server;
 };
 
 const requeueStaleJobs = async () => {
@@ -118,6 +191,7 @@ const fetchJobs = async () =>
 
 const handleJob = async (job: EmailJobRow) => {
   try {
+    await waitForSendSlot();
     const providerMessageId = await emailService.sendQueuedEmail(job);
 
     await prisma.emailJob.update({
@@ -152,8 +226,9 @@ const handleJob = async (job: EmailJobRow) => {
       return;
     }
 
-    const delaySeconds = buildRetryDelaySeconds(attempts);
-    const nextAttemptAt = new Date(Date.now() + delaySeconds * 1000);
+    const delayMs = buildRetryDelayMs(attempts);
+    const nextAttemptAt = new Date(Date.now() + delayMs);
+    const delaySeconds = Math.max(1, Math.round(delayMs / 1000));
 
     await prisma.emailJob.update({
       where: { id: job.id },
@@ -193,6 +268,7 @@ const processBatch = async (jobs: EmailJobRow[]) => {
 
 export const startEmailWorker = async () => {
   logger.info(`Email worker starting (id: ${WORKER_ID}).`);
+  const healthServer = startHealthServer();
 
   let shuttingDown = false;
   const handleShutdown = (signal: NodeJS.Signals) => {
@@ -225,6 +301,12 @@ export const startEmailWorker = async () => {
       logger.error(`Email worker loop error: ${extractErrorMessage(error)}`);
       await sleep(POLL_MS);
     }
+  }
+
+  if (healthServer) {
+    await new Promise<void>((resolve) => {
+      healthServer.close(() => resolve());
+    });
   }
 
   await prisma.$disconnect();
