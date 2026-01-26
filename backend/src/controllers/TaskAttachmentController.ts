@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import TaskAttachmentService from "../services/TaskAttachmentService";
+import cloudinaryService from "../services/CloudinaryService";
 
 class TaskAttachmentController {
   /**
@@ -36,7 +37,26 @@ class TaskAttachmentController {
       }
 
       if (files.length === 0) {
-        res.status(400).json({ message: "No file uploaded" });
+        const rawUploads = (req.body as any)?.uploads;
+        if (!rawUploads) {
+          res.status(400).json({ message: "No file uploaded" });
+          return;
+        }
+
+        const uploads =
+          typeof rawUploads === "string" ? JSON.parse(rawUploads) : rawUploads;
+
+        const attachments = await TaskAttachmentService.createCloudinaryAttachments(
+          taskId,
+          userId!,
+          uploads,
+        );
+
+        res.status(201).json({
+          message: "Attachment uploaded successfully",
+          data: attachments.length === 1 ? attachments[0] : attachments,
+          uploadedCount: attachments.length,
+        });
         return;
       }
 
@@ -55,6 +75,40 @@ class TaskAttachmentController {
         message: "Attachment uploaded successfully",
         data: attachments.length === 1 ? attachments[0] : attachments,
         uploadedCount: attachments.length,
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  /**
+   * Create a Cloudinary upload signature for direct uploads
+   * POST /api/tasks/:taskId/attachments/cloudinary/signature
+   */
+  async createCloudinarySignature(req: Request, res: Response) {
+    try {
+      const { taskId } = req.params;
+
+      if (!taskId) {
+        res.status(400).json({ message: "Task ID is required" });
+        return;
+      }
+
+      if (!cloudinaryService.isConfigured()) {
+        res.status(500).json({ message: "Cloudinary not configured" });
+        return;
+      }
+
+      const folder = `task-attachments/${taskId}`;
+      const signature = cloudinaryService.getSignature({
+        folder,
+        resourceType: "auto",
+        tags: [taskId],
+      });
+
+      res.json({
+        message: "Signature created",
+        data: signature,
       });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -100,15 +154,21 @@ class TaskAttachmentController {
         return;
       }
 
-      const { buffer, filename, mimeType } =
-        await TaskAttachmentService.downloadAttachment(attachmentId);
+      const result = await TaskAttachmentService.downloadAttachment(
+        attachmentId
+      );
 
-      res.setHeader("Content-Type", mimeType);
+      if (result.type === "redirect") {
+        res.redirect(result.url);
+        return;
+      }
+
+      res.setHeader("Content-Type", result.mimeType);
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${filename}"`
+        `attachment; filename="${result.filename}"`
       );
-      res.send(buffer);
+      res.send(result.buffer);
     } catch (error: any) {
       res.status(404).json({ message: error.message });
     }
