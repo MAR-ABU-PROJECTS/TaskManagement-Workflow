@@ -1,4 +1,6 @@
 import express from "express";
+import fs from "fs";
+import path from "path";
 import multer from "multer";
 import { authenticate } from "../middleware/auth";
 import {
@@ -20,12 +22,23 @@ import TimeTrackingController from "../controllers/TimeTrackingController";
 
 const router = express.Router();
 
-// Configure multer for file uploads
+// Configure multer for file uploads (server-side uploads)
+const maxUploadMb = Number(process.env.UPLOAD_MAX_MB || "1024");
+const maxUploadFiles = Number(process.env.UPLOAD_MAX_FILES || "10");
+const tempUploadDir = path.join(process.cwd(), "uploads", "tmp");
+fs.mkdirSync(tempUploadDir, { recursive: true });
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, tempUploadDir),
+    filename: (_req, file, cb) => {
+      const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      cb(null, `${unique}-${safeName}`);
+    },
+  }),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB per file
-    files: 10, // Max number of files per request
+    fileSize: maxUploadMb * 1024 * 1024,
+    files: maxUploadFiles,
   },
 });
 
@@ -1057,7 +1070,8 @@ router.get("/:taskId/attachments", authenticate, (req, res) =>
  *   post:
  *     summary: Upload attachment to task
  *     description: |
- *       Upload a file attachment to a task. Max file size: 10MB.
+ *       Upload a file attachment to a task. Server-side uploads are intended for small files.
+ *       For large files, upload directly to Cloudinary and send the upload metadata to this endpoint.
  *       Supported formats: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, ZIP, etc.
  *     tags: [Tasks]
  *     security:
@@ -1084,7 +1098,7 @@ router.get("/:taskId/attachments", authenticate, (req, res) =>
  *                 items:
  *                   type: string
  *                   format: binary
- *                 description: Files to upload (max 10 files, 10MB each)
+ *                 description: Files to upload (max 10 files, 1024MB each by default)
  *               file:
  *                 type: string
  *                 format: binary
@@ -1092,6 +1106,33 @@ router.get("/:taskId/attachments", authenticate, (req, res) =>
  *               description:
  *                 type: string
  *                 description: Optional file description
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - uploads
+ *             properties:
+ *               uploads:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required: [publicId, secureUrl, originalFilename, bytes]
+ *                   properties:
+ *                     publicId:
+ *                       type: string
+ *                     assetId:
+ *                       type: string
+ *                     secureUrl:
+ *                       type: string
+ *                     originalFilename:
+ *                       type: string
+ *                     bytes:
+ *                       type: integer
+ *                     resourceType:
+ *                       type: string
+ *                       enum: [image, video, raw, auto]
+ *                     mimeType:
+ *                       type: string
  *     responses:
  *       201:
  *         description: File uploaded successfully
@@ -1125,6 +1166,35 @@ router.post(
     { name: "file", maxCount: 1 },
   ]),
   (req, res) => TaskAttachmentController.uploadAttachment(req, res),
+);
+
+/**
+ * @swagger
+ * /api/tasks/{taskId}/attachments/cloudinary/signature:
+ *   post:
+ *     summary: Create Cloudinary upload signature
+ *     description: |
+ *       Returns a signed payload for direct uploads to Cloudinary.
+ *       Use this for large files and multiple uploads without routing through the API.
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Signature created
+ */
+router.post(
+  "/:taskId/attachments/cloudinary/signature",
+  authenticate,
+  (req, res) => TaskAttachmentController.createCloudinarySignature(req, res),
 );
 
 /**

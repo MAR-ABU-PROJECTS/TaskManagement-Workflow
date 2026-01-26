@@ -114,6 +114,11 @@ enum EmailJobStatus {
   FAILED
 }
 
+enum StorageProvider {
+  LOCAL
+  CLOUDINARY
+}
+
 enum DependencyType {
   BLOCKS
   IS_BLOCKED_BY
@@ -434,20 +439,26 @@ model ActiveTimer {
 }
 
 model TaskAttachment {
-  id           String   @id @default(uuid())
-  taskId       String   @map("task_id")
-  uploadedById String   @map("uploaded_by_id")
-  fileName     String   @map("file_name")
-  originalName String   @map("original_name")
-  filePath     String   @map("file_path")
-  mimeType     String   @map("mime_type")
-  fileSize     Int      @map("file_size")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id                     String          @id @default(uuid())
+  taskId                 String          @map("task_id")
+  uploadedById           String          @map("uploaded_by_id")
+  fileName               String          @map("file_name")
+  originalName           String          @map("original_name")
+  filePath               String?         @map("file_path")
+  mimeType               String          @map("mime_type")
+  fileSize               Int             @map("file_size")
+  storageProvider        StorageProvider @default(LOCAL) @map("storage_provider")
+  cloudinaryPublicId     String?         @map("cloudinary_public_id")
+  cloudinaryAssetId      String?         @map("cloudinary_asset_id")
+  cloudinaryUrl          String?         @map("cloudinary_url")
+  cloudinaryResourceType String?         @map("cloudinary_resource_type")
+  createdAt              DateTime        @default(now()) @map("created_at")
 
   // Relations
   task       Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   uploadedBy User @relation("TaskAttachmentUploader", fields: [uploadedById], references: [id])
 
+  @@index([cloudinaryPublicId])
   @@map("task_attachments")
 }
 
