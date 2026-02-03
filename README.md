@@ -5,23 +5,23 @@
 
 A comprehensive, enterprise-grade project and task management application built for MAR ABU PROJECTS SERVICES LTD. This system provides JIRA-like functionality with support for multiple project methodologies (Agile, Waterfall, Kanban), advanced user management, reporting, and integration capabilities.
 
-## ✨ Latest Updates (v2.4.0)
+## Latest Updates (v2.4.0)
 
-### 🎯 Dashboard System
+### Dashboard System
 - **General User Dashboard**: Personalized metrics for all roles (CEO, HOO, HR, ADMIN, STAFF)
 - **Super Admin Dashboard**: System-wide statistics (Super Admin only)
 - Role-based data filtering and project visibility
 
-### 🔐 Password Reset Flow
+### Password Reset Flow
 - Secure token-based password reset via email
 - 1-hour token expiration with single-use validation
 - Email notifications for reset requests and confirmations
 
-### 🐛 Critical Bug Fixes
-- ✅ Task deletion errors resolved
-- ✅ Project member addition in updates fixed
-- ✅ User deletion cascade deletes working
-- ✅ Activity logging improved
+### Critical Bug Fixes
+- Task deletion errors resolved
+- Project member addition in updates fixed
+- User deletion cascade deletes working
+- Activity logging improved
 
 ## Architecture
 
